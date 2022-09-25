@@ -1,0 +1,19 @@
+tqdm==4.64.1
+cython==0.29.32
+opencv_python==4.6.0.66
+matplotlib==3.5.3
+imageio==2.21.3
+
+# mediapipe
+mediapipe==0.8.11
+
+# mmd
+numpy-quaternion==2022.4.2
+bezier==2021.2.12
+Pillow==9.2.0
+scikit-image==0.19.3
+
+# traslate
+Babel==2.10.3
+requests
+
