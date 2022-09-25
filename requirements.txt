@@ -7,6 +7,8 @@ imageio==2.21.3
 cython==0.29.32
 easydict==1.9
 PyYAML==6.0
+pycocotools==2.0.5
+git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox
 
 # mediapipe
 mediapipe==0.8.11

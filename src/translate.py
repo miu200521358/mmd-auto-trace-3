@@ -4,7 +4,7 @@ import os
 import re
 import traceback
 
-import requests
+import requests  # type: ignore
 
 if __name__ == "__main__":
     target_locale = "en"

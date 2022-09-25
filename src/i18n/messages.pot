@@ -62,3 +62,15 @@ msgstr ""
 msgid "2D姿勢推定で予期せぬエラーが発生しました。"
 msgstr ""
 
+
+msgid "学習モデル準備開始: {checkpoint}"
+msgstr ""
+
+
+msgid "AlphaPose開始"
+msgstr ""
+
+
+msgid "2D姿勢推定結果保存完了: {outputpath}"
+msgstr ""
+

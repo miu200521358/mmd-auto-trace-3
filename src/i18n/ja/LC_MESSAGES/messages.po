@@ -21,6 +21,7 @@ msgstr "MMD自動トレース開始\n　処理対象映像ファイル: {video_f
 msgid "動画準備開始"
 msgstr "動画準備開始"
 
+
 msgid "指定されたファイルパスが存在しません。\n{video_file}"
 msgstr "指定されたファイルパスが存在しません。\n{video_file}"
 
@@ -33,11 +34,38 @@ msgstr "【初回チェック】\n　ファイル名: {video_file}, ファイル
 msgid "元動画読み込み開始"
 msgstr "元動画読み込み開始"
 
+
 msgid "補間生成開始"
 msgstr "補間生成開始"
+
 
 msgid "【再チェック】\n　準備フォルダ: {process_img_dir}, 横: {width}, 縦: {height}, フレーム数: {last}, fps: {fps}"
 msgstr "【再チェック】\n　準備フォルダ: {process_img_dir}, 横: {width}, 縦: {height}, フレーム数: {last}, fps: {fps}"
 
 msgid "動画準備完了: {process_img_dir}"
 msgstr "動画準備完了: {process_img_dir}"
+
+
+msgid "2D人物姿勢推定開始: {img_dir}"
+msgstr "2D人物姿勢推定開始: {img_dir}"
+
+
+msgid "指定された処理用ディレクトリが存在しません。: {img_dir}"
+msgstr "指定された処理用ディレクトリが存在しません。: {img_dir}"
+
+
+msgid "2D姿勢推定で予期せぬエラーが発生しました。"
+msgstr "2D姿勢推定で予期せぬエラーが発生しました。"
+
+
+msgid "学習モデル準備開始: {checkpoint}"
+msgstr "学習モデル準備開始: {checkpoint}"
+
+
+msgid "AlphaPose開始"
+msgstr "AlphaPose開始"
+
+
+msgid "2D姿勢推定結果保存完了: {outputpath}"
+msgstr "2D姿勢推定結果保存完了: {outputpath}"
+

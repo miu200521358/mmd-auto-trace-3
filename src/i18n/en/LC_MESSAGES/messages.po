@@ -21,6 +21,7 @@ msgstr "MMD auto trace start\nProcessing target video file: {video_file}\nProces
 msgid "動画準備開始"
 msgstr "Video ready"
 
+
 msgid "指定されたファイルパスが存在しません。\n{video_file}"
 msgstr "The specified file path does not exist.\n{video_file}"
 
@@ -33,11 +34,38 @@ msgstr "[First check]\nFile name: {video_file}, File size: {size}, Horizontal: {
 msgid "元動画読み込み開始"
 msgstr "Start loading original video"
 
+
 msgid "補間生成開始"
 msgstr "Start interpolation generation"
+
 
 msgid "【再チェック】\n　準備フォルダ: {process_img_dir}, 横: {width}, 縦: {height}, フレーム数: {last}, fps: {fps}"
 msgstr "[Recheck]\n Preparation folder: {process_img_dir}, Width: {width}, Height: {height}, Number of frames: {last}, fps: {fps}"
 
 msgid "動画準備完了: {process_img_dir}"
 msgstr "Video ready: {process_img_dir}"
+
+
+msgid "2D人物姿勢推定開始: {img_dir}"
+msgstr "Start 2D human pose estimation: {img_dir}"
+
+
+msgid "指定された処理用ディレクトリが存在しません。: {img_dir}"
+msgstr "The specified processing directory does not exist: {img_dir}"
+
+
+msgid "2D姿勢推定で予期せぬエラーが発生しました。"
+msgstr "Unexpected error in 2D pose estimation."
+
+
+msgid "学習モデル準備開始: {checkpoint}"
+msgstr "Learning model preparation started: {checkpoint}"
+
+
+msgid "AlphaPose開始"
+msgstr "Start AlphaPose"
+
+
+msgid "2D姿勢推定結果保存完了: {outputpath}"
+msgstr "Completed saving 2D pose estimation result: {outputpath}"
+

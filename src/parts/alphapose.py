@@ -6,7 +6,7 @@ import random
 import sys
 from glob import glob
 
-sys.path.append(os.path.abspath(os.path.join(__file__, "../AlphaPose/alphapose")))
+sys.path.append(os.path.abspath(os.path.join(__file__, "../../AlphaPose")))
 
 import cv2
 import matplotlib.pyplot as plt
@@ -17,6 +17,8 @@ from AlphaPose.alphapose.models import builder
 from AlphaPose.alphapose.utils.detector import DetectionLoader
 from AlphaPose.alphapose.utils.writer import DataWriter
 from AlphaPose.detector.apis import get_detector
+from AlphaPose.detector.yolo_api import YOLODetector
+from AlphaPose.detector.yolo_cfg import cfg as ycfg
 from AlphaPose.trackers import track
 from AlphaPose.trackers.tracker_api import Tracker
 from AlphaPose.trackers.tracker_cfg import cfg as tcfg
@@ -53,6 +55,8 @@ def execute(args):
 
         argv.inputpath = os.path.join(args.img_dir, "01_frames")
         argv.outputpath = os.path.join(args.img_dir, "02_alphapose")
+        os.makedirs(argv.outputpath, exist_ok=True)
+
         argv.gpus = [int(i) for i in argv.gpus.split(",")] if torch.cuda.device_count() >= 1 else [-1]
         argv.device = torch.device("cuda:" + str(argv.gpus[0]) if argv.gpus[0] >= 0 else "cpu")
         argv.detbatch = argv.detbatch * len(argv.gpus)
@@ -63,8 +67,12 @@ def execute(args):
             torch.multiprocessing.set_start_method("forkserver", force=True)
             torch.multiprocessing.set_sharing_strategy("file_system")
 
-        input_source = glob(os.path.join(argv.inputpath, "*.png"))
-        det_loader = DetectionLoader(input_source, get_detector(args), cfg, args, batchSize=args.detbatch, mode="image", queueSize=args.qsize)
+        input_source = [os.path.basename(file_path) for file_path in glob(os.path.join(argv.inputpath, "*.png"))]
+
+        ycfg.CONFIG = "AlphaPose/detector/yolo/cfg/yolov3-spp.cfg"
+        ycfg.WEIGHTS = "../data/alphapose/yolo/yolov3-spp.weights"
+        det_loader = DetectionLoader(input_source, YOLODetector(ycfg, argv), cfg, argv, batchSize=argv.detbatch, mode="image", queueSize=argv.qsize)
+        det_worker = det_loader.start()
 
         # Load pose model
         pose_model = builder.build_sppe(cfg.MODEL, preset_cfg=cfg.DATA_PRESET)
@@ -74,8 +82,11 @@ def execute(args):
             checkpoint=argv.checkpoint,
             decoration=MLogger.DECORATION_LINE,
         )
-        pose_model.load_state_dict(torch.load(args.checkpoint, map_location=args.device))
-        tracker = Tracker(tcfg, args)
+        pose_model.load_state_dict(torch.load(argv.checkpoint, map_location=argv.device))
+        tcfg.loadmodel = (
+            "../data/alphapose/trackers/weights/osnet_ain_x1_0_msmt17_256x128_amsgrad_ep50_lr0.0015_coslr_b64_fb10_softmax_labsmth_flip_jitter.pth"
+        )
+        tracker = Tracker(tcfg, argv)
 
         if len(argv.gpus) > 1:
             pose_model = torch.nn.DataParallel(pose_model, device_ids=argv.gpus).to(argv.device)
@@ -83,10 +94,15 @@ def execute(args):
             pose_model.to(argv.device)
         pose_model.eval()
 
-        writer = DataWriter(cfg, args, save_video=False, queueSize=args.qsize).start()
+        writer = DataWriter(cfg, argv, save_video=False, queueSize=argv.qsize).start()
+
+        logger.info(
+            "AlphaPose開始",
+            decoration=MLogger.DECORATION_LINE,
+        )
 
         with torch.no_grad():
-            for i in tqdm(range(input_source), dynamic_ncols=True):
+            for _ in tqdm(input_source, dynamic_ncols=True):
                 (inps, orig_img, im_name, boxes, scores, ids, cropped_boxes) = det_loader.read()
                 if orig_img is None:
                     break
@@ -94,7 +110,7 @@ def execute(args):
                     writer.save(None, None, None, None, None, orig_img, im_name)
                     continue
                 # Pose Estimation
-                inps = inps.to(args.device)
+                inps = inps.to(argv.device)
                 datalen = inps.size(0)
                 leftover = 0
                 if (datalen) % argv.posebatch:
@@ -106,7 +122,7 @@ def execute(args):
                     hm_j = pose_model(inps_j)
                     hm.append(hm_j)
                 hm = torch.cat(hm)
-                boxes, scores, ids, hm, cropped_boxes = track(tracker, args, orig_img, inps, boxes, hm, cropped_boxes, im_name, scores)
+                boxes, scores, ids, hm, cropped_boxes = track(tracker, argv, orig_img, inps, boxes, hm, cropped_boxes, im_name, scores)
                 hm = hm.cpu()
                 writer.save(boxes, scores, ids, hm, cropped_boxes, orig_img, im_name)
 
@@ -351,8 +367,8 @@ def execute(args):
         # cv2.destroyAllWindows()
 
         logger.info(
-            "2D姿勢推定結果保存完了: {outdir}",
-            outdir=argv.outdir,
+            "2D姿勢推定結果保存完了: {outputpath}",
+            outputpath=argv.outputpath,
             decoration=MLogger.DECORATION_BOX,
         )
 
@@ -562,7 +578,7 @@ def get_args_parser():
         help="choose which cuda device to use by index and input comma to use multi gpus, e.g. 0,1,2,3. (input -1 for cpu only)",
     )
     parser.add_argument(
-        "--qsize", type=int, dest="qsize", default=1024, help="the length of result buffer, where reducing it will lower requirement of cpu memory"
+        "--qsize", type=int, dest="qsize", default=128, help="the length of result buffer, where reducing it will lower requirement of cpu memory"
     )
     parser.add_argument("--flip", default=False, action="store_true", help="enable flip testing")
     parser.add_argument("--debug", default=False, action="store_true", help="print detail information")
