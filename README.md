@@ -9,3 +9,8 @@ pip install -r requirements.txt
 
 git submodule add https://github.com/miu200521358/AlphaPose src/AlphaPose 
 
+(mat3) C:\MMD\mmd-auto-trace-3\src\AlphaPose>python setup.py build install
+
+opendr のインストールに失敗するけど、とりあえず無視
+
+

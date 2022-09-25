@@ -50,3 +50,15 @@ msgstr ""
 msgid "動画準備完了: {process_img_dir}"
 msgstr ""
 
+
+msgid "2D人物姿勢推定開始: {img_dir}"
+msgstr ""
+
+
+msgid "指定された処理用ディレクトリが存在しません。: {img_dir}"
+msgstr ""
+
+
+msgid "2D姿勢推定で予期せぬエラーが発生しました。"
+msgstr ""
+

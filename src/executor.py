@@ -79,11 +79,11 @@ if __name__ == "__main__":
 
         result, args.img_dir = execute(args)
 
-    # if result and "snipper" in args.process:
-    #     # snipperによる人物推定
-    #     from parts.snipper import execute
+    if result and "alphapose" in args.process:
+        # alphaposeによる2D人物推定
+        from parts.alphapose import execute
 
-    #     result = execute(args)
+        result = execute(args)
 
     # if result and "mediapipe" in args.process:
     #     # mediapipeによる人物推定
