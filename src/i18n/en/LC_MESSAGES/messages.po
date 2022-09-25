@@ -1,0 +1,43 @@
+# Translations template for PROJECT.
+# Copyright (C) 2022 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2022-09-14 09:20+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.10.3\n"
+
+msgid "MMD自動トレース開始\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}"
+msgstr "MMD auto trace start\nProcessing target video file: {video_file}\nProcessing content: {process}"
+msgid "動画準備開始"
+msgstr "Video ready"
+
+msgid "指定されたファイルパスが存在しません。\n{video_file}"
+msgstr "The specified file path does not exist.\n{video_file}"
+
+msgid "MMD自動トレース終了\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}\n　トレース結果: {img_dir}\n　処理時間: {elapsed_time}"
+msgstr "MMD auto trace end\n　Processing target video file: {video_file}\nProcessing content: {process}\nTrace result: {img_dir}\nProcessing time: {elapsed_time}"
+
+msgid "【初回チェック】\n　ファイル名: {video_file}, ファイルサイズ: {size}, 横: {W}, 縦: {H}, フレーム数: {count}, fps: {fps}"
+msgstr "[First check]\nFile name: {video_file}, File size: {size}, Horizontal: {W}, Vertical: {H}, Number of frames: {count}, fps: {fps}"
+
+msgid "元動画読み込み開始"
+msgstr "Start loading original video"
+
+msgid "補間生成開始"
+msgstr "Start interpolation generation"
+
+msgid "【再チェック】\n　準備フォルダ: {process_img_dir}, 横: {width}, 縦: {height}, フレーム数: {last}, fps: {fps}"
+msgstr "[Recheck]\n Preparation folder: {process_img_dir}, Width: {width}, Height: {height}, Number of frames: {last}, fps: {fps}"
+
+msgid "動画準備完了: {process_img_dir}"
+msgstr "Video ready: {process_img_dir}"
