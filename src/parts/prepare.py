@@ -71,12 +71,12 @@ def execute(args):
         # フォルダ生成
         os.makedirs(process_img_dir)
         os.makedirs(os.path.join(process_img_dir, "resize"), exist_ok=True)
-        os.makedirs(os.path.join(process_img_dir, "frames"), exist_ok=True)
+        os.makedirs(os.path.join(process_img_dir, "01_frames"), exist_ok=True)
 
         # リサイズpng出力先
         resize_img_path = os.path.join(process_img_dir, "resize", "{0:012}.png")
         # 補間png出力先
-        process_img_path = os.path.join(process_img_dir, "frames", "{0:03}", "{1:012}.png")
+        process_img_path = os.path.join(process_img_dir, "01_frames", "{0:012}.png")
 
         # 縮尺
         scale = width / W
@@ -150,30 +150,15 @@ def execute(args):
                     # 最終フレームとかで対象パスがない場合、ひとつ手前
                     target_path = resize_img_path.format(round(k) - 1)
 
-                # snipper用に適当に分断する
-                process_dir_idx = kidx // 800
-                process_path = process_img_path.format(process_dir_idx, kidx)
+                process_path = process_img_path.format(kidx)
                 if not os.path.exists(target_path):
                     # 最終フレームとかで対象パスがない場合、ひとつ手前
-                    target_path = process_img_path.format(process_dir_idx, kidx - 1)
+                    target_path = process_img_path.format(kidx - 1)
 
                 os.makedirs(os.path.dirname(process_path), exist_ok=True)
 
                 # 該当フレーム番号の画像をコピー
                 shutil.copy(target_path, process_path)
-
-                if process_dir_idx > 0 and kidx % 800 < 200:
-                    # 1000F以降の先頭の方なら、前のディレクトリにも入れておく
-                    process_dir_idx -= 1
-                    process_path = process_img_path.format(process_dir_idx, kidx)
-                    if not os.path.exists(target_path):
-                        # 最終フレームとかで対象パスがない場合、ひとつ手前
-                        target_path = process_img_path.format(process_dir_idx, kidx - 1)
-
-                    os.makedirs(os.path.dirname(process_path), exist_ok=True)
-
-                    # 該当フレーム番号の画像をコピー
-                    shutil.copy(target_path, process_path)
 
             # 終わったら開放
             cap.release()
