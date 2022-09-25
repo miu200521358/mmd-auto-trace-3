@@ -18,3 +18,35 @@ msgstr ""
 
 msgid "MMD自動トレース開始\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}"
 msgstr ""
+
+msgid "動画準備開始"
+msgstr ""
+
+
+msgid "指定されたファイルパスが存在しません。\n{video_file}"
+msgstr ""
+
+
+msgid "MMD自動トレース終了\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}\n　トレース結果: {img_dir}\n　処理時間: {elapsed_time}"
+msgstr ""
+
+
+msgid "【初回チェック】\n　ファイル名: {video_file}, ファイルサイズ: {size}, 横: {W}, 縦: {H}, フレーム数: {count}, fps: {fps}"
+msgstr ""
+
+
+msgid "元動画読み込み開始"
+msgstr ""
+
+
+msgid "補間生成開始"
+msgstr ""
+
+
+msgid "【再チェック】\n　準備フォルダ: {process_img_dir}, 横: {width}, 縦: {height}, フレーム数: {last}, fps: {fps}"
+msgstr ""
+
+
+msgid "動画準備完了: {process_img_dir}"
+msgstr ""
+
