@@ -102,8 +102,13 @@
             var max_x = -99999, max_y = -99999, max_z = -99999, min_x = 99999, min_y = 99999, min_z = 99999;
             var jsonData = JSON.parse(ev.target.result);
             var max_fno = 0;
+            var min_fno = -1;
 
             Object.keys(jsonData).forEach(function (fno) {
+              if (min_fno < 0) {
+                min_fno = fno;
+                console.log("min_fno: " + min_fno);
+              }
               console.log("fno: " + fno);
               var depth_json = jsonData[fno]["body_depth"];
               var dx = parseFloat(depth_json.x);
@@ -144,11 +149,11 @@
             document.getElementById("z_max").value = Math.ceil(max_z / 100) * 100;
 
             // 行数をFrameに表示
-            document.getElementById('fr_min').value = 0;
+            document.getElementById('fr_min').value = min_fno;
             document.getElementById('fr_max').value = max_fno;
 
             // Frameを0にする
-            document.getElementById('fr').value = 0;
+            document.getElementById('fr').value = min_fno;
 
             plotpose();
           }

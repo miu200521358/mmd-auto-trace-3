@@ -207,8 +207,10 @@ def execute(args):
                                     "z": float(landmark.z),
                                 }
                     elif n > 0:
-                        # 推定結果がなかった場合、ひとつ前のをコピー
-                        frame_json_data["mp_body_world_joints"] = json_datas[list(json_datas.keys())[n - 1]]["mp_body_world_joints"]
+                        # 推定結果がなかった場合、前のをコピー
+                        for m in range(n - 1, 0, -1):
+                            if "mp_body_world_joints" in json_datas[list(json_datas.keys())[m]]:
+                                frame_json_data["mp_body_world_joints"] = json_datas[list(json_datas.keys())[m]]["mp_body_world_joints"]
 
                 mediapipe_json_path = os.path.join(output_dir_path, os.path.basename(persion_json_path))
 
