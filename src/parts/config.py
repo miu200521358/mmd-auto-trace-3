@@ -8,6 +8,6 @@ class DirName(Enum):
 
 
 class FileName(Enum):
-    ORIGINAL = "original.mp4"
     ALPHAPOSE_RESULT = "alphapose-results.json"
+    ALPHAPOSE_IMAGE = "alphapose.png"
     ALPHAPOSE_VIDEO = "alphapose.mp4"

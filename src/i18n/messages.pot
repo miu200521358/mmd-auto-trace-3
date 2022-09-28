@@ -158,3 +158,11 @@ msgstr ""
 msgid "入力動画のサイズが調整後に40で割り切れません。調整前({W}x{H}) -> 調整後({width}x{org_height})\n適切なサイズ({height})になるまで上辺を塗りつぶします。\n{video_file}"
 msgstr ""
 
+
+msgid "AlphaPose 結果分類"
+msgstr ""
+
+
+msgid "AlphaPose 結果分類準備"
+msgstr ""
+

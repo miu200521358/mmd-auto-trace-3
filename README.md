@@ -13,4 +13,10 @@ git submodule add https://github.com/miu200521358/AlphaPose src/AlphaPose
 
 opendr のインストールに失敗するけど、とりあえず無視
 
+## 学習モデルDL
+
+### detector > tracker
+
+JDE-1088x608
+https://github.com/Zhongdao/Towards-Realtime-MOT#pretrained-model-and-baseline-models
 

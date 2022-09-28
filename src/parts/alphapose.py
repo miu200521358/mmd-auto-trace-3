@@ -5,6 +5,7 @@ import platform
 import random
 import shutil
 import sys
+import time
 from glob import glob
 
 sys.path.append(os.path.abspath(os.path.join(__file__, "../../AlphaPose")))
@@ -18,8 +19,8 @@ from AlphaPose.alphapose.models import builder
 from AlphaPose.alphapose.utils.detector import DetectionLoader
 from AlphaPose.alphapose.utils.writer import DataWriter
 from AlphaPose.detector.apis import get_detector
-from AlphaPose.detector.yolo_api import YOLODetector
-from AlphaPose.detector.yolo_cfg import cfg as ycfg
+from AlphaPose.detector.tracker_api import Tracker as DTracker
+from AlphaPose.detector.tracker_cfg import cfg as dcfg
 from AlphaPose.trackers import track
 from AlphaPose.trackers.tracker_api import Tracker
 from AlphaPose.trackers.tracker_cfg import cfg as tcfg
@@ -28,13 +29,15 @@ from easydict import EasyDict as edict
 from PIL import Image
 from tqdm import tqdm
 
+from parts.config import DirName, FileName
+
 logger = MLogger(__name__)
 
 
 def execute(args):
     try:
         logger.info(
-            "2D人物姿勢推定開始: {img_dir}",
+            "2D姿勢推定 開始: {img_dir}",
             img_dir=args.img_dir,
             decoration=MLogger.DECORATION_BOX,
         )
@@ -54,11 +57,9 @@ def execute(args):
         if platform.system() == "Windows":
             argv.sp = True
 
-        argv.inputpath = os.path.join(args.img_dir, "01_frames")
-        argv.outputpath = os.path.join(args.img_dir, "02_alphapose")
-
-        # 描画用画像をフォルダごとコピー
-        shutil.copytree(argv.inputpath, argv.outputpath, dirs_exist_ok=True)
+        argv.inputpath = os.path.join(args.img_dir, DirName.FRAMES.value)
+        argv.outputpath = os.path.join(args.img_dir, DirName.ALPHAPOSE.value)
+        os.makedirs(argv.outputpath, exist_ok=True)
 
         argv.gpus = [int(i) for i in argv.gpus.split(",")] if torch.cuda.device_count() >= 1 else [-1]
         argv.device = torch.device("cuda:" + str(argv.gpus[0]) if argv.gpus[0] >= 0 else "cpu")
@@ -72,22 +73,22 @@ def execute(args):
 
         input_source = [os.path.basename(file_path) for file_path in glob(os.path.join(argv.inputpath, "*.png"))]
 
-        ycfg.CONFIG = "AlphaPose/detector/yolo/cfg/yolov3-spp.cfg"
-        ycfg.WEIGHTS = "../data/alphapose/yolo/yolov3-spp.weights"
-        det_loader = DetectionLoader(input_source, YOLODetector(ycfg, argv), cfg, argv, batchSize=argv.detbatch, mode="image", queueSize=argv.qsize)
-        det_worker = det_loader.start()
-
-        # Load pose model
-        pose_model = builder.build_sppe(cfg.MODEL, preset_cfg=cfg.DATA_PRESET)
-
         logger.info(
             "学習モデル準備開始: {checkpoint}",
             checkpoint=argv.checkpoint,
             decoration=MLogger.DECORATION_LINE,
         )
+
+        dcfg.CONFIG = "AlphaPose/detector/tracker/cfg/yolov3.cfg"
+        dcfg.WEIGHTS = "../data/alphapose/pretrained_models/jde.1088x608.uncertainty.pt"
+        det_loader = DetectionLoader(input_source, DTracker(dcfg, argv), cfg, argv, batchSize=argv.detbatch, mode="image", queueSize=argv.qsize)
+        det_loader.start()
+
+        # Load pose model
+        pose_model = builder.build_sppe(cfg.MODEL, preset_cfg=cfg.DATA_PRESET)
         pose_model.load_state_dict(torch.load(argv.checkpoint, map_location=argv.device))
         tcfg.loadmodel = (
-            "../data/alphapose/trackers/weights/osnet_ain_x1_0_msmt17_256x128_amsgrad_ep50_lr0.0015_coslr_b64_fb10_softmax_labsmth_flip_jitter.pth"
+            "../data/alphapose/pretrained_models/osnet_ain_x1_0_msmt17_256x128_amsgrad_ep50_lr0.0015_coslr_b64_fb10_softmax_labsmth_flip_jitter.pth"
         )
         tracker = Tracker(tcfg, argv)
 
@@ -129,8 +130,18 @@ def execute(args):
                 hm = hm.cpu()
                 writer.save(boxes, scores, ids, hm, cropped_boxes, orig_img, im_name)
 
+        running_str = "."
+        while writer.running():
+            time.sleep(1)
+            logger.info(
+                "Rendering {running}",
+                running=running_str,
+                decoration=MLogger.DECORATION_LINE,
+            )
+            running_str += "."
+
         logger.info(
-            "AlphaPose 結果保存",
+            "AlphaPose 結果分類準備",
             decoration=MLogger.DECORATION_LINE,
         )
 
@@ -138,12 +149,43 @@ def execute(args):
         det_loader.stop()
 
         json_datas = {}
-        with open(os.path.join(argv.outputpath, "alphapose-results.json"), "r") as f:
+        with open(os.path.join(argv.outputpath, FileName.ALPHAPOSE_RESULT.value), "r") as f:
             json_datas = json.load(f)
 
+        # person_idx を数える
+        person_idxs = []
+        for json_data in tqdm(json_datas):
+            person_idxs.append(json_data["idx"])
+
+        # 追跡画像用色生成
+        random.seed(13)
+        pids = list(set(person_idxs))
+        cmap = plt.get_cmap("rainbow")
+        pid_colors = [cmap(i) for i in np.linspace(0, 1, len(pids))]
+        random.shuffle(pid_colors)
+        pid_colors_opencv = [(np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in pid_colors]
+
+        target_image_path = os.path.join(argv.outputpath, FileName.ALPHAPOSE_IMAGE.value)
+        prev_image_id = ""
         max_fno = 0
         personal_datas = {}
+
+        img = Image.open(glob(os.path.join(argv.inputpath, "*.png"))[0])
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        out = cv2.VideoWriter(
+            os.path.join(args.img_dir, DirName.ALPHAPOSE.value, FileName.ALPHAPOSE_VIDEO.value),
+            fourcc,
+            30.0,
+            (img.size[0], img.size[1]),
+        )
+
+        logger.info(
+            "AlphaPose 結果分類",
+            decoration=MLogger.DECORATION_LINE,
+        )
+
         for json_data in tqdm(json_datas):
+            # 人物INDEX別に保持
             person_idx = int(json_data["idx"])
             if person_idx not in personal_datas:
                 personal_datas[person_idx] = {}
@@ -157,70 +199,43 @@ def execute(args):
                 "bbox": json_data["box"],
             }
 
+            if prev_image_id != json_data["image_id"]:
+                # 前の画像IDが入ってる場合、動画出力
+                if prev_image_id:
+                    out.write(cv2.imread(target_image_path))
+                # 前と画像が違う場合、1枚だけコピー
+                shutil.copy(os.path.join(argv.inputpath, json_data["image_id"]), target_image_path)
+
+            save_2d_image(
+                target_image_path,
+                person_idx,
+                fno,
+                json_data["keypoints"],
+                json_data["box"],
+                pid_colors_opencv[person_idx - 1],
+            )
+
+            prev_image_id = json_data["image_id"]
             if fno > max_fno:
                 max_fno = fno
 
-        logger.info(
-            "AlphaPose 結果描画",
-            decoration=MLogger.DECORATION_LINE,
-        )
-
-        random.seed(13)
-        pids = list(personal_datas.keys())
-        cmap = plt.get_cmap("rainbow")
-        pid_colors = [cmap(i) for i in np.linspace(0, 1, len(pids))]
-        random.shuffle(pid_colors)
-        pid_colors_opencv = [(np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in pid_colors]
-
-        os.makedirs(os.path.join(args.img_dir, "03_alphapose_personal"), exist_ok=True)
-
-        with tqdm(total=(max_fno * len(personal_datas.keys()))) as pchar:
-            for person_idx, personal_data in personal_datas.items():
-                with open(os.path.join(args.img_dir, "03_alphapose_personal", f"{person_idx:03d}.json"), "w") as f:
-                    json.dump(personal_data, f, indent=4)
-
-                for fno, personal_frame_data in personal_data.items():
-                    save_2d_image(
-                        os.path.join(argv.outputpath, personal_frame_data["image_id"]),
-                        person_idx - 1,
-                        fno,
-                        personal_frame_data["2d-keypoints"],
-                        personal_frame_data["bbox"],
-                        pid_colors_opencv,
-                    )
-                    pchar.update(1)
-
-        logger.info(
-            "AlphaPose 結果動画生成",
-            decoration=MLogger.DECORATION_LINE,
-        )
-
-        for i, file_path in enumerate(glob(os.path.join(argv.outputpath, "*.png"))):
-            if i == 0:
-                img = Image.open(file_path)
-                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-                out = cv2.VideoWriter(
-                    os.path.join(args.img_dir, "03_alphapose_personal", "alphapose.mp4"),
-                    fourcc,
-                    30.0,
-                    (img.size[0], img.size[1]),
-                )
-            out.write(cv2.imread(file_path))
+        # 最後の1枚を出力
+        out.write(cv2.imread(target_image_path))
 
         out.release()
         cv2.destroyAllWindows()
 
         logger.info(
-            "AlphaPose 後始末",
+            "AlphaPose 結果保存",
             decoration=MLogger.DECORATION_LINE,
         )
 
-        for i, file_path in enumerate(glob(os.path.join(argv.outputpath, "*.png"))):
-            # 合成終わったら削除
-            os.remove(file_path)
+        for person_idx, personal_data in personal_datas.items():
+            with open(os.path.join(args.img_dir, DirName.ALPHAPOSE.value, f"{person_idx:03d}.json"), "w") as f:
+                json.dump(personal_data, f, indent=4)
 
         logger.info(
-            "2D姿勢推定結果保存完了: {outputpath}",
+            "2D姿勢推定 結果保存完了: {outputpath}",
             outputpath=argv.outputpath,
             decoration=MLogger.DECORATION_BOX,
         )
@@ -231,7 +246,7 @@ def execute(args):
         return False
 
 
-def save_2d_image(image_path: str, person_idx: int, fidx: int, keypoints: list, bbox: list, pid_colors_opencv: list):
+def save_2d_image(image_path: str, person_idx: int, fno: int, keypoints: list, bbox: list, pid_color: tuple):
     img = cv2.imread(image_path)
     kps = np.array(keypoints).reshape(-1, 3)
 
@@ -276,7 +291,7 @@ def save_2d_image(image_path: str, person_idx: int, fidx: int, keypoints: list, 
             img,
             (joint1_x, joint1_y),
             (joint2_x, joint2_y),
-            color=tuple(pid_colors_opencv[person_idx]),
+            color=tuple(pid_color),
             thickness=t,
         )
         cv2.circle(
@@ -284,14 +299,14 @@ def save_2d_image(image_path: str, person_idx: int, fidx: int, keypoints: list, 
             thickness=-1,
             center=(joint1_x, joint1_y),
             radius=r,
-            color=tuple(pid_colors_opencv[person_idx]),
+            color=tuple(pid_color),
         )
         cv2.circle(
             img,
             thickness=-1,
             center=(joint2_x, joint2_y),
             radius=r,
-            color=tuple(pid_colors_opencv[person_idx]),
+            color=tuple(pid_color),
         )
 
     bbox_x = int(bbox[0])
@@ -303,28 +318,28 @@ def save_2d_image(image_path: str, person_idx: int, fidx: int, keypoints: list, 
         img,
         (bbox_x, bbox_y),
         (bbox_x + bbox_w, bbox_y),
-        color=tuple(pid_colors_opencv[person_idx]),
+        color=tuple(pid_color),
         thickness=bbx_thick,
     )
     cv2.line(
         img,
         (bbox_x, bbox_y),
         (bbox_x, bbox_y + bbox_h),
-        color=tuple(pid_colors_opencv[person_idx]),
+        color=tuple(pid_color),
         thickness=bbx_thick,
     )
     cv2.line(
         img,
         (bbox_x + bbox_w, bbox_y),
         (bbox_x + bbox_w, bbox_y + bbox_h),
-        color=tuple(pid_colors_opencv[person_idx]),
+        color=tuple(pid_color),
         thickness=bbx_thick,
     )
     cv2.line(
         img,
         (bbox_x, bbox_y + bbox_h),
         (bbox_x + bbox_w, bbox_y + bbox_h),
-        color=tuple(pid_colors_opencv[person_idx]),
+        color=tuple(pid_color),
         thickness=bbx_thick,
     )
 
@@ -334,7 +349,7 @@ def save_2d_image(image_path: str, person_idx: int, fidx: int, keypoints: list, 
         (bbox_x + bbox_w // 3, bbox_y - 5),
         cv2.FONT_HERSHEY_SIMPLEX,
         1,
-        color=tuple(pid_colors_opencv[person_idx]),
+        color=tuple(pid_color),
         thickness=bbx_thick,
     )
 
@@ -344,13 +359,13 @@ def save_2d_image(image_path: str, person_idx: int, fidx: int, keypoints: list, 
         ((bbox_x + bbox_w) + bbox_w // 3, (bbox_y + bbox_h) - 5),
         cv2.FONT_HERSHEY_SIMPLEX,
         1,
-        color=tuple(pid_colors_opencv[person_idx]),
+        color=tuple(pid_color),
         thickness=bbx_thick,
     )
 
     cv2.putText(
         img,
-        f"{fidx:6d}F",
+        f"{fno:6d}F",
         (10, 30),
         cv2.FONT_HERSHEY_SIMPLEX,
         1,
@@ -373,7 +388,7 @@ def get_args_parser():
         "--checkpoint", type=str, default="../data/alphapose/pretrained_models/halpe26_fast_res50_256x192.pth", help="checkpoint file name"
     )
     parser.add_argument("--sp", default=False, action="store_true", help="Use single process for pytorch")
-    parser.add_argument("--detector", dest="detector", help="detector name", default="yolo")
+    parser.add_argument("--detector", dest="detector", help="detector name", default="tracker")
     parser.add_argument("--detfile", dest="detfile", help="detection result file", default="")
     parser.add_argument("--indir", dest="inputpath", help="image-directory", default="")
     parser.add_argument("--list", dest="inputlist", help="image-list", default="")

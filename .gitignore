@@ -125,3 +125,4 @@ dmypy.json
 
 *.pth
 *.weights
+*.pt
