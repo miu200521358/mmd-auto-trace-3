@@ -126,3 +126,4 @@ dmypy.json
 *.pth
 *.weights
 *.pt
+src/cython-bbox/
