@@ -106,9 +106,9 @@ def execute(args):
                             POSE_LANDMARKS,
                         ):
                             frame_json_data["mp_body_world_joints"][output_name] = {
-                                "x": -float(world_landmark.x),
-                                "y": -float(world_landmark.y),
-                                "z": float(world_landmark.z),
+                                "x": -float(world_landmark.x) * 100,
+                                "y": -float(world_landmark.y) * 100,
+                                "z": float(world_landmark.z) * 100,
                             }
 
                         for jname in (
