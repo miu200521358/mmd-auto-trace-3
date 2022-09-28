@@ -19,8 +19,8 @@ from AlphaPose.alphapose.models import builder
 from AlphaPose.alphapose.utils.detector import DetectionLoader
 from AlphaPose.alphapose.utils.writer import DataWriter
 from AlphaPose.detector.apis import get_detector
-from AlphaPose.detector.tracker_api import Tracker as DTracker
-from AlphaPose.detector.tracker_cfg import cfg as dcfg
+from AlphaPose.detector.yolox_api import YOLOXDetector
+from AlphaPose.detector.yolox_cfg import cfg as ycfg
 from AlphaPose.trackers import track
 from AlphaPose.trackers.tracker_api import Tracker
 from AlphaPose.trackers.tracker_cfg import cfg as tcfg
@@ -79,16 +79,16 @@ def execute(args):
             decoration=MLogger.DECORATION_LINE,
         )
 
-        dcfg.CONFIG = "AlphaPose/detector/tracker/cfg/yolov3.cfg"
-        dcfg.WEIGHTS = "../data/alphapose/pretrained_models/jde.1088x608.uncertainty.pt"
-        det_loader = DetectionLoader(input_source, DTracker(dcfg, argv), cfg, argv, batchSize=argv.detbatch, mode="image", queueSize=argv.qsize)
+        ycfg.MODEL_NAME = "yolox-x"
+        ycfg.MODEL_WEIGHTS = "../data/alphapose/detector/yorox/yolox_x.pth"
+        det_loader = DetectionLoader(input_source, YOLOXDetector(ycfg, argv), cfg, argv, batchSize=argv.detbatch, mode="image", queueSize=argv.qsize)
         det_loader.start()
 
         # Load pose model
         pose_model = builder.build_sppe(cfg.MODEL, preset_cfg=cfg.DATA_PRESET)
         pose_model.load_state_dict(torch.load(argv.checkpoint, map_location=argv.device))
         tcfg.loadmodel = (
-            "../data/alphapose/pretrained_models/osnet_ain_x1_0_msmt17_256x128_amsgrad_ep50_lr0.0015_coslr_b64_fb10_softmax_labsmth_flip_jitter.pth"
+            "../data/alphapose/tracker/osnet_ain_x1_0_msmt17_256x128_amsgrad_ep50_lr0.0015_coslr_b64_fb10_softmax_labsmth_flip_jitter.pth"
         )
         tracker = Tracker(tcfg, argv)
 
@@ -384,9 +384,7 @@ def get_args_parser():
     parser.add_argument(
         "--cfg", type=str, default="AlphaPose/configs/halpe_26/resnet/256x192_res50_lr1e-3_1x.yaml", help="experiment configure file name"
     )
-    parser.add_argument(
-        "--checkpoint", type=str, default="../data/alphapose/pretrained_models/halpe26_fast_res50_256x192.pth", help="checkpoint file name"
-    )
+    parser.add_argument("--checkpoint", type=str, default="../data/alphapose/checkpoint/halpe26_fast_res50_256x192.pth", help="checkpoint file name")
     parser.add_argument("--sp", default=False, action="store_true", help="Use single process for pytorch")
     parser.add_argument("--detector", dest="detector", help="detector name", default="tracker")
     parser.add_argument("--detfile", dest="detfile", help="detection result file", default="")

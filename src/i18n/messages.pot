@@ -166,3 +166,7 @@ msgstr ""
 msgid "AlphaPose 結果分類準備"
 msgstr ""
 
+
+msgid "Rendering {running}"
+msgstr ""
+
