@@ -249,9 +249,9 @@ def execute(args):
                 fidx = str(fno)
                 personal_data[fno] = {
                     "body_depth": {
-                        "x": fjoints[0][0],
-                        "y": fjoints[0][1],
-                        "z": fjoints[0][2],
+                        "x": fjoints[0][0] * 100,
+                        "y": fjoints[0][1] * 100,
+                        "z": fjoints[0][2] * 100,
                     },
                 }
                 for joint_type in ("mp_body_world_joints", "mp_left_hand_joints", "mp_right_hand_joints", "mp_face_joints"):

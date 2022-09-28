@@ -65,9 +65,11 @@ def execute(args):
                     decoration=MLogger.DECORATION_LINE,
                 )
 
-                for fidx, frame_json_data in tqdm(
-                    json_datas.items(),
-                    desc=f"No.{pname} ... ",
+                for n, (fidx, frame_json_data) in enumerate(
+                    tqdm(
+                        json_datas.items(),
+                        desc=f"No.{pname} ... ",
+                    ),
                 ):
 
                     bbox_x = int(frame_json_data["bbox"]["x"])
@@ -204,6 +206,9 @@ def execute(args):
                                     "y": -float(landmark.y),
                                     "z": float(landmark.z),
                                 }
+                    elif n > 0:
+                        # 推定結果がなかった場合、ひとつ前のをコピー
+                        frame_json_data["mp_body_world_joints"] = json_datas[list(json_datas.keys())[n - 1]]["mp_body_world_joints"]
 
                 mediapipe_json_path = os.path.join(output_dir_path, os.path.basename(persion_json_path))
 

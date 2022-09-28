@@ -105,7 +105,12 @@
 
             Object.keys(jsonData).forEach(function (fno) {
               console.log("fno: " + fno);
-              var bf_json = jsonData[fno]["posetriplet-keypoints"];
+              var depth_json = jsonData[fno]["body_depth"];
+              var dx = parseFloat(depth_json.x);
+              var dy = parseFloat(depth_json.y);
+              var dz = parseFloat(depth_json.z);
+
+              var bf_json = jsonData[fno]["mp_body_world_joints"];
               console.log("bf_json: " + bf_json);
               var bf_list = [];
               max_fno = fno;
@@ -116,9 +121,9 @@
                 var x = parseFloat(bf.x);
                 var y = parseFloat(bf.y);
                 var z = parseFloat(bf.z);
-                bf.x = x * 100;
-                bf.y = z * 100;
-                bf.z = y * 100;
+                bf.x = x + dx;
+                bf.y = z + dz;
+                bf.z = y + dy;
                 bf_list.push(bf);
 
                 if (bf.x > max_x) { max_x = bf.x };
@@ -223,11 +228,13 @@
         bone_names[key] = poslist[i].name
       }
 
-      var order = [['head', 'neck', 'spine2', 'spine'],
-      ['neck', 'left_shoulder', 'left_elbow', 'left_wrist', 'left_index'],
-      ['neck', 'right_shoulder', 'right_elbow', 'right_wrist', 'right_index'],
-      ['pelvis', 'right_hip', 'right_knee', 'right_ankle', 'right_foot_index'],
-      ['pelvis', 'left_hip', 'left_knee', 'left_ankle', 'left_foot_index']];
+      var order = [['Head', 'Nose', 'Neck', 'Spine'],
+      ['Neck', 'LShoulder', 'LElbow', 'LWrist', 'LIndex'],
+      ['Neck', 'RShoulder', 'RElbow', 'RWrist', 'RIndex'],
+      ['Pelvis', 'RHip', 'RKnee', 'RAnkle', 'RFootIndex'],
+      ['Pelvis', 'LHip', 'LKnee', 'LAnkle', 'LFootIndex'],
+      ['REye', 'Nose'],
+      ['LEye', 'Nose']];
       var x = [];
       var y = [];
       var z = [];
@@ -356,6 +363,44 @@
             y: y[4],
             z: z[4],
             text: text[4],
+            name: 'left',
+            opacity: 2,
+            line: {
+              width: 6,
+              color: 'rgb(46, 204, 113)',
+              reversescale: false
+            },
+            marker: {
+              color: 'rgb(46, 204, 113)',
+              size: 2
+            }
+          },
+          {
+            type: 'scatter3d',
+            mode: 'lines+markers',
+            x: x[5],
+            y: y[5],
+            z: z[5],
+            text: text[5],
+            name: 'right',
+            opacity: 2,
+            line: {
+              width: 6,
+              color: 'rgb(155, 89, 182)',
+              reversescale: false
+            },
+            marker: {
+              color: 'rgb(155, 89, 182)',
+              size: 2
+            }
+          },
+          {
+            type: 'scatter3d',
+            mode: 'lines+markers',
+            x: x[6],
+            y: y[6],
+            z: z[6],
+            text: text[6],
             name: 'left',
             opacity: 2,
             line: {
