@@ -1,6 +1,6 @@
 cd AlphaPose
 
 git fetch
-git merge origin/main
+git merge master
 
 cd ..
