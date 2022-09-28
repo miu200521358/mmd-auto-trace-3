@@ -99,51 +99,107 @@ def execute(args):
                         and results.pose_world_landmarks
                         and results.pose_world_landmarks.landmark
                     ):
-                        frame_json_data["mp_body_joints"] = {"joints": {}}
-                        frame_json_data["mp_body_world_joints"] = {"joints": {}}
+                        frame_json_data["mp_body_world_joints"] = {}
 
-                        for landmark, world_landmark, output_name in zip(
-                            results.pose_landmarks.landmark,
+                        for world_landmark, output_name in zip(
                             results.pose_world_landmarks.landmark,
                             POSE_LANDMARKS,
                         ):
-                            frame_json_data["mp_body_joints"]["joints"][output_name] = {
-                                "x": -float(landmark.x),
-                                "y": -float(landmark.y),
-                                "z": float(landmark.z),
-                                "score": float(landmark.visibility),
-                            }
-                            frame_json_data["mp_body_world_joints"]["joints"][output_name] = {
+                            frame_json_data["mp_body_world_joints"][output_name] = {
                                 "x": -float(world_landmark.x),
                                 "y": -float(world_landmark.y),
                                 "z": float(world_landmark.z),
                             }
 
+                        for jname in (
+                            "Pelvis",
+                            "Pelvis2",
+                            "Spine",
+                            "Neck",
+                            "Head",
+                            "LCollar",
+                            "RCollar",
+                        ):
+                            frame_json_data["mp_body_world_joints"][jname] = {}
+
+                        for axis in ["x", "y", "z"]:
+                            # 下半身
+                            frame_json_data["mp_body_world_joints"]["Pelvis"][axis] = np.mean(
+                                [
+                                    frame_json_data["mp_body_world_joints"]["LHip"][axis],
+                                    frame_json_data["mp_body_world_joints"]["RHip"][axis],
+                                ]
+                            )
+                            # 下半身先
+                            frame_json_data["mp_body_world_joints"]["Pelvis2"][axis] = np.mean(
+                                [
+                                    frame_json_data["mp_body_world_joints"]["LHip"][axis],
+                                    frame_json_data["mp_body_world_joints"]["RHip"][axis],
+                                    frame_json_data["mp_body_world_joints"]["LKnee"][axis],
+                                    frame_json_data["mp_body_world_joints"]["RKnee"][axis],
+                                ]
+                            )
+                            # 上半身
+                            frame_json_data["mp_body_world_joints"]["Spine"][axis] = np.mean(
+                                [
+                                    frame_json_data["mp_body_world_joints"]["LHip"][axis],
+                                    frame_json_data["mp_body_world_joints"]["RHip"][axis],
+                                ]
+                            )
+                            # 首
+                            frame_json_data["mp_body_world_joints"]["Neck"][axis] = np.mean(
+                                [
+                                    frame_json_data["mp_body_world_joints"]["LShoulder"][axis],
+                                    frame_json_data["mp_body_world_joints"]["RShoulder"][axis],
+                                ]
+                            )
+                            # 左肩
+                            frame_json_data["mp_body_world_joints"]["LCollar"][axis] = np.mean(
+                                [
+                                    frame_json_data["mp_body_world_joints"]["LShoulder"][axis],
+                                    frame_json_data["mp_body_world_joints"]["RShoulder"][axis],
+                                ]
+                            )
+                            # 右肩
+                            frame_json_data["mp_body_world_joints"]["RCollar"][axis] = np.mean(
+                                [
+                                    frame_json_data["mp_body_world_joints"]["LShoulder"][axis],
+                                    frame_json_data["mp_body_world_joints"]["RShoulder"][axis],
+                                ]
+                            )
+                            # 頭
+                            frame_json_data["mp_body_world_joints"]["Head"][axis] = np.mean(
+                                [
+                                    frame_json_data["mp_body_world_joints"]["LEar"][axis],
+                                    frame_json_data["mp_body_world_joints"]["REar"][axis],
+                                ]
+                            )
+
                         if results.right_hand_landmarks:
-                            frame_json_data["mp_left_hand_joints"] = {"joints": {}}
+                            frame_json_data["mp_left_hand_joints"] = {}
                             for landmark, output_name in zip(
                                 results.right_hand_landmarks.landmark,
                                 HAND_LANDMARKS,
                             ):
-                                frame_json_data["mp_left_hand_joints"]["joints"][output_name] = {
+                                frame_json_data["mp_left_hand_joints"][output_name] = {
                                     "x": -float(landmark.x),
                                     "y": -float(landmark.y),
                                     "z": float(landmark.z),
                                 }
 
                         if results.left_hand_landmarks:
-                            frame_json_data["mp_right_hand_joints"] = {"joints": {}}
+                            frame_json_data["mp_right_hand_joints"] = {}
                             for landmark, output_name in zip(results.left_hand_landmarks.landmark, HAND_LANDMARKS):
-                                frame_json_data["mp_right_hand_joints"]["joints"][output_name] = {
+                                frame_json_data["mp_right_hand_joints"][output_name] = {
                                     "x": -float(landmark.x),
                                     "y": -float(landmark.y),
                                     "z": float(landmark.z),
                                 }
 
                         if results.face_landmarks:
-                            frame_json_data["mp_face_joints"] = {"joints": {}}
+                            frame_json_data["mp_face_joints"] = {}
                             for lidx, landmark in enumerate(results.face_landmarks.landmark):
-                                frame_json_data["mp_face_joints"]["joints"][lidx] = {
+                                frame_json_data["mp_face_joints"][lidx] = {
                                     "x": -float(landmark.x),
                                     "y": -float(landmark.y),
                                     "z": float(landmark.z),
@@ -174,39 +230,39 @@ def execute(args):
 
 # 左右逆
 POSE_LANDMARKS = [
-    "nose",
-    "right_eye_inner",
-    "right_eye",
-    "right_eye_outer",
-    "left_eye_inner",
-    "left_eye",
-    "left_eye_outer",
-    "right_ear",
-    "left_ear",
-    "mouth_right",
-    "mouth_left",
-    "right_shoulder",
-    "left_shoulder",
-    "right_elbow",
-    "left_elbow",
-    "body_right_wrist",
-    "body_left_wrist",
-    "body_right_pinky",
-    "body_left_pinky",
-    "body_right_index",
-    "body_left_index",
-    "body_right_thumb",
-    "body_left_thumb",
-    "right_hip",
-    "left_hip",
-    "right_knee",
-    "left_knee",
-    "right_ankle",
-    "left_ankle",
-    "right_heel",
-    "left_heel",
-    "right_foot_index",
-    "left_foot_index",
+    "Nose",
+    "REyeIn",
+    "REye",
+    "REyeOut",
+    "LEyeIn",
+    "LEye",
+    "LEyeOut",
+    "REar",
+    "LEar",
+    "RMouth",
+    "LMouth",
+    "RShoulder",
+    "LShoulder",
+    "RElbow",
+    "LElbow",
+    "RWrist",
+    "LWrist",
+    "RPinky",
+    "LPinky",
+    "RIndex",
+    "LIndex",
+    "RThumb",
+    "LThumb",
+    "RHip",
+    "LHip",
+    "RKnee",
+    "LKnee",
+    "RAnkle",
+    "LAnkle",
+    "RHeel",
+    "LHeel",
+    "RFootIndex",
+    "LFootIndex",
 ]
 
 HAND_LANDMARKS = [

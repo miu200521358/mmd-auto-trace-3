@@ -21,7 +21,6 @@ msgstr "MMD自動トレース開始\n　処理対象映像ファイル: {video_f
 msgid "動画準備開始"
 msgstr "動画準備開始"
 
-
 msgid "指定されたファイルパスが存在しません。\n{video_file}"
 msgstr "指定されたファイルパスが存在しません。\n{video_file}"
 
@@ -34,10 +33,8 @@ msgstr "【初回チェック】\n　ファイル名: {video_file}, ファイル
 msgid "元動画読み込み開始"
 msgstr "元動画読み込み開始"
 
-
 msgid "補間生成開始"
 msgstr "補間生成開始"
-
 
 msgid "【再チェック】\n　準備フォルダ: {process_img_dir}, 横: {width}, 縦: {height}, フレーム数: {last}, fps: {fps}"
 msgstr "【再チェック】\n　準備フォルダ: {process_img_dir}, 横: {width}, 縦: {height}, フレーム数: {last}, fps: {fps}"
@@ -45,58 +42,44 @@ msgstr "【再チェック】\n　準備フォルダ: {process_img_dir}, 横: {w
 msgid "動画準備完了: {process_img_dir}"
 msgstr "動画準備完了: {process_img_dir}"
 
-
 msgid "2D人物姿勢推定開始: {img_dir}"
 msgstr "2D人物姿勢推定開始: {img_dir}"
-
 
 msgid "指定された処理用ディレクトリが存在しません。: {img_dir}"
 msgstr "指定された処理用ディレクトリが存在しません。: {img_dir}"
 
-
 msgid "2D姿勢推定で予期せぬエラーが発生しました。"
 msgstr "2D姿勢推定で予期せぬエラーが発生しました。"
-
 
 msgid "学習モデル準備開始: {checkpoint}"
 msgstr "学習モデル準備開始: {checkpoint}"
 
-
 msgid "AlphaPose開始"
 msgstr "AlphaPose開始"
-
 
 msgid "2D姿勢推定結果保存完了: {outputpath}"
 msgstr "2D姿勢推定結果保存完了: {outputpath}"
 
-
 msgid "AlphaPose 開始"
-msgstr "AlphaPose開始"
-
+msgstr "AlphaPose 開始"
 
 msgid "AlphaPose 結果保存"
 msgstr "AlphaPose 結果保存"
 
-
 msgid "AlphaPose 結果描画"
 msgstr "AlphaPose 結果描画"
-
 
 msgid "AlphaPose 結果動画生成"
 msgstr "AlphaPose 結果動画生成"
 
-
 msgid "AlphaPose 後始末"
-msgstr "AlphaPose開始"
-
+msgstr "AlphaPose 後始末"
 
 msgid "動画準備で予期せぬエラーが発生しました。"
-msgstr "2D姿勢推定で予期せぬエラーが発生しました。"
-
+msgstr "動画準備で予期せぬエラーが発生しました。"
 
 msgid "2D姿勢推定 開始: {img_dir}"
-msgstr "2D人物姿勢推定開始: {img_dir}"
-
+msgstr "2D姿勢推定 開始: {img_dir}"
 
 msgid "入力動画のサイズが調整後に40で割り切れません。調整前({W}x{H}) -> 調整後({width}x{org_height})\n適切なサイズ({height})になるまで上辺を塗りつぶします。\n{video_file}"
 msgstr "入力動画のサイズが調整後に40で割り切れません。調整前({W}x{H}) -> 調整後({width}x{org_height})\n適切なサイズ({height})になるまで上辺を塗りつぶします。\n{video_file}"
@@ -104,39 +87,50 @@ msgstr "入力動画のサイズが調整後に40で割り切れません。調�
 msgid "AlphaPose 結果分類"
 msgstr "AlphaPose 結果分類"
 
-
 msgid "AlphaPose 結果分類準備"
 msgstr "AlphaPose 結果分類準備"
-
 
 msgid "Rendering {running}"
 msgstr "Rendering {running}"
 
-
 msgid "深度推定 開始: {img_dir}"
-msgstr "2D人物姿勢推定開始: {img_dir}"
-
+msgstr "深度推定 開始: {img_dir}"
 
 msgid "深度推定で予期せぬエラーが発生しました。"
-msgstr "2D姿勢推定で予期せぬエラーが発生しました。"
-
+msgstr "深度推定で予期せぬエラーが発生しました。"
 
 msgid "【No.{pname}】2D姿勢推定 結果取得"
 msgstr "【No.{pname}】2D姿勢推定 結果取得"
 
-
 msgid "【No.{pname}】深度推定 開始"
 msgstr "【No.{pname}】深度推定 開始"
-
 
 msgid "【No.{pname}】深度推定 結果取得"
 msgstr "【No.{pname}】深度推定 結果取得"
 
-
 msgid "【No.{pname}】深度推定 結果保存"
 msgstr "【No.{pname}】深度推定 結果保存"
 
-
 msgid "深度推定 結果保存完了: {output_dir_path}"
-msgstr "2D姿勢推定結果保存完了: {outputpath}"
+msgstr "深度推定 結果保存完了: {output_dir_path}"
 
+msgid "mediapipe推定処理開始: {img_dir}"
+msgstr "mediapipe推定処理開始: {img_dir}"
+
+msgid "【No.{pname}】mediapipe 推定開始"
+msgstr "【No.{pname}】mediapipe 推定開始"
+
+msgid "mediapipe推定で予期せぬエラーが発生しました。"
+msgstr "mediapipe推定で予期せぬエラーが発生しました。"
+
+msgid "2D姿勢推定 結果保存完了: {outputpath}"
+msgstr "2D姿勢推定 結果保存完了: {outputpath}"
+
+msgid "【No.{pname}】mediapipe 推定結果出力"
+msgstr "【No.{pname}】mediapipe 推定結果出力"
+
+msgid "mediapipe 推定処理終了: {output_dir}"
+msgstr "mediapipe 推定処理終了: {output_dir}"
+
+msgid "【No.{pname}】姿勢推定 結果取得"
+msgstr "【No.{pname}】姿勢推定 結果取得"

@@ -170,3 +170,7 @@ msgstr ""
 msgid "mediapipe 推定処理終了: {output_dir}"
 msgstr ""
 
+
+msgid "【No.{pname}】姿勢推定 結果取得"
+msgstr ""
+

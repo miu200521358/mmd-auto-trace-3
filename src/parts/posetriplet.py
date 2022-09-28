@@ -150,7 +150,7 @@ def execute(args):
         if not os.path.exists(os.path.join(args.img_dir, DirName.MEDIAPIPE.value)):
             logger.error(
                 "指定された3D姿勢推定ディレクトリが存在しません。\n3D姿勢推定が完了していない可能性があります。: {img_dir}",
-                img_dir=os.path.join(args.img_dir, DirName.ALPHAPOSE.value),
+                img_dir=os.path.join(args.img_dir, DirName.MEDIAPIPE.value),
                 decoration=MLogger.DECORATION_BOX,
             )
             return False
@@ -188,34 +188,27 @@ def execute(args):
         model = get_model(argv, ckpt_path)
         model_traj = get_model_traj(argv, ckpt_path)
 
-        for persion_json_path in glob(os.path.join(args.img_dir, DirName.ALPHAPOSE.value, "*.json")):
-            if FileName.ALPHAPOSE_RESULT.value in persion_json_path:
-                continue
-
+        for persion_json_path in glob(os.path.join(args.img_dir, DirName.MEDIAPIPE.value, "*.json")):
             json_datas = {}
             with open(persion_json_path, "r") as f:
                 json_datas = json.load(f)
-
-            if len(json_datas) < 5:
-                # 5F以内であればスルー
-                continue
 
             # 人物INDEX
             pname, _ = os.path.splitext(os.path.basename(persion_json_path))
 
             logger.info(
-                "【No.{pname}】2D姿勢推定 結果取得",
+                "【No.{pname}】姿勢推定 結果取得",
                 pname=pname,
                 decoration=MLogger.DECORATION_LINE,
             )
 
             width = height = 0
-            keypoints = {}
+            keypoints_2d = {}
             for fno, frame_json_data in tqdm(json_datas.items(), desc=f"No.{pname} ... "):
                 fno = int(fno)
                 width = int(frame_json_data["image"]["width"])
                 height = int(frame_json_data["image"]["height"])
-                keypoints[fno] = np.array(frame_json_data["2d-keypoints"]).reshape(-1, 3)[:, :2]
+                keypoints_2d[fno] = np.array(frame_json_data["2d-keypoints"]).reshape(-1, 3)[:, :2]
 
             logger.info(
                 "【No.{pname}】深度推定 開始",
@@ -223,9 +216,9 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
 
-            norm_keypoints = fetch_keypoint(np.array(list(keypoints.values())), width, height)
-            data_loader = get_dataloader(model, norm_keypoints)
-            data_loader_traj = get_dataloader(model_traj, norm_keypoints)
+            norm_keypoints_2d = fetch_keypoint(np.array(list(keypoints_2d.values())), width, height)
+            data_loader = get_dataloader(model, norm_keypoints_2d)
+            data_loader_traj = get_dataloader(model_traj, norm_keypoints_2d)
 
             prediction = evaluate(
                 data_loader,
@@ -252,58 +245,18 @@ def execute(args):
             )
 
             personal_data = {}
-            for fno, fjoints in tqdm(zip(keypoints.keys(), prediction.tolist()), desc=f"No.{pname} ... "):
+            for fno, fjoints in tqdm(zip(keypoints_2d.keys(), prediction.tolist()), desc=f"No.{pname} ... "):
                 fidx = str(fno)
                 personal_data[fno] = {
-                    "image": json_datas[fidx]["image"],
-                    "2d-keypoints": json_datas[fidx]["2d-keypoints"],
-                    "bbox": json_datas[fidx]["bbox"],
-                    "posetriplet-keypoints": {},
+                    "body_depth": {
+                        "x": fjoints[0][0],
+                        "y": fjoints[0][1],
+                        "z": fjoints[0][2],
+                    },
                 }
-                for jname, (jx, jy, jz) in zip(SIMPLE16_KEYPOINTS, fjoints):
-                    personal_data[fno]["posetriplet-keypoints"][jname] = {
-                        "x": float(jx),
-                        "y": -float(jy),
-                        "z": float(jz),
-                    }
-                    if jname == "pelvis":
-                        personal_data[fno]["posetriplet-keypoints"]["spine"] = {
-                            "x": float(jx),
-                            "y": -float(jy),
-                            "z": float(jz),
-                        }
-                personal_data[fno]["posetriplet-keypoints"]["pelvis2"] = {
-                    "x": float(
-                        np.mean(
-                            [
-                                personal_data[fno]["posetriplet-keypoints"]["left_knee"]["x"],
-                                personal_data[fno]["posetriplet-keypoints"]["right_knee"]["x"],
-                                personal_data[fno]["posetriplet-keypoints"]["left_hip"]["x"],
-                                personal_data[fno]["posetriplet-keypoints"]["right_hip"]["x"],
-                            ]
-                        )
-                    ),
-                    "y": float(
-                        np.mean(
-                            [
-                                personal_data[fno]["posetriplet-keypoints"]["left_knee"]["y"],
-                                personal_data[fno]["posetriplet-keypoints"]["right_knee"]["y"],
-                                personal_data[fno]["posetriplet-keypoints"]["left_hip"]["y"],
-                                personal_data[fno]["posetriplet-keypoints"]["right_hip"]["y"],
-                            ]
-                        )
-                    ),
-                    "z": float(
-                        np.mean(
-                            [
-                                personal_data[fno]["posetriplet-keypoints"]["left_knee"]["z"],
-                                personal_data[fno]["posetriplet-keypoints"]["right_knee"]["z"],
-                                personal_data[fno]["posetriplet-keypoints"]["left_hip"]["z"],
-                                personal_data[fno]["posetriplet-keypoints"]["right_hip"]["z"],
-                            ]
-                        )
-                    ),
-                }
+                for joint_type in ("mp_body_world_joints", "mp_left_hand_joints", "mp_right_hand_joints", "mp_face_joints"):
+                    if joint_type in json_datas[fidx]:
+                        personal_data[fno][joint_type] = json_datas[fidx][joint_type]
 
             logger.info(
                 "【No.{pname}】深度推定 結果保存",
@@ -348,7 +301,7 @@ def fetch_keypoint(keypoints: np.ndarray, width: int, height: int):
     return normalize_screen_coordinates(keypoints_imgunnorm[..., :2], width, height)
 
 
-def get_dataloader(model, keypoints: np.ndarray):
+def get_dataloader(model, keypoints_2d: np.ndarray):
     #  Receptive field: 243 frames for args.arc [3, 3, 3, 3, 3]
     receptive_field = model.receptive_field()
     pad = (receptive_field - 1) // 2  # Padding on each side
@@ -356,7 +309,7 @@ def get_dataloader(model, keypoints: np.ndarray):
     data_loader = UnchunkedGenerator(
         None,
         None,
-        [keypoints],
+        [keypoints_2d],
         pad=pad,
         causal_shift=causal_shift,
         augment=False,

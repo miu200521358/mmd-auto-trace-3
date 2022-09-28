@@ -21,7 +21,6 @@ msgstr "MMD auto trace start\nProcessing target video file: {video_file}\nProces
 msgid "動画準備開始"
 msgstr "Video ready"
 
-
 msgid "指定されたファイルパスが存在しません。\n{video_file}"
 msgstr "The specified file path does not exist.\n{video_file}"
 
@@ -34,10 +33,8 @@ msgstr "[First check]\nFile name: {video_file}, File size: {size}, Horizontal: {
 msgid "元動画読み込み開始"
 msgstr "Start loading original video"
 
-
 msgid "補間生成開始"
 msgstr "Start interpolation generation"
-
 
 msgid "【再チェック】\n　準備フォルダ: {process_img_dir}, 横: {width}, 縦: {height}, フレーム数: {last}, fps: {fps}"
 msgstr "[Recheck]\n Preparation folder: {process_img_dir}, Width: {width}, Height: {height}, Number of frames: {last}, fps: {fps}"
@@ -45,58 +42,44 @@ msgstr "[Recheck]\n Preparation folder: {process_img_dir}, Width: {width}, Heigh
 msgid "動画準備完了: {process_img_dir}"
 msgstr "Video ready: {process_img_dir}"
 
-
 msgid "2D人物姿勢推定開始: {img_dir}"
 msgstr "Start 2D human pose estimation: {img_dir}"
-
 
 msgid "指定された処理用ディレクトリが存在しません。: {img_dir}"
 msgstr "The specified processing directory does not exist: {img_dir}"
 
-
 msgid "2D姿勢推定で予期せぬエラーが発生しました。"
 msgstr "Unexpected error in 2D pose estimation."
-
 
 msgid "学習モデル準備開始: {checkpoint}"
 msgstr "Learning model preparation started: {checkpoint}"
 
-
 msgid "AlphaPose開始"
 msgstr "Start AlphaPose"
 
-
 msgid "2D姿勢推定結果保存完了: {outputpath}"
-msgstr "Completed saving 2D pose estimation result: {outputpath}"
-
+msgstr "2D pose estimation result saved: {outputpath}"
 
 msgid "AlphaPose 開始"
 msgstr "Start AlphaPose"
 
-
 msgid "AlphaPose 結果保存"
 msgstr "Save AlphaPose result"
-
 
 msgid "AlphaPose 結果描画"
 msgstr "AlphaPose Result Drawing"
 
-
 msgid "AlphaPose 結果動画生成"
 msgstr "AlphaPose Result Movie Generation"
 
-
 msgid "AlphaPose 後始末"
-msgstr "Start AlphaPose"
-
+msgstr "AlphaPose Cleanup"
 
 msgid "動画準備で予期せぬエラーが発生しました。"
-msgstr "Unexpected error in 2D pose estimation."
-
+msgstr "An unexpected error occurred while preparing the video."
 
 msgid "2D姿勢推定 開始: {img_dir}"
-msgstr "Start 2D human pose estimation: {img_dir}"
-
+msgstr "2D pose estimation start: {img_dir}"
 
 msgid "入力動画のサイズが調整後に40で割り切れません。調整前({W}x{H}) -> 調整後({width}x{org_height})\n適切なサイズ({height})になるまで上辺を塗りつぶします。\n{video_file}"
 msgstr "The size of the input video is not divisible by 40 after adjustment.Before adjustment({W}x{H}) -> After adjustment({width}x{org_height})\nIt will be the appropriate size({height}) Fill top edge up to \n{video_file}"
@@ -104,39 +87,50 @@ msgstr "The size of the input video is not divisible by 40 after adjustment.Befo
 msgid "AlphaPose 結果分類"
 msgstr "AlphaPose Outcome Classification"
 
-
 msgid "AlphaPose 結果分類準備"
 msgstr "AlphaPose Outcome Classification Preparation"
-
 
 msgid "Rendering {running}"
 msgstr "Rendering {running}"
 
-
 msgid "深度推定 開始: {img_dir}"
-msgstr "Start 2D human pose estimation: {img_dir}"
-
+msgstr "Depth estimation start: {img_dir}"
 
 msgid "深度推定で予期せぬエラーが発生しました。"
-msgstr "Unexpected error in 2D pose estimation."
-
+msgstr "Unexpected error in depth estimation."
 
 msgid "【No.{pname}】2D姿勢推定 結果取得"
 msgstr "[No.{pname}] Get 2D pose estimation result"
 
-
 msgid "【No.{pname}】深度推定 開始"
 msgstr "[No.{pname}] depth estimation start"
-
 
 msgid "【No.{pname}】深度推定 結果取得"
 msgstr "[No.{pname}] Get Depth Estimation Result"
 
-
 msgid "【No.{pname}】深度推定 結果保存"
 msgstr "[No.{pname}] Depth Estimation Result Save"
 
-
 msgid "深度推定 結果保存完了: {output_dir_path}"
-msgstr "Completed saving 2D pose estimation result: {outputpath}"
+msgstr "Depth estimation result saved: {output_dir_path}"
 
+msgid "mediapipe推定処理開始: {img_dir}"
+msgstr "Start mediapipe estimation process: {img_dir}"
+
+msgid "【No.{pname}】mediapipe 推定開始"
+msgstr "[No.{pname}] start mediapipe estimation"
+
+msgid "mediapipe推定で予期せぬエラーが発生しました。"
+msgstr "Unexpected error in mediapipe estimation."
+
+msgid "2D姿勢推定 結果保存完了: {outputpath}"
+msgstr "2D pose estimation result saved: {outputpath}"
+
+msgid "【No.{pname}】mediapipe 推定結果出力"
+msgstr "[No.{pname}] mediapipe estimation result output"
+
+msgid "mediapipe 推定処理終了: {output_dir}"
+msgstr "mediapipe estimation finished: {output_dir}"
+
+msgid "【No.{pname}】姿勢推定 結果取得"
+msgstr "[No.{pname}] Posture estimation result acquisition"
