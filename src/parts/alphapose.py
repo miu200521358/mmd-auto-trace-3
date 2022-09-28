@@ -199,8 +199,13 @@ def execute(args):
                     "width": img.size[0],
                     "height": img.size[1],
                 },
+                "bbox": {
+                    "x": json_data["box"][0],
+                    "y": json_data["box"][1],
+                    "width": json_data["box"][2],
+                    "height": json_data["box"][3],
+                },
                 "2d-keypoints": json_data["keypoints"],
-                "bbox": json_data["box"],
             }
 
             if prev_image_id != json_data["image_id"]:

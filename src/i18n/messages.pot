@@ -146,3 +146,27 @@ msgstr ""
 msgid "深度推定 結果保存完了: {output_dir_path}"
 msgstr ""
 
+
+msgid "mediapipe推定処理開始: {img_dir}"
+msgstr ""
+
+
+msgid "【No.{pname}】mediapipe 推定開始"
+msgstr ""
+
+
+msgid "mediapipe推定で予期せぬエラーが発生しました。"
+msgstr ""
+
+
+msgid "2D姿勢推定 結果保存完了: {outputpath}"
+msgstr ""
+
+
+msgid "【No.{pname}】mediapipe 推定結果出力"
+msgstr ""
+
+
+msgid "mediapipe 推定処理終了: {output_dir}"
+msgstr ""
+

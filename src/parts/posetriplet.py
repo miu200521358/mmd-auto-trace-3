@@ -147,6 +147,14 @@ def execute(args):
             )
             return False
 
+        if not os.path.exists(os.path.join(args.img_dir, DirName.MEDIAPIPE.value)):
+            logger.error(
+                "指定された3D姿勢推定ディレクトリが存在しません。\n3D姿勢推定が完了していない可能性があります。: {img_dir}",
+                img_dir=os.path.join(args.img_dir, DirName.ALPHAPOSE.value),
+                decoration=MLogger.DECORATION_BOX,
+            )
+            return False
+
         parser = get_args_parser()
         argv = parser.parse_args(args=[])
 
@@ -180,12 +188,12 @@ def execute(args):
         model = get_model(argv, ckpt_path)
         model_traj = get_model_traj(argv, ckpt_path)
 
-        for json_path in glob(os.path.join(args.img_dir, DirName.ALPHAPOSE.value, "*.json")):
-            if FileName.ALPHAPOSE_RESULT.value in json_path:
+        for persion_json_path in glob(os.path.join(args.img_dir, DirName.ALPHAPOSE.value, "*.json")):
+            if FileName.ALPHAPOSE_RESULT.value in persion_json_path:
                 continue
 
             json_datas = {}
-            with open(json_path, "r") as f:
+            with open(persion_json_path, "r") as f:
                 json_datas = json.load(f)
 
             if len(json_datas) < 5:
@@ -193,7 +201,7 @@ def execute(args):
                 continue
 
             # 人物INDEX
-            pname = os.path.basename(json_path).split(".")[0]
+            pname, _ = os.path.splitext(os.path.basename(persion_json_path))
 
             logger.info(
                 "【No.{pname}】2D姿勢推定 結果取得",
@@ -203,11 +211,11 @@ def execute(args):
 
             width = height = 0
             keypoints = {}
-            for fno, json_data in tqdm(json_datas.items(), desc=f"No.{pname} ... "):
+            for fno, frame_json_data in tqdm(json_datas.items(), desc=f"No.{pname} ... "):
                 fno = int(fno)
-                width = int(json_data["image"]["width"])
-                height = int(json_data["image"]["height"])
-                keypoints[fno] = np.array(json_data["2d-keypoints"]).reshape(-1, 3)[:, :2]
+                width = int(frame_json_data["image"]["width"])
+                height = int(frame_json_data["image"]["height"])
+                keypoints[fno] = np.array(frame_json_data["2d-keypoints"]).reshape(-1, 3)[:, :2]
 
             logger.info(
                 "【No.{pname}】深度推定 開始",
@@ -303,7 +311,7 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
 
-            with open(os.path.join(output_dir_path, os.path.basename(json_path)), "w") as f:
+            with open(os.path.join(output_dir_path, os.path.basename(persion_json_path)), "w") as f:
                 json.dump(personal_data, f, indent=4)
 
         logger.info(

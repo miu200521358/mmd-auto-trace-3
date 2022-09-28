@@ -85,17 +85,17 @@ if __name__ == "__main__":
 
         result = execute(args)
 
+    if result and "mediapipe" in args.process:
+        # mediapipeによる3D人物推定
+        from parts.mediapipe import execute
+
+        result = execute(args)
+
     if result and "posetriplet" in args.process:
         # posetripletによる人物推定
         from parts.posetriplet import execute
 
         result = execute(args)
-
-    # if result and "mediapipe" in args.process:
-    #     # mediapipeによる人物推定
-    #     from parts.mediapipe import execute
-
-    #     result = execute(args)
 
     # if result and "smooth" in args.process:
     #     # 人物スムージング
