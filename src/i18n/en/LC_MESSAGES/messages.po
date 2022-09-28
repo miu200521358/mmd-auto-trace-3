@@ -69,3 +69,74 @@ msgstr "Start AlphaPose"
 msgid "2D姿勢推定結果保存完了: {outputpath}"
 msgstr "Completed saving 2D pose estimation result: {outputpath}"
 
+
+msgid "AlphaPose 開始"
+msgstr "Start AlphaPose"
+
+
+msgid "AlphaPose 結果保存"
+msgstr "Save AlphaPose result"
+
+
+msgid "AlphaPose 結果描画"
+msgstr "AlphaPose Result Drawing"
+
+
+msgid "AlphaPose 結果動画生成"
+msgstr "AlphaPose Result Movie Generation"
+
+
+msgid "AlphaPose 後始末"
+msgstr "Start AlphaPose"
+
+
+msgid "動画準備で予期せぬエラーが発生しました。"
+msgstr "Unexpected error in 2D pose estimation."
+
+
+msgid "2D姿勢推定 開始: {img_dir}"
+msgstr "Start 2D human pose estimation: {img_dir}"
+
+
+msgid "入力動画のサイズが調整後に40で割り切れません。調整前({W}x{H}) -> 調整後({width}x{org_height})\n適切なサイズ({height})になるまで上辺を塗りつぶします。\n{video_file}"
+msgstr "The size of the input video is not divisible by 40 after adjustment.Before adjustment({W}x{H}) -> After adjustment({width}x{org_height})\nIt will be the appropriate size({height}) Fill top edge up to \n{video_file}"
+
+msgid "AlphaPose 結果分類"
+msgstr "AlphaPose Outcome Classification"
+
+
+msgid "AlphaPose 結果分類準備"
+msgstr "AlphaPose Outcome Classification Preparation"
+
+
+msgid "Rendering {running}"
+msgstr "Rendering {running}"
+
+
+msgid "深度推定 開始: {img_dir}"
+msgstr "Start 2D human pose estimation: {img_dir}"
+
+
+msgid "深度推定で予期せぬエラーが発生しました。"
+msgstr "Unexpected error in 2D pose estimation."
+
+
+msgid "【No.{pname}】2D姿勢推定 結果取得"
+msgstr "[No.{pname}] Get 2D pose estimation result"
+
+
+msgid "【No.{pname}】深度推定 開始"
+msgstr "[No.{pname}] depth estimation start"
+
+
+msgid "【No.{pname}】深度推定 結果取得"
+msgstr "[No.{pname}] Get Depth Estimation Result"
+
+
+msgid "【No.{pname}】深度推定 結果保存"
+msgstr "[No.{pname}] Depth Estimation Result Save"
+
+
+msgid "深度推定 結果保存完了: {output_dir_path}"
+msgstr "Completed saving 2D pose estimation result: {outputpath}"
+

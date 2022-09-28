@@ -103,58 +103,6 @@ msgid "2D姿勢推定 開始: {img_dir}"
 msgstr ""
 
 
-msgid "【000 - 】AlphaPose 画像抽出"
-msgstr ""
-
-
-msgid "【000 - 】AlphaPose 推定開始"
-msgstr ""
-
-
-msgid "【0000 - 】AlphaPose 画像抽出"
-msgstr ""
-
-
-msgid "【0000 - 】AlphaPose 推定開始"
-msgstr ""
-
-
-msgid "【0000 - 】AlphaPose 結果保存"
-msgstr ""
-
-
-msgid "AlphaPose 人物別結果保存"
-msgstr ""
-
-
-msgid "2D姿勢推定 結果保存完了: {outputpath}"
-msgstr ""
-
-
-msgid "【0000 - 】AlphaPose 結果描画"
-msgstr ""
-
-
-msgid "【0000 - 】AlphaPose 動画保存"
-msgstr ""
-
-
-msgid "【1000 - 】AlphaPose 画像抽出"
-msgstr ""
-
-
-msgid "【1000 - 】AlphaPose 推定開始"
-msgstr ""
-
-
-msgid "【1000 - 】AlphaPose 結果保存"
-msgstr ""
-
-
-msgid "【1000 - 】AlphaPose 結果描画"
-msgstr ""
-
-
 msgid "入力動画のサイズが調整後に40で割り切れません。調整前({W}x{H}) -> 調整後({width}x{org_height})\n適切なサイズ({height})になるまで上辺を塗りつぶします。\n{video_file}"
 msgstr ""
 
@@ -168,5 +116,33 @@ msgstr ""
 
 
 msgid "Rendering {running}"
+msgstr ""
+
+
+msgid "深度推定 開始: {img_dir}"
+msgstr ""
+
+
+msgid "深度推定で予期せぬエラーが発生しました。"
+msgstr ""
+
+
+msgid "【No.{pname}】2D姿勢推定 結果取得"
+msgstr ""
+
+
+msgid "【No.{pname}】深度推定 開始"
+msgstr ""
+
+
+msgid "【No.{pname}】深度推定 結果取得"
+msgstr ""
+
+
+msgid "【No.{pname}】深度推定 結果保存"
+msgstr ""
+
+
+msgid "深度推定 結果保存完了: {output_dir_path}"
 msgstr ""
 

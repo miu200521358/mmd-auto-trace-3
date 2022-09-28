@@ -5,6 +5,7 @@ class DirName(Enum):
     TMP = "tmp"
     FRAMES = "01_frames"
     ALPHAPOSE = "02_alphapose"
+    POSETRIPLET = "03_posetriplet"
 
 
 class FileName(Enum):

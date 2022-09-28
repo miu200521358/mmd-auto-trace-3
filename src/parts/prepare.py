@@ -3,7 +3,6 @@ import os
 import pathlib
 import shutil
 import warnings
-from glob import glob
 
 import cv2
 import numpy as np

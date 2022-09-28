@@ -194,7 +194,11 @@ def execute(args):
             kps = np.array(kps).reshape(-1, 3)[:17, :2]
             fno = int(json_data["image_id"].replace(".png", ""))
             personal_datas[person_idx][fno] = {
-                "image_id": json_data["image_id"],
+                "image": {
+                    "path": os.path.join(argv.inputpath, json_data["image_id"]),
+                    "width": img.size[0],
+                    "height": img.size[1],
+                },
                 "2d-keypoints": json_data["keypoints"],
                 "bbox": json_data["box"],
             }

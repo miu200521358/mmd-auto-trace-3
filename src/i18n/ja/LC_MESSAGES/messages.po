@@ -69,3 +69,74 @@ msgstr "AlphaPose開始"
 msgid "2D姿勢推定結果保存完了: {outputpath}"
 msgstr "2D姿勢推定結果保存完了: {outputpath}"
 
+
+msgid "AlphaPose 開始"
+msgstr "AlphaPose開始"
+
+
+msgid "AlphaPose 結果保存"
+msgstr "AlphaPose 結果保存"
+
+
+msgid "AlphaPose 結果描画"
+msgstr "AlphaPose 結果描画"
+
+
+msgid "AlphaPose 結果動画生成"
+msgstr "AlphaPose 結果動画生成"
+
+
+msgid "AlphaPose 後始末"
+msgstr "AlphaPose開始"
+
+
+msgid "動画準備で予期せぬエラーが発生しました。"
+msgstr "2D姿勢推定で予期せぬエラーが発生しました。"
+
+
+msgid "2D姿勢推定 開始: {img_dir}"
+msgstr "2D人物姿勢推定開始: {img_dir}"
+
+
+msgid "入力動画のサイズが調整後に40で割り切れません。調整前({W}x{H}) -> 調整後({width}x{org_height})\n適切なサイズ({height})になるまで上辺を塗りつぶします。\n{video_file}"
+msgstr "入力動画のサイズが調整後に40で割り切れません。調整前({W}x{H}) -> 調整後({width}x{org_height})\n適切なサイズ({height})になるまで上辺を塗りつぶします。\n{video_file}"
+
+msgid "AlphaPose 結果分類"
+msgstr "AlphaPose 結果分類"
+
+
+msgid "AlphaPose 結果分類準備"
+msgstr "AlphaPose 結果分類準備"
+
+
+msgid "Rendering {running}"
+msgstr "Rendering {running}"
+
+
+msgid "深度推定 開始: {img_dir}"
+msgstr "2D人物姿勢推定開始: {img_dir}"
+
+
+msgid "深度推定で予期せぬエラーが発生しました。"
+msgstr "2D姿勢推定で予期せぬエラーが発生しました。"
+
+
+msgid "【No.{pname}】2D姿勢推定 結果取得"
+msgstr "【No.{pname}】2D姿勢推定 結果取得"
+
+
+msgid "【No.{pname}】深度推定 開始"
+msgstr "【No.{pname}】深度推定 開始"
+
+
+msgid "【No.{pname}】深度推定 結果取得"
+msgstr "【No.{pname}】深度推定 結果取得"
+
+
+msgid "【No.{pname}】深度推定 結果保存"
+msgstr "【No.{pname}】深度推定 結果保存"
+
+
+msgid "深度推定 結果保存完了: {output_dir_path}"
+msgstr "2D姿勢推定結果保存完了: {outputpath}"
+

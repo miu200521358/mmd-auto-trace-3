@@ -103,9 +103,9 @@
             var jsonData = JSON.parse(ev.target.result);
             var max_fno = 0;
 
-            Object.keys(jsonData["result"]).forEach(function (fno) {
+            Object.keys(jsonData).forEach(function (fno) {
               console.log("fno: " + fno);
-              var bf_json = jsonData["result"][fno];
+              var bf_json = jsonData[fno]["posetriplet-keypoints"];
               console.log("bf_json: " + bf_json);
               var bf_list = [];
               max_fno = fno;
