@@ -3,6 +3,7 @@ import json
 import os
 import platform
 import random
+import shutil
 import sys
 from glob import glob
 
@@ -55,7 +56,9 @@ def execute(args):
 
         argv.inputpath = os.path.join(args.img_dir, "01_frames")
         argv.outputpath = os.path.join(args.img_dir, "02_alphapose")
-        os.makedirs(argv.outputpath, exist_ok=True)
+
+        # 描画用画像をフォルダごとコピー
+        shutil.copytree(argv.inputpath, argv.outputpath, dirs_exist_ok=True)
 
         argv.gpus = [int(i) for i in argv.gpus.split(",")] if torch.cuda.device_count() >= 1 else [-1]
         argv.device = torch.device("cuda:" + str(argv.gpus[0]) if argv.gpus[0] >= 0 else "cpu")
@@ -97,7 +100,7 @@ def execute(args):
         writer = DataWriter(cfg, argv, save_video=False, queueSize=argv.qsize).start()
 
         logger.info(
-            "AlphaPose開始",
+            "AlphaPose 開始",
             decoration=MLogger.DECORATION_LINE,
         )
 
@@ -126,245 +129,95 @@ def execute(args):
                 hm = hm.cpu()
                 writer.save(boxes, scores, ids, hm, cropped_boxes, orig_img, im_name)
 
+        logger.info(
+            "AlphaPose 結果保存",
+            decoration=MLogger.DECORATION_LINE,
+        )
+
         writer.stop()
         det_loader.stop()
 
-        # model, criterion, postprocessors = build_model(argv)
-        # if argv.resume and os.path.exists(argv.resume):
-        #     checkpoint = torch.load(argv.resume, map_location="cpu")
-        #     model.load_state_dict(checkpoint["model"])
-        # else:
-        #     logger.error(
-        #         "指定された学習モデルが存在しません\n{resume}",
-        #         resume=argv.resume,
-        #         decoration=MLogger.DECORATION_BOX,
-        #     )
-        #     return False
-        # model.eval()
+        json_datas = {}
+        with open(os.path.join(argv.outputpath, "alphapose-results.json"), "r") as f:
+            json_datas = json.load(f)
 
-        # logger.info(
-        #     "学習モデル準備完了: {resume}",
-        #     resume=argv.resume,
-        #     decoration=MLogger.DECORATION_LINE,
-        # )
+        max_fno = 0
+        personal_datas = {}
+        for json_data in tqdm(json_datas):
+            person_idx = int(json_data["idx"])
+            if person_idx not in personal_datas:
+                personal_datas[person_idx] = {}
 
-        # for frame_dir in sorted(glob(os.path.join(args.img_dir, "frames", "*"))):
-        #     dir_name = os.path.basename(frame_dir)
-        #     argv.data_dir = frame_dir
-        #     argv.outdir = os.path.join(args.img_dir, "snipper", os.path.basename(frame_dir))
-        #     os.makedirs(argv.outdir, exist_ok=True)
+            kps = json_data["keypoints"]
+            kps = np.array(kps).reshape(-1, 3)[:17, :2]
+            fno = int(json_data["image_id"].replace(".png", ""))
+            personal_datas[person_idx][fno] = {
+                "image_id": json_data["image_id"],
+                "2d-keypoints": json_data["keypoints"],
+                "bbox": json_data["box"],
+            }
 
-        #     logger.info(
-        #         "【No.{dir_name}】snipper姿勢推定開始",
-        #         dir_name=dir_name,
-        #         decoration=MLogger.DECORATION_LINE,
-        #     )
+            if fno > max_fno:
+                max_fno = fno
 
-        #     all_samples, frame_indices, all_filenames = get_all_samples(argv)  # snippet of images
+        logger.info(
+            "AlphaPose 結果描画",
+            decoration=MLogger.DECORATION_LINE,
+        )
 
-        #     results = []
-        #     with torch.set_grad_enabled(False):  # deactivate autograd to reduce memory usage
-        #         for samples in tqdm(all_samples):
-        #             imgs = samples["imgs"].to(device).unsqueeze(dim=0)  # argv.posebatch = 1
-        #             input_size = samples["input_size"].to(device).unsqueeze(0).unsqueeze(0).unsqueeze(0)  # [1, 1, 1, 2]
-        #             outputs, _ = model(imgs)
+        random.seed(13)
+        pids = list(personal_datas.keys())
+        cmap = plt.get_cmap("rainbow")
+        pid_colors = [cmap(i) for i in np.linspace(0, 1, len(pids))]
+        random.shuffle(pid_colors)
+        pid_colors_opencv = [(np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in pid_colors]
 
-        #             max_depth = argv.max_depth
-        #             bs, num_queries = outputs["pred_logits"].shape[:2]
-        #             for i in range(bs):
-        #                 human_prob = outputs["pred_logits"][i].softmax(-1)[..., 1]
+        os.makedirs(os.path.join(args.img_dir, "03_alphapose_personal"), exist_ok=True)
 
-        #                 _out_kepts_depth = outputs["pred_depth"][i]  # n x T x num_kpts x 1
-        #                 # root + displacement
-        #                 _out_kepts_depth[:, :, 1:, :] = _out_kepts_depth[:, :, 0:1, :] + _out_kepts_depth[:, :, 1:, :] / max_depth
-        #                 out_kepts_depth = max_depth * _out_kepts_depth  # scale to original depth
+        with tqdm(total=(max_fno * len(personal_datas.keys()))) as pchar:
+            for person_idx, personal_data in personal_datas.items():
+                with open(os.path.join(args.img_dir, "03_alphapose_personal", f"{person_idx:03d}.json"), "w") as f:
+                    json.dump(personal_data, f, indent=4)
 
-        #                 out_score = outputs["pred_kpts2d"][i, :, :, :, 2:3]  # n x T x num_kpts x 1
-        #                 out_kepts2d = outputs["pred_kpts2d"][i, :, :, :, 0:2]  # n x T x num_kpts x 2
-        #                 # root + displacement
-        #                 out_kepts2d[:, :, 1:, :] = out_kepts2d[:, :, :1, :] + out_kepts2d[:, :, 1:, :]
-        #                 out_kepts2d = out_kepts2d * input_size  # scale to original image size
+                for fno, personal_frame_data in personal_data.items():
+                    save_2d_image(
+                        os.path.join(argv.outputpath, personal_frame_data["image_id"]),
+                        person_idx - 1,
+                        fno,
+                        personal_frame_data["2d-keypoints"],
+                        personal_frame_data["bbox"],
+                        pid_colors_opencv,
+                    )
+                    pchar.update(1)
 
-        #                 inv_trans = samples["inv_trans"]
-        #                 input_size = samples["input_size"]
-        #                 img_size = samples["img_size"]
-        #                 filenames = samples["filenames"]
-        #                 results.append(
-        #                     {
-        #                         "human_score": human_prob.cpu().numpy(),  # [n]
-        #                         "pred_kpt_scores": out_score.cpu().numpy(),  # [n, T, num_joints, 1]
-        #                         "pred_kpts": out_kepts2d.cpu().numpy(),  # [n, T, num_kpts, 2]
-        #                         "pred_depth": out_kepts_depth.cpu().numpy(),  # [n, T, num_kpts, 1]
-        #                         "inv_trans": inv_trans.cpu().numpy(),  # [2, 3]
-        #                         "filenames": filenames,  # [filename_{t}, filename_{t+gap}, ...]
-        #                         "input_size": input_size.cpu().numpy(),  # (w, h)
-        #                         "img_size": img_size.cpu().numpy(),  # (w, h)
-        #                     }
-        #                 )
+        logger.info(
+            "AlphaPose 結果動画生成",
+            decoration=MLogger.DECORATION_LINE,
+        )
 
-        #     logger.info(
-        #         "【No.{dir_name}】姿勢推定の関連付け",
-        #         dir_name=dir_name,
-        #         decoration=MLogger.DECORATION_LINE,
-        #     )
+        for i, file_path in enumerate(glob(os.path.join(argv.outputpath, "*.png"))):
+            if i == 0:
+                img = Image.open(file_path)
+                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                out = cv2.VideoWriter(
+                    os.path.join(args.img_dir, "03_alphapose_personal", "alphapose.mp4"),
+                    fourcc,
+                    30.0,
+                    (img.size[0], img.size[1]),
+                )
+            out.write(cv2.imread(file_path))
 
-        #     all_frames_results, max_pid = associate_snippets(results, frame_indices, all_filenames, argv)
+        out.release()
+        cv2.destroyAllWindows()
 
-        #     logger.info(
-        #         "【No.{dir_name}】姿勢推定結果保存(3D)",
-        #         dir_name=dir_name,
-        #         decoration=MLogger.DECORATION_LINE,
-        #     )
+        logger.info(
+            "AlphaPose 後始末",
+            decoration=MLogger.DECORATION_LINE,
+        )
 
-        #     save_results_3d(
-        #         all_frames_results,
-        #         all_filenames,
-        #         argv.data_dir,
-        #         argv.outdir,
-        #         max_pid,
-        #         argv.max_depth,
-        #         argv.seq_gap,
-        #     )
-
-        # logger.info(
-        #     "姿勢推定結果検証",
-        #     decoration=MLogger.DECORATION_LINE,
-        # )
-
-        # mix_outdir = os.path.join(args.img_dir, "snipper", "mix")
-        # os.makedirs(mix_outdir, exist_ok=True)
-
-        # mix_output_json_dir = os.path.join(mix_outdir, "json")
-        # os.makedirs(mix_output_json_dir, exist_ok=True)
-
-        # mix_output_track2d_dir = os.path.join(mix_outdir, "track2d")
-        # os.makedirs(mix_output_track2d_dir, exist_ok=True)
-
-        # frame_count = 0
-        # for outdir in sorted(glob(os.path.join(args.img_dir, "snipper", "*"))):
-        #     frame_count += len(glob(os.path.join(outdir, "json", "*.json"))) * 1000
-
-        # all_json_datas = {}
-        # with tqdm(
-        #     total=frame_count,
-        # ) as pchar:
-
-        #     for oidx, outdir in enumerate(sorted(glob(os.path.join(args.img_dir, "snipper", "*")))):
-        #         for json_path in list(sorted(glob(os.path.join(outdir, "json", "*.json")))):
-        #             file_name = os.path.basename(json_path)
-        #             person_idx, _ = file_name.split(".")
-        #             json_datas = {}
-        #             with open(json_path, "r") as f:
-        #                 json_datas = json.load(f)
-
-        #             if oidx == 0:
-        #                 # 最初はそのままコピー
-        #                 all_json_datas[person_idx] = json_datas
-        #                 continue
-
-        #             start_matchs = {}
-        #             for (
-        #                 target_person_idx,
-        #                 person_json_datas,
-        #             ) in all_json_datas.items():
-        #                 start_matchs[target_person_idx] = {}
-
-        #                 for sidx in list(json_datas.keys())[:200]:
-        #                     start_matchs[target_person_idx][sidx] = 9999999999
-
-        #                     bbox = json_datas[sidx]["snipper"]["bbox"]
-
-        #                     bbox_x = int(bbox["x"])
-        #                     bbox_y = int(bbox["y"])
-        #                     bbox_w = int(bbox["width"])
-        #                     bbox_h = int(bbox["height"])
-
-        #                     if sidx not in person_json_datas:
-        #                         continue
-
-        #                     pbbox = person_json_datas[sidx]["snipper"]["bbox"]
-
-        #                     pbbox_x = int(pbbox["x"])
-        #                     pbbox_y = int(pbbox["y"])
-        #                     pbbox_w = int(pbbox["width"])
-        #                     pbbox_h = int(pbbox["height"])
-
-        #                     # bboxの差異を図る
-        #                     start_matchs[target_person_idx][sidx] = (
-        #                         abs(pbbox_x - bbox_x) + abs(pbbox_y - bbox_y) + abs(pbbox_w - bbox_w) + abs(pbbox_h - bbox_h)
-        #                     )
-
-        #             match_idxs = {}
-        #             for pidx, start_match in start_matchs.items():
-        #                 match_idxs[pidx] = np.mean(list(start_match.values()))
-
-        #             match_person_idx = list(match_idxs.keys())[np.argmin(list(match_idxs.values()))]
-        #             # マッチしたのでも差異が大きければ新しくINDEX付与
-        #             if match_idxs[match_person_idx] > 120:
-        #                 match_person_idx = f"{(int(list(all_json_datas.keys())[-1]) + 1):03d}"
-        #                 all_json_datas[match_person_idx] = {}
-
-        #             for sidx, json_data in json_datas.items():
-        #                 all_json_datas[match_person_idx][sidx] = json_data
-
-        #                 pchar.update(1)
-
-        # random.seed(13)
-        # pids = list(all_json_datas.keys())
-        # cmap = plt.get_cmap("rainbow")
-        # pid_colors = [cmap(i) for i in np.linspace(0, 1, len(pids))]
-        # random.shuffle(pid_colors)
-        # pid_colors_opencv = [(np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in pid_colors]
-
-        # logger.info("姿勢推定結果保存(2D)", decoration=MLogger.DECORATION_LINE)
-
-        # with tqdm(
-        #     total=frame_count,
-        # ) as pchar:
-        #     image_paths = {}
-        #     for pidx, (pid, json_datas) in enumerate(all_json_datas.items()):
-        #         for fidx, json_data in json_datas.items():
-        #             image_path = json_data["snipper"]["image"]["path"]
-        #             if image_path in image_paths:
-        #                 image_path = image_paths[image_path]
-
-        #             process_path = os.path.join(mix_output_track2d_dir, os.path.basename(image_path))
-        #             save_visual_results_2d(
-        #                 image_path,
-        #                 process_path,
-        #                 pidx,
-        #                 pid,
-        #                 pid_colors_opencv,
-        #                 json_data["snipper"]["joints"],
-        #                 json_data["snipper"]["bbox"],
-        #             )
-
-        #             image_paths[image_path] = process_path
-
-        #             pchar.update(1)
-
-        #         with open(os.path.join(mix_output_json_dir, f"{pid}.json"), mode="w") as f:
-        #             json.dump(json_datas, f, indent=4)
-
-        # logger.info("姿勢推定結果保存(動画)", decoration=MLogger.DECORATION_LINE)
-
-        # frames = glob(os.path.join(mix_output_track2d_dir, "*.*"))
-        # img = Image.open(frames[0])
-
-        # fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        # out = cv2.VideoWriter(
-        #     os.path.join(mix_outdir, "snipper.mp4"),
-        #     fourcc,
-        #     30.0,
-        #     (img.size[0], img.size[1]),
-        # )
-
-        # for process_img_path in tqdm(frames):
-        #     # トラッキングmp4合成
-        #     out.write(cv2.imread(process_img_path))
-
-        # out.release()
-        # cv2.destroyAllWindows()
+        for i, file_path in enumerate(glob(os.path.join(argv.outputpath, "*.png"))):
+            # 合成終わったら削除
+            os.remove(file_path)
 
         logger.info(
             "2D姿勢推定結果保存完了: {outputpath}",
@@ -378,164 +231,135 @@ def execute(args):
         return False
 
 
-# def save_visual_results_2d(
-#     image_path: str,
-#     process_path: str,
-#     pidx: int,
-#     pid: str,
-#     pid_colors_opencv: list,
-#     joints: dict,
-#     bbox: dict,
-# ):
-#     img = cv2.imread(image_path)
+def save_2d_image(image_path: str, person_idx: int, fidx: int, keypoints: list, bbox: list, pid_colors_opencv: list):
+    img = cv2.imread(image_path)
+    kps = np.array(keypoints).reshape(-1, 3)
 
-#     SKELETONS = [
-#         ("root", "left_hip"),
-#         ("root", "right_hip"),
-#         ("root", "head_bottom"),
-#         ("head_bottom", "left_shoulder"),
-#         ("head_bottom", "right_shoulder"),
-#         ("head_bottom", "nose"),
-#         ("left_shoulder", "left_elbow"),
-#         ("left_elbow", "left_wrist"),
-#         ("right_shoulder", "right_elbow"),
-#         ("right_elbow", "right_wrist"),
-#         ("left_hip", "left_knee"),
-#         ("left_knee", "left_ankle"),
-#         ("right_hip", "right_knee"),
-#         ("right_knee", "right_ankle"),
-#     ]
+    # https://github.com/Fang-Haoshu/Halpe-FullBody
+    SKELETONS = [
+        (19, 11),  # Hip, LHip
+        (19, 12),  # Hip, RHip
+        (19, 18),  # Hip, Neck
+        (18, 5),  # Neck, LShoulder
+        (18, 6),  # Neck, RShoulder
+        (18, 0),  # Neck, Nose
+        (0, 1),  # Nose, LEye
+        (0, 2),  # Nose, REye
+        (0, 17),  # Nose, Head
+        (1, 3),  # LEye, LEar
+        (2, 4),  # REye, REar
+        (5, 7),  # LShoulder, LElbow
+        (7, 9),  # LElbow, LWrist
+        (6, 8),  # RShoulder, RElbow
+        (8, 10),  # RElbow, RWrist
+        (11, 13),  # LHip, LKnee
+        (13, 15),  # LKnee, LAnkle
+        (12, 14),  # RHip, Rknee
+        (14, 16),  # Rknee, RAnkle
+        (15, 20),  # LAnkle, LBigToe
+        (15, 22),  # LAnkle, LSmallToe
+        (15, 24),  # LAnkle, LHeel
+        (16, 21),  # RAnkle, RBigToe
+        (16, 23),  # RAnkle, RSmallToe
+        (16, 25),  # RAnkle, RHeel
+    ]
 
-#     for l, (j1, j2) in enumerate(SKELETONS):
-#         joint1 = joints[j1]
-#         joint2 = joints[j2]
+    for j1, j2 in SKELETONS:
+        joint1_x = int(kps[j1, 0])
+        joint1_y = int(kps[j1, 1])
+        joint2_x = int(kps[j2, 0])
+        joint2_y = int(kps[j2, 1])
 
-#         joint1_x = int(joint1["x"])
-#         joint1_y = int(joint1["y"])
-#         joint2_x = int(joint2["x"])
-#         joint2_y = int(joint2["y"])
+        t = 2
+        r = 6
+        cv2.line(
+            img,
+            (joint1_x, joint1_y),
+            (joint2_x, joint2_y),
+            color=tuple(pid_colors_opencv[person_idx]),
+            thickness=t,
+        )
+        cv2.circle(
+            img,
+            thickness=-1,
+            center=(joint1_x, joint1_y),
+            radius=r,
+            color=tuple(pid_colors_opencv[person_idx]),
+        )
+        cv2.circle(
+            img,
+            thickness=-1,
+            center=(joint2_x, joint2_y),
+            radius=r,
+            color=tuple(pid_colors_opencv[person_idx]),
+        )
 
-#         if joint1["z"] > 0 and joint2["z"] > 0:
-#             t = 4
-#             r = 8
-#             cv2.line(
-#                 img,
-#                 (joint1_x, joint1_y),
-#                 (joint2_x, joint2_y),
-#                 color=tuple(pid_colors_opencv[pidx]),
-#                 # color=tuple(sks_colors[l]),
-#                 thickness=t,
-#             )
-#             cv2.circle(
-#                 img,
-#                 thickness=-1,
-#                 center=(joint1_x, joint1_y),
-#                 radius=r,
-#                 color=tuple(pid_colors_opencv[pidx]),
-#             )
-#             cv2.circle(
-#                 img,
-#                 thickness=-1,
-#                 center=(joint2_x, joint2_y),
-#                 radius=r,
-#                 color=tuple(pid_colors_opencv[pidx]),
-#             )
+    bbox_x = int(bbox[0])
+    bbox_y = int(bbox[1])
+    bbox_w = int(bbox[2])
+    bbox_h = int(bbox[3])
+    bbx_thick = 3
+    cv2.line(
+        img,
+        (bbox_x, bbox_y),
+        (bbox_x + bbox_w, bbox_y),
+        color=tuple(pid_colors_opencv[person_idx]),
+        thickness=bbx_thick,
+    )
+    cv2.line(
+        img,
+        (bbox_x, bbox_y),
+        (bbox_x, bbox_y + bbox_h),
+        color=tuple(pid_colors_opencv[person_idx]),
+        thickness=bbx_thick,
+    )
+    cv2.line(
+        img,
+        (bbox_x + bbox_w, bbox_y),
+        (bbox_x + bbox_w, bbox_y + bbox_h),
+        color=tuple(pid_colors_opencv[person_idx]),
+        thickness=bbx_thick,
+    )
+    cv2.line(
+        img,
+        (bbox_x, bbox_y + bbox_h),
+        (bbox_x + bbox_w, bbox_y + bbox_h),
+        color=tuple(pid_colors_opencv[person_idx]),
+        thickness=bbx_thick,
+    )
 
-#     bbox_x = int(bbox["x"])
-#     bbox_y = int(bbox["y"])
-#     bbox_w = int(bbox["width"])
-#     bbox_h = int(bbox["height"])
-#     bbx_thick = 3
-#     cv2.line(
-#         img,
-#         (bbox_x, bbox_y),
-#         (bbox_x + bbox_w, bbox_y),
-#         color=tuple(pid_colors_opencv[pidx]),
-#         thickness=bbx_thick,
-#     )
-#     cv2.line(
-#         img,
-#         (bbox_x, bbox_y),
-#         (bbox_x, bbox_y + bbox_h),
-#         color=tuple(pid_colors_opencv[pidx]),
-#         thickness=bbx_thick,
-#     )
-#     cv2.line(
-#         img,
-#         (bbox_x + bbox_w, bbox_y),
-#         (bbox_x + bbox_w, bbox_y + bbox_h),
-#         color=tuple(pid_colors_opencv[pidx]),
-#         thickness=bbx_thick,
-#     )
-#     cv2.line(
-#         img,
-#         (bbox_x, bbox_y + bbox_h),
-#         (bbox_x + bbox_w, bbox_y + bbox_h),
-#         color=tuple(pid_colors_opencv[pidx]),
-#         thickness=bbx_thick,
-#     )
+    cv2.putText(
+        img,
+        f"{person_idx:03d}",
+        (bbox_x + bbox_w // 3, bbox_y - 5),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1,
+        color=tuple(pid_colors_opencv[person_idx]),
+        thickness=bbx_thick,
+    )
 
-#     cv2.putText(
-#         img,
-#         pid,
-#         (bbox_x + bbox_w // 3, bbox_y - 5),
-#         cv2.FONT_HERSHEY_SIMPLEX,
-#         1,
-#         color=tuple(pid_colors_opencv[pidx]),
-#         thickness=bbx_thick,
-#     )
+    cv2.putText(
+        img,
+        f"{person_idx:03d}",
+        ((bbox_x + bbox_w) + bbox_w // 3, (bbox_y + bbox_h) - 5),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1,
+        color=tuple(pid_colors_opencv[person_idx]),
+        thickness=bbx_thick,
+    )
 
-#     cv2.imwrite(process_path, img)
+    cv2.putText(
+        img,
+        f"{fidx:6d}F",
+        (10, 30),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1,
+        color=(182, 0, 182),
+        thickness=2,
+    )
 
-
-# def save_results_3d(all_frames_results, all_filenames, data_dir, save_dir, max_pid, max_depth, gap):
-
-#     result_dir = os.path.join(save_dir, "json")
-#     os.makedirs(result_dir, exist_ok=True)
-
-#     json_datas = {}
-#     for frame_idx in tqdm(all_frames_results.keys()):
-#         filename = all_filenames[frame_idx]
-#         # ファイル名をそのままフレーム番号として扱う
-#         fno = int(filename.split(".")[0])
-#         img = cv2.imread(os.path.join(data_dir, filename))
-#         h, w, _ = img.shape
-
-#         pids, poses = all_frames_results[frame_idx]
-#         for p, pid in enumerate(pids):
-#             kpt_3d = poses[p]
-#             if pid not in json_datas:
-#                 json_datas[pid] = {}
-
-#             bbx = bbox_2d_padded(kpt_3d, 0.3, 0.3)
-
-#             json_datas[int(pid)][fno] = {
-#                 "snipper": {
-#                     "image": {
-#                         "path": os.path.join(data_dir, filename),
-#                         "width": float(w),
-#                         "height": float(h),
-#                     },
-#                     "bbox": {
-#                         "x": float(bbx[0]),
-#                         "y": float(bbx[1]),
-#                         "width": float(bbx[2]),
-#                         "height": float(bbx[3]),
-#                     },
-#                     "joints": {},
-#                 },
-#             }
-#             for n, (x, y, z, score) in enumerate(kpt_3d):
-#                 json_datas[int(pid)][fno]["snipper"]["joints"][Joint.NAMES[n]] = {
-#                     "x": float(x),
-#                     "y": float(y),
-#                     "z": float(z),
-#                     "score": float(score),
-#                 }
-
-#     for pid, json_data in json_datas.items():
-#         with open(os.path.join(result_dir, f"{pid:03d}.json"), mode="w") as f:
-#             json.dump(json_data, f, indent=4)
+    # 同じファイルに上書き
+    cv2.imwrite(image_path, img)
 
 
 def get_args_parser():

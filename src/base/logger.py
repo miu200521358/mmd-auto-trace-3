@@ -167,11 +167,7 @@ class MLogger:
                     messages = f.readlines()
 
                 new_msg = self.re_break.sub("\\\\n", msg)
-                added_msg_idxs = [
-                    n + 1
-                    for n, inmsg in enumerate(messages)
-                    if "msgid" in inmsg and new_msg in inmsg
-                ]
+                added_msg_idxs = [n + 1 for n, inmsg in enumerate(messages) if "msgid" in inmsg and new_msg in inmsg]
 
                 if not added_msg_idxs:
                     messages.append(f'\nmsgid "{new_msg}"\n')
@@ -186,11 +182,7 @@ class MLogger:
             trans_msg = self.translater.gettext(msg)
 
             # ログレコード生成
-            if (
-                args
-                and isinstance(args[0], Exception)
-                or (args and len(args) > 1 and isinstance(args[0], Exception))
-            ):
+            if args and isinstance(args[0], Exception) or (args and len(args) > 1 and isinstance(args[0], Exception)):
                 trans_msg = f"{trans_msg}\n\n{traceback.format_exc()}"
                 args = None
                 log_record = self.logger.makeRecord(
@@ -226,17 +218,11 @@ class MLogger:
                 if target_decoration == MLogger.DECORATION_BOX:
                     output_msg = self.create_box_message(print_msg, target_level, title)
                 elif target_decoration == MLogger.DECORATION_LINE:
-                    output_msg = self.create_line_message(
-                        print_msg, target_level, title
-                    )
+                    output_msg = self.create_line_message(print_msg, target_level, title)
                 elif target_decoration == MLogger.DECORATION_IN_BOX:
-                    output_msg = self.create_in_box_message(
-                        print_msg, target_level, title
-                    )
+                    output_msg = self.create_in_box_message(print_msg, target_level, title)
                 else:
-                    output_msg = self.create_simple_message(
-                        print_msg, target_level, title
-                    )
+                    output_msg = self.create_simple_message(print_msg, target_level, title)
             else:
                 output_msg = self.create_simple_message(print_msg, target_level, title)
 
@@ -253,8 +239,9 @@ class MLogger:
                     self.module_name,
                 )
                 self.logger.handle(log_record)
-            except Exception as e:
-                raise e
+            except:
+                # エラーしてたら無視
+                pass
 
     def create_box_message(self, msg, level, title=None):
         msg_block = []
@@ -305,9 +292,7 @@ class MLogger:
         return "\n".join(msg_block)
 
     @classmethod
-    def initialize(
-        cls, lang: str, mode: LoggingMode, level=logging.INFO, out_path=None
-    ):
+    def initialize(cls, lang: str, mode: LoggingMode, level=logging.INFO, out_path=None):
         logging.basicConfig(level=level, format=cls.DEFAULT_FORMAT)
         cls.total_level = level
         cls.mode = mode

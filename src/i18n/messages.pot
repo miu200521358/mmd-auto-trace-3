@@ -74,3 +74,87 @@ msgstr ""
 msgid "2D姿勢推定結果保存完了: {outputpath}"
 msgstr ""
 
+
+msgid "AlphaPose 開始"
+msgstr ""
+
+
+msgid "AlphaPose 結果保存"
+msgstr ""
+
+
+msgid "AlphaPose 結果描画"
+msgstr ""
+
+
+msgid "AlphaPose 結果動画生成"
+msgstr ""
+
+
+msgid "AlphaPose 後始末"
+msgstr ""
+
+
+msgid "動画準備で予期せぬエラーが発生しました。"
+msgstr ""
+
+
+msgid "2D姿勢推定 開始: {img_dir}"
+msgstr ""
+
+
+msgid "【000 - 】AlphaPose 画像抽出"
+msgstr ""
+
+
+msgid "【000 - 】AlphaPose 推定開始"
+msgstr ""
+
+
+msgid "【0000 - 】AlphaPose 画像抽出"
+msgstr ""
+
+
+msgid "【0000 - 】AlphaPose 推定開始"
+msgstr ""
+
+
+msgid "【0000 - 】AlphaPose 結果保存"
+msgstr ""
+
+
+msgid "AlphaPose 人物別結果保存"
+msgstr ""
+
+
+msgid "2D姿勢推定 結果保存完了: {outputpath}"
+msgstr ""
+
+
+msgid "【0000 - 】AlphaPose 結果描画"
+msgstr ""
+
+
+msgid "【0000 - 】AlphaPose 動画保存"
+msgstr ""
+
+
+msgid "【1000 - 】AlphaPose 画像抽出"
+msgstr ""
+
+
+msgid "【1000 - 】AlphaPose 推定開始"
+msgstr ""
+
+
+msgid "【1000 - 】AlphaPose 結果保存"
+msgstr ""
+
+
+msgid "【1000 - 】AlphaPose 結果描画"
+msgstr ""
+
+
+msgid "入力動画のサイズが調整後に40で割り切れません。調整前({W}x{H}) -> 調整後({width}x{org_height})\n適切なサイズ({height})になるまで上辺を塗りつぶします。\n{video_file}"
+msgstr ""
+
