@@ -7,6 +7,8 @@ class DirName(Enum):
     ALPHAPOSE = "02_alphapose"
     MEDIAPIPE = "03_mediapipe"
     POSETRIPLET = "04_posetriplet"
+    SMOOTH = "05_smooth"
+    MOTION = "06_motion"
 
 
 class FileName(Enum):

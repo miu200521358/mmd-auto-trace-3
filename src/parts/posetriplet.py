@@ -1,11 +1,7 @@
 import argparse
 import json
 import os
-import platform
-import random
-import shutil
 import sys
-import time
 from glob import glob
 
 sys.path.append(os.path.abspath(os.path.join(__file__, "../../PoseTriplet")))
@@ -23,7 +19,7 @@ from PoseTriplet.estimator_inference.common.model import TemporalModel
 from PoseTriplet.estimator_inference.common.utils import evaluate
 from tqdm import tqdm
 
-from parts.config import DirName, FileName
+from parts.config import DirName
 
 logger = MLogger(__name__)
 
@@ -50,7 +46,7 @@ COCO_KEYPOINTS = {
     "RKnee": 14,
     "LAnkle": 15,
     "RAnkle": 16,
-    "Hip": 17,  # 計算して追加
+    "Pelvis": 17,  # 計算して追加
     "Spine": 18,  # 計算して追加
     "Neck": 19,  # 計算して追加
     "Head": 20,  # 計算して追加
@@ -77,7 +73,7 @@ HALPE_KEYPOINTS = {
     "RAnkle": 16,
     "Head": 17,
     "Neck": 18,
-    "Hip": 19,
+    "Pelvis": 19,
     "LBigToe": 20,
     "RBigToe": 21,
     "LSmallToe": 22,
@@ -89,7 +85,7 @@ HALPE_KEYPOINTS = {
 
 # Halpe26 -> COCO
 HALPE_2_COCO_ORDER = (
-    HALPE_KEYPOINTS["Hip"],
+    HALPE_KEYPOINTS["Pelvis"],
     HALPE_KEYPOINTS["RHip"],
     HALPE_KEYPOINTS["RKnee"],
     HALPE_KEYPOINTS["RAnkle"],
@@ -109,26 +105,6 @@ HALPE_2_COCO_ORDER = (
 
 # 左右のキー番号
 KEYPOINTS_SYMMETRY = ((4, 5, 6, 10, 11, 12), (1, 2, 3, 13, 14, 15))
-
-# PoseTripletのジョイント名
-SIMPLE16_KEYPOINTS = (
-    "pelvis",
-    "right_hip",
-    "right_knee",
-    "right_ankle",
-    "left_hip",
-    "left_knee",
-    "left_ankle",
-    "spine2",
-    "neck",
-    "head",
-    "left_shoulder",
-    "left_elbow",
-    "left_wrist",
-    "right_shoulder",
-    "right_elbow",
-    "right_wrist",
-)
 
 
 def execute(args):
@@ -248,10 +224,12 @@ def execute(args):
             for fno, fjoints in tqdm(zip(keypoints_2d.keys(), prediction.tolist()), desc=f"No.{pname} ... "):
                 fidx = str(fno)
                 personal_data[fno] = {
-                    "body_depth": {
-                        "x": fjoints[0][0] * 100,
-                        "y": fjoints[0][1] * 100,
-                        "z": fjoints[0][2] * 100,
+                    "pt_joints": {
+                        "Pelvis": {
+                            "x": fjoints[0][0] * 100,
+                            "y": fjoints[0][1] * 100,
+                            "z": fjoints[0][2] * 100,
+                        }
                     },
                 }
                 for joint_type in ("mp_body_world_joints", "mp_left_hand_joints", "mp_right_hand_joints", "mp_face_joints"):
@@ -281,7 +259,7 @@ def execute(args):
 
 def fetch_keypoint(keypoints: np.ndarray, width: int, height: int):
     # Keypointの並び順を調整する
-    spine = 0.5 * (keypoints[:, HALPE_KEYPOINTS["Neck"]] + keypoints[:, HALPE_KEYPOINTS["Hip"]])
+    spine = 0.5 * (keypoints[:, HALPE_KEYPOINTS["Neck"]] + keypoints[:, HALPE_KEYPOINTS["Pelvis"]])
     combine = np.transpose([spine], (1, 0, 2))
     combine_kp = np.concatenate([keypoints, combine], axis=1)
     keypoints_imgunnorm = combine_kp[:, HALPE_2_COCO_ORDER].copy()

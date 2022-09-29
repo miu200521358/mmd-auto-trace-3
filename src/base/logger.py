@@ -160,7 +160,7 @@ class MLogger:
             extra_args["module_name"] = self.module_name
 
             # 翻訳する
-            if self.mode == LoggingMode.MODE_UPDATE:
+            if self.mode == LoggingMode.MODE_UPDATE and logging.DEBUG < target_level:
                 # 更新ありの場合、既存データのチェックを行って追記する
                 messages = []
                 with open("i18n/messages.pot", mode="r", encoding="utf-8") as f:

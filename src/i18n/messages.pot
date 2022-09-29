@@ -174,3 +174,95 @@ msgstr ""
 msgid "【No.{pname}】姿勢推定 結果取得"
 msgstr ""
 
+
+msgid "関節スムージング処理開始: {img_dir}"
+msgstr ""
+
+
+msgid "【No.{pname}】関節スムージング準備開始"
+msgstr ""
+
+
+msgid "【No.{pname}】関節スムージング開始"
+msgstr ""
+
+
+msgid "【No.{pname}】関節距離計測"
+msgstr ""
+
+
+msgid "【No.{pname}】関節スムージング合成開始"
+msgstr ""
+
+
+msgid "【No.{pname}】関節スムージング出力開始"
+msgstr ""
+
+
+msgid "関節スムージング処理終了: {img_dir}"
+msgstr ""
+
+
+msgid "【No.{pname}】関節深度準備開始"
+msgstr ""
+
+
+msgid "関節スムージングで予期せぬエラーが発生しました。"
+msgstr ""
+
+
+msgid "指定された深度推定ディレクトリが存在しません。\n深度推定が完了していない可能性があります。: {img_dir}"
+msgstr ""
+
+
+msgid "モーション生成処理開始: {img_dir}"
+msgstr ""
+
+
+msgid "【No.{pname}】モーション結果位置計算開始"
+msgstr ""
+
+
+msgid "【No.{pname}】モーション(センター)計算開始"
+msgstr ""
+
+
+msgid "【No.{pname}】モーション(回転)計算開始"
+msgstr ""
+
+
+msgid "【No.{pname}】モーション(IK)計算開始"
+msgstr ""
+
+
+msgid "【No.{pname}】モーション(回転)生成開始【{path}】"
+msgstr ""
+
+
+msgid "【No.{pname}】モーション スムージング準備"
+msgstr ""
+
+
+msgid "【No.{pname}】モーション スムージング開始"
+msgstr ""
+
+
+msgid "【No.{pname}】モーション スムージング設定"
+msgstr ""
+
+
+msgid "【No.{pname}】モーション(スムージング)生成開始【{path}】"
+msgstr ""
+
+
+msgid "【No.{pname}】モーション 間引き準備"
+msgstr ""
+
+
+msgid "【No.{pname}】モーション(間引き)生成開始【{path}】"
+msgstr ""
+
+
+msgid "モーション結果保存完了: {motion_dir_path}"
+msgstr ""
+

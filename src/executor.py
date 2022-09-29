@@ -97,17 +97,17 @@ if __name__ == "__main__":
 
         result = execute(args)
 
-    # if result and "smooth" in args.process:
-    #     # 人物スムージング
-    #     from parts.smooth import execute
+    if result and "smooth" in args.process:
+        # 人物スムージング
+        from parts.smooth import execute
 
-    #     result = execute(args)
+        result = execute(args)
 
-    # if result and "motion" in args.process:
-    #     # モーション生成
-    #     from parts.motion import execute
+    if result and "motion" in args.process:
+        # モーション生成
+        from parts.motion import execute
 
-    #     result = execute(args)
+        result = execute(args)
 
     elapsed_time = time.time() - start
 

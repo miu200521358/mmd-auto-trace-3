@@ -44,7 +44,7 @@ def execute(args):
         output_dir_path = os.path.join(args.img_dir, DirName.MEDIAPIPE.value)
         os.makedirs(output_dir_path, exist_ok=True)
 
-        with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+        with mp_holistic.Holistic(min_detection_confidence=0.6, min_tracking_confidence=0.7) as holistic:
             for persion_json_path in glob(os.path.join(args.img_dir, DirName.ALPHAPOSE.value, "*.json")):
                 if FileName.ALPHAPOSE_RESULT.value in persion_json_path:
                     continue
@@ -103,7 +103,8 @@ def execute(args):
                     ):
                         frame_json_data["mp_body_world_joints"] = {}
 
-                        for world_landmark, output_name in zip(
+                        for landmark, world_landmark, output_name in zip(
+                            results.pose_landmarks.landmark,
                             results.pose_world_landmarks.landmark,
                             POSE_LANDMARKS,
                         ):
@@ -111,6 +112,7 @@ def execute(args):
                                 "x": -float(world_landmark.x) * 100,
                                 "y": -float(world_landmark.y) * 100,
                                 "z": float(world_landmark.z) * 100,
+                                "score": float(landmark.visibility),
                             }
 
                         for jname in (
