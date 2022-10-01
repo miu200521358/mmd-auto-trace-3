@@ -37,12 +37,8 @@ class Interpolation(BaseModel):
         b = self.begin.copy()
         self.begin = Interpolation.round_mmd((self.begin - b) / diff, MVector2D())
         self.start = Interpolation.round_mmd((self.start - b) / diff, MVector2D())
-        self.end = Interpolation.round_mmd(
-            (self.end - b) / diff, MVector2D(IP_MAX, IP_MAX)
-        )
-        self.finish = Interpolation.round_mmd(
-            (self.finish - b) / diff, MVector2D(IP_MAX, IP_MAX)
-        )
+        self.end = Interpolation.round_mmd((self.end - b) / diff, MVector2D(IP_MAX, IP_MAX))
+        self.finish = Interpolation.round_mmd((self.finish - b) / diff, MVector2D(IP_MAX, IP_MAX))
 
     @classmethod
     def round_mmd(cls, t: MVector2D, s: MVector2D) -> MVector2D:
@@ -82,6 +78,21 @@ def get_infections(values: list[float], threshold, decimals) -> list[int]:
     return infections
 
 
+def get_y_infections(values: list[float], threshold) -> list[int]:
+    extract_idxs = []
+    start_idx = 0
+    end_idx = 1
+    # 一定の角度以上に回転してるキーを打つ
+    while end_idx <= len(values) - 1:
+        if np.sum(np.abs(np.diff(values[start_idx:end_idx]))) >= threshold:
+            extract_idxs.append(end_idx - 1)
+            start_idx = end_idx - 1
+            end_idx = start_idx + 1
+        else:
+            end_idx += 1
+    return extract_idxs
+
+
 def create_interpolation(values: list[float]):
     if len(values) <= 2 or abs(np.max(values) - np.min(values)) < 0.0001:
         return Interpolation()
@@ -119,9 +130,7 @@ def create_interpolation(values: list[float]):
 # https://pomax.github.io/bezierinfo
 # https://shspage.hatenadiary.org/entry/20140625/1403702735
 # https://bezier.readthedocs.io/en/stable/python/reference/bezier.curve.html#bezier.curve.Curve.evaluate
-def evaluate(
-    interpolation: Interpolation, start: int, now: int, end: int
-) -> tuple[float, float, float]:
+def evaluate(interpolation: Interpolation, start: int, now: int, end: int) -> tuple[float, float, float]:
     """
     補間曲線を求める
 

@@ -4,7 +4,7 @@ from datetime import datetime
 from glob import glob
 
 import numpy as np
-from base.bezier import create_interpolation, get_infections
+from base.bezier import create_interpolation, get_infections, get_y_infections
 from base.logger import MLogger
 from base.math import MMatrix4x4, MQuaternion, MVector3D
 from mmd.pmx.reader import PmxReader
@@ -215,8 +215,8 @@ def execute(args):
                     toe_bone_name = f"{direction}つま先"
                     heel_bone_name = f"{direction}かかと"
 
-                    for bname in [toe_bone_name, heel_bone_name, toe_bone_name, heel_bone_name]:
-                        bone_abs_poses[bname] = {-1: 0.0}
+                    for bname in [ankle_bone_name, toe_bone_name, heel_bone_name]:
+                        bone_abs_poses[bname] = {}
 
                     toe_link_names = [
                         "全ての親",
@@ -290,6 +290,7 @@ def execute(args):
                         # 回転から求めた当該モデルの絶対位置
                         heel_abs_pos = mats[heel_bone_name] * MVector3D()
 
+                        bone_abs_poses[ankle_bone_name][fno] = ankle_abs_pos
                         bone_abs_poses[toe_bone_name][fno] = toe_abs_pos
                         bone_abs_poses[heel_bone_name][fno] = heel_abs_pos
 
@@ -327,8 +328,8 @@ def execute(args):
                     np.array(["左足首", "右足首", "左かかと", "右かかと", "左つま先", "右つま先"])[
                         np.argmin(
                             [
-                                left_ankle_abs_pos,
-                                right_ankle_abs_pos,
+                                left_ankle_abs_pos.y,
+                                right_ankle_abs_pos.y,
                                 left_heel_abs_pos.y,
                                 right_heel_abs_pos.y,
                                 left_toe_abs_pos.y,
@@ -338,9 +339,9 @@ def execute(args):
                     ]
                 )
 
-                bottom_adjust_y = botton_leg_y
-                if "足首" not in botton_leg_name:
-                    bottom_adjust_y -= trace_org_motion.bones[f"{botton_leg_name[0]}足ＩＫ"][fno].position.y
+                bottom_adjust_y = botton_leg_y - bone_abs_poses[botton_leg_name].get(fno, MVector3D()).y
+                # if "足首" not in botton_leg_name:
+                #     bottom_adjust_y -= trace_org_motion.bones[f"{botton_leg_name[0]}足ＩＫ"][fno].position.y
 
                 center_relative_pos: MVector3D = (
                     center_abs_pos - trace_model.bones["下半身"].position + (trace_model.bones["グルーブ"].position - trace_model.bones["センター"].position)
@@ -364,9 +365,9 @@ def execute(args):
                 groove_bf.position = groove_pos
                 trace_org_motion.bones.append(groove_bf)
 
-                trace_org_motion.bones["左足ＩＫ"][fno].position.y += bottom_adjust_y
-                trace_org_motion.bones["右足ＩＫ"][fno].position.y += bottom_adjust_y
-                trace_org_motion.bones["グルーブ"][fno].position.y += bottom_adjust_y
+                trace_org_motion.bones["左足ＩＫ"][fno].position.y = max(0, trace_org_motion.bones["左足ＩＫ"][fno].position.y + bottom_adjust_y)
+                trace_org_motion.bones["右足ＩＫ"][fno].position.y = max(0, trace_org_motion.bones["右足ＩＫ"][fno].position.y + bottom_adjust_y)
+                trace_org_motion.bones["グルーブ"][fno].position.y += botton_leg_y
 
             trace_org_motion_path = os.path.join(motion_dir_path, f"trace_no{pname}_original.vmd")
             logger.info(
@@ -532,12 +533,14 @@ def execute(args):
                     rot_values.append(MQuaternion().dot(rot))
                     rot_y_values.append(rot.to_euler_degrees().y)
 
-                mx_infections = get_infections(mx_values, 0.1, 1)
-                my_infections = get_infections(my_values, 0.1, 1)
+                mx_infections = get_infections(mx_values, 0.05, 1)
+                my_infections = get_infections(my_values, 0.05, 1)
                 mz_infections = get_infections(mz_values, 0.1, 1)
                 rot_infections = get_infections(rot_values, 0.001, 3)
                 # 体幹はY軸のオイラー角の変位（180度のフリップ）を検出する
                 rot_y_infections = get_infections(rot_y_values, 0.1, 1) if bone_name in ["上半身", "下半身"] else []
+                # 回転変動も検出する(180度だけだとどっち向きの回転か分からないので)
+                rot_y2_infections = get_y_infections(rot_y_values, 110) if bone_name in ["上半身", "下半身"] else []
 
                 infections = list(
                     sorted(
@@ -548,6 +551,7 @@ def execute(args):
                             | set(mz_infections)
                             | set(rot_infections)
                             | set(rot_y_infections)
+                            | set(rot_y2_infections)
                         )
                     )
                 )

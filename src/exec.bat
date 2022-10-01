@@ -2,15 +2,16 @@
 
 cls
 
-@REM set PROCESS=prepare,alphapose,mediapipe,posetriplet,mix,motion
+set PROCESS=prepare,alphapose,mediapipe,posetriplet,mix,motion
 @REM set PROCESS=prepare,alphapose,mediapipe,posetriplet
 @REM set PROCESS=mediapipe,posetriplet,mix,motion
 @REM set PROCESS=mix,motion
-set PROCESS=motion
+@REM set PROCESS=motion
 set LOGMODE=0
 set LANG=ja
 
-python executor.py --img-dir "E:\\MMD\\MikuMikuDance_v926x64\\Work\\201805_auto\\02\\buster\\buster_0-1424_mp4_20220930_144936" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+@REM python executor.py --video-file "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\02\buster\buster_0-1700.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "E:\\MMD\\MikuMikuDance_v926x64\\Work\\201805_auto\\02\\buster\\buster_0-1700_mp4_20221001_233113" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 
 @REM python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\03\ivory\ivory_mp4_20220928_121801" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\03\bbf\bbf_mp4_20220928_105958" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
