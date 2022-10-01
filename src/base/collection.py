@@ -239,6 +239,9 @@ class BaseIndexDictModel(Generic[TBaseIndexModel]):
             raise StopIteration
         return self.data[self.__indices[self.__iter_index]]
 
+    def __contains__(self, v) -> bool:
+        return v in self.data.keys()
+
 
 TBaseIndexDictModel = TypeVar("TBaseIndexDictModel", bound=BaseIndexDictModel)
 
@@ -248,9 +251,7 @@ class BaseIndexNameDictInnerModel(Generic[TBaseIndexNameModel]):
 
     __slots__ = ["data", "__indices", "__iter_index", "name"]
 
-    def __init__(
-        self, name: str = None, data: Dict[int, TBaseIndexNameModel] = None
-    ) -> None:
+    def __init__(self, name: str = None, data: Dict[int, TBaseIndexNameModel] = None) -> None:
         """
         モデル辞書
 
@@ -337,15 +338,14 @@ class BaseIndexNameDictInnerModel(Generic[TBaseIndexNameModel]):
             raise StopIteration
         return self.data[self.__indices[self.__iter_index]]
 
-
-TBaseIndexNameDictInnerModel = TypeVar(
-    "TBaseIndexNameDictInnerModel", bound=BaseIndexNameDictInnerModel
-)
+    def __contains__(self, v) -> bool:
+        return v in self.data.keys()
 
 
-class BaseIndexNameDictModel(
-    Generic[TBaseIndexNameModel, TBaseIndexNameDictInnerModel]
-):
+TBaseIndexNameDictInnerModel = TypeVar("TBaseIndexNameDictInnerModel", bound=BaseIndexNameDictInnerModel)
+
+
+class BaseIndexNameDictModel(Generic[TBaseIndexNameModel, TBaseIndexNameDictInnerModel]):
     """BaseIndexNameModelの辞書基底クラス"""
 
     __slots__ = ["data", "__iter_index", "__names"]
@@ -418,10 +418,11 @@ class BaseIndexNameDictModel(
             raise StopIteration
         return self.data[self.__names[self.__iter_index]]
 
+    def __contains__(self, v) -> bool:
+        return v in self.data.keys()
 
-TBaseIndexNameDictModel = TypeVar(
-    "TBaseIndexNameDictModel", bound=BaseIndexNameDictModel
-)
+
+TBaseIndexNameDictModel = TypeVar("TBaseIndexNameDictModel", bound=BaseIndexNameDictModel)
 
 
 class BaseHashModel(BaseModel, ABC):

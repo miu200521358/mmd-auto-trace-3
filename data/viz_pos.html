@@ -100,7 +100,7 @@
           //読込終了後の処理
           reader.onload = function (ev) {
             var max_x = -99999, max_y = -99999, max_z = -99999, min_x = 99999, min_y = 99999, min_z = 99999;
-            var jsonData = JSON.parse(ev.target.result);
+            var jsonData = JSON.parse(ev.target.result)["joints"];
             var max_fno = 0;
             var min_fno = -1;
 
@@ -111,8 +111,11 @@
               }
               console.log("fno: " + fno);
               console.log("jsonData[fno]: " + jsonData[fno]);
-              var bf_json = jsonData[fno]["pt_joints"];
+              var bf_json = jsonData[fno]["body"];
               console.log("bf_json: " + bf_json);
+              if (bf_json === undefined) {
+                return;
+              }
               var bf_list = [];
               max_fno = fno;
               Object.keys(bf_json).forEach(function (bone_name) {
@@ -122,9 +125,9 @@
                 var x = parseFloat(bf.x);
                 var y = parseFloat(bf.y);
                 var z = parseFloat(bf.z);
-                bf.x = x * 100;
-                bf.y = z * 100;
-                bf.z = y * 100;
+                bf.x = x;
+                bf.y = z;
+                bf.z = y;
                 bf_list.push(bf);
 
                 if (bf.x > max_x) { max_x = bf.x };
@@ -233,13 +236,13 @@
         bone_names[key] = poslist[i].name
       }
 
-      var order = [['Head', 'Neck', 'Spine2', 'Spine'],
-      ['Neck', 'LShoulder', 'LElbow', 'LWrist'],
-      ['Neck', 'RShoulder', 'RElbow', 'RWrist'],
-      ['Pelvis', 'RHip', 'RKnee', 'RAnkle'],
-      ['Pelvis', 'LHip', 'LKnee', 'LAnkle'],
-      [],
-      []];
+      var order = [['Head', 'Nose', 'Neck', 'Spine2', 'Spine'],
+      ['Neck', 'LShoulder', 'LElbow', 'LWrist', 'LIndex'],
+      ['Neck', 'RShoulder', 'RElbow', 'RWrist', 'RIndex'],
+      ['Pelvis', 'RHip', 'RKnee', 'RAnkle', 'RFootIndex'],
+      ['Pelvis', 'LHip', 'LKnee', 'LAnkle', 'LFootIndex'],
+      ['REar', 'Nose'],
+      ['LEar', 'Nose']];
       var x = [];
       var y = [];
       var z = [];

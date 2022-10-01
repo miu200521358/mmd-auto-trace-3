@@ -19,8 +19,11 @@ from AlphaPose.alphapose.models import builder
 from AlphaPose.alphapose.utils.detector import DetectionLoader
 from AlphaPose.alphapose.utils.writer import DataWriter
 from AlphaPose.detector.apis import get_detector
-from AlphaPose.detector.yolox_api import YOLOXDetector
-from AlphaPose.detector.yolox_cfg import cfg as ycfg
+from AlphaPose.detector.yolo_api import YOLODetector
+from AlphaPose.detector.yolo_cfg import cfg as ycfg
+
+# from AlphaPose.detector.yolox_api import YOLOXDetector
+# from AlphaPose.detector.yolox_cfg import cfg as ycfg
 from AlphaPose.trackers import track
 from AlphaPose.trackers.tracker_api import Tracker
 from AlphaPose.trackers.tracker_cfg import cfg as tcfg
@@ -79,9 +82,13 @@ def execute(args):
             decoration=MLogger.DECORATION_LINE,
         )
 
-        ycfg.MODEL_NAME = "yolox-x"
-        ycfg.MODEL_WEIGHTS = "../data/alphapose/detector/yorox/yolox_x.pth"
-        det_loader = DetectionLoader(input_source, YOLOXDetector(ycfg, argv), cfg, argv, batchSize=argv.detbatch, mode="image", queueSize=argv.qsize)
+        # ycfg.MODEL_NAME = "yolox-x"
+        # ycfg.MODEL_WEIGHTS = "../data/alphapose/detector/yolox/yolox_x.pth"
+        # detector = YOLOXDetector(ycfg, argv)
+        ycfg.CONFIG = "AlphaPose/detector/yolo/cfg/yolov3-spp.cfg"
+        ycfg.WEIGHTS = "../data/alphapose/detector/yolo/yolov3-spp.weights"
+        detector = YOLODetector(ycfg, argv)
+        det_loader = DetectionLoader(input_source, detector, cfg, argv, batchSize=argv.detbatch, mode="image", queueSize=argv.qsize)
         det_loader.start()
 
         # Load pose model
@@ -184,11 +191,14 @@ def execute(args):
             decoration=MLogger.DECORATION_LINE,
         )
 
+        all_bbox_areas = {}
         for json_data in tqdm(json_datas):
             # 人物INDEX別に保持
             person_idx = int(json_data["idx"])
             if person_idx not in personal_datas:
                 personal_datas[person_idx] = {}
+            if person_idx not in all_bbox_areas:
+                all_bbox_areas[person_idx] = []
 
             kps = json_data["keypoints"]
             kps = np.array(kps).reshape(-1, 3)[:17, :2]
@@ -207,6 +217,8 @@ def execute(args):
                 },
                 "2d-keypoints": json_data["keypoints"],
             }
+
+            all_bbox_areas[person_idx].append(float(json_data["box"][2]) * float(json_data["box"][3]))
 
             if prev_image_id != json_data["image_id"]:
                 # 前の画像IDが入ってる場合、動画出力
@@ -234,14 +246,22 @@ def execute(args):
         out.release()
         cv2.destroyAllWindows()
 
+        is_targets = dict([(person_idx, True) for person_idx in all_bbox_areas.keys()])
+        bbox_area_medians = dict([(person_idx, np.median(bbox_areas)) for person_idx, bbox_areas in all_bbox_areas.items()])
+        if np.max(list(bbox_area_medians.values())) - np.min(list(bbox_area_medians.values())) > np.mean(list(bbox_area_medians.values())):
+            is_targets = dict(
+                [(person_idx, bbox_area_medians[person_idx] > np.mean(list(bbox_area_medians.values()))) for person_idx in all_bbox_areas.keys()]
+            )
+
         logger.info(
             "AlphaPose 結果保存",
             decoration=MLogger.DECORATION_LINE,
         )
 
-        for person_idx, personal_data in personal_datas.items():
-            with open(os.path.join(args.img_dir, DirName.ALPHAPOSE.value, f"{person_idx:03d}.json"), "w") as f:
-                json.dump(personal_data, f, indent=4)
+        for person_idx, personal_data in tqdm(personal_datas.items()):
+            if is_targets[person_idx] and 5 < len(personal_data.keys()):
+                with open(os.path.join(args.img_dir, DirName.ALPHAPOSE.value, f"{person_idx:03d}.json"), "w") as f:
+                    json.dump(personal_data, f, indent=4)
 
         logger.info(
             "2D姿勢推定 結果保存完了: {outputpath}",

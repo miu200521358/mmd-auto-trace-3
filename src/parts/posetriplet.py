@@ -105,7 +105,7 @@ HALPE_2_COCO_ORDER = (
 )
 
 # 学習したボーン名順番
-RESULT_JOINT_NAMES  = (
+BODY_LANDMARKS  = (
     "Pelvis",
     "RHip",
     "RKnee",
@@ -275,15 +275,12 @@ def execute(args):
                     },
                 }
 
-                for jname, fjoint in zip(RESULT_JOINT_NAMES, fjoints):
+                for jname, fjoint in zip(BODY_LANDMARKS, fjoints):
                     personal_data[fno]["pt_joints"][jname] = {
-                        "x": -float(fjoint[0]),
-                        "y": float(fjoint[2]),
-                        "z": -float(fjoint[1]),
+                        "x": -float(fjoint[0]) * 100,
+                        "y": float(fjoint[2]) * 100,
+                        "z": -float(fjoint[1]) * 100,
                     }
-
-                # 上半身は下半身と同じ位置
-                personal_data[fno]["pt_joints"]["Spine"] = personal_data[fno]["pt_joints"]["Pelvis"]
 
                 for joint_type in ("mp_body_world_joints", "mp_left_hand_joints", "mp_right_hand_joints", "mp_face_joints"):
                     if joint_type in json_datas[fidx]:
