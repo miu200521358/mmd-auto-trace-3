@@ -98,9 +98,9 @@ if __name__ == "__main__":
 
         result = execute(args)
 
-    if result and "smooth" in args.process:
-        # 人物スムージング
-        from parts.smooth import execute
+    if result and "mix" in args.process:
+        # 推定結果合成
+        from parts.mix import execute
 
         result = execute(args)
 

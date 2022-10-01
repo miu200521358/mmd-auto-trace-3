@@ -21,7 +21,6 @@ from AlphaPose.alphapose.utils.writer import DataWriter
 from AlphaPose.detector.apis import get_detector
 from AlphaPose.detector.yolo_api import YOLODetector
 from AlphaPose.detector.yolo_cfg import cfg as ycfg
-
 # from AlphaPose.detector.yolox_api import YOLOXDetector
 # from AlphaPose.detector.yolox_cfg import cfg as ycfg
 from AlphaPose.trackers import track

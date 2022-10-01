@@ -2,10 +2,10 @@
 
 cls
 
-@REM set PROCESS=prepare,alphapose,mediapipe,posetriplet,smooth,motion
+@REM set PROCESS=prepare,alphapose,mediapipe,posetriplet,mix,motion
 @REM set PROCESS=prepare,alphapose,mediapipe,posetriplet
-@REM set PROCESS=mediapipe,posetriplet,smooth,motion
-@REM set PROCESS=smooth,motion
+@REM set PROCESS=mediapipe,posetriplet,mix,motion
+@REM set PROCESS=mix,motion
 set PROCESS=motion
 set LOGMODE=0
 set LANG=ja

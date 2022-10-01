@@ -64,10 +64,10 @@ msgid "AlphaPose 開始"
 msgstr "Start AlphaPose"
 
 msgid "AlphaPose 結果保存"
-msgstr "Save AlphaPose result"
+msgstr "Save AlphaPose Results"
 
 msgid "AlphaPose 結果描画"
-msgstr "AlphaPose Result Drawing"
+msgstr "AlphaPose result drawing"
 
 msgid "AlphaPose 結果動画生成"
 msgstr "AlphaPose Result Movie Generation"
@@ -92,78 +92,56 @@ msgstr "AlphaPose Outcome Classification Preparation"
 
 msgid "Rendering {running}"
 msgstr "Rendering {running}"
-
-msgid "深度推定 開始: {img_dir}"
-msgstr "Depth estimation start: {img_dir}"
-
-msgid "深度推定で予期せぬエラーが発生しました。"
-msgstr "Unexpected error in depth estimation."
-
-msgid "【No.{pname}】2D姿勢推定 結果取得"
-msgstr "[No.{pname}] Get 2D pose estimation result"
-
-msgid "【No.{pname}】深度推定 開始"
-msgstr "[No.{pname}] depth estimation start"
-
-msgid "【No.{pname}】深度推定 結果取得"
-msgstr "[No.{pname}] Get Depth Estimation Result"
-
-msgid "【No.{pname}】深度推定 結果保存"
-msgstr "[No.{pname}] Depth Estimation Result Save"
-
-msgid "深度推定 結果保存完了: {output_dir_path}"
-msgstr "Depth estimation result saved: {output_dir_path}"
-
-msgid "mediapipe推定処理開始: {img_dir}"
-msgstr "Start mediapipe estimation process: {img_dir}"
-
-msgid "【No.{pname}】mediapipe 推定開始"
-msgstr "[No.{pname}] start mediapipe estimation"
-
-msgid "mediapipe推定で予期せぬエラーが発生しました。"
-msgstr "Unexpected error in mediapipe estimation."
-
 msgid "2D姿勢推定 結果保存完了: {outputpath}"
 msgstr "2D pose estimation result saved: {outputpath}"
 
-msgid "【No.{pname}】mediapipe 推定結果出力"
-msgstr "[No.{pname}] mediapipe estimation result output"
+msgid "Mediapipe推定処理開始: {img_dir}"
+msgstr "Mediapipe estimation process started: {img_dir}"
 
-msgid "mediapipe 推定処理終了: {output_dir}"
-msgstr "mediapipe estimation finished: {output_dir}"
+msgid "【No.{pname}】Mediapipe 推定開始"
+msgstr "[No.{pname}] Mediapipe estimation start"
 
-msgid "【No.{pname}】姿勢推定 結果取得"
-msgstr "[No.{pname}] Posture estimation result acquisition"
+msgid "【No.{pname}】Mediapipe 推定結果出力"
+msgstr "[No.{pname}] Mediapipe estimation result output"
 
-msgid "関節スムージング処理開始: {img_dir}"
-msgstr "Start joint smoothing process: {img_dir}"
+msgid "Mediapipe 推定処理終了: {output_dir}"
+msgstr "Mediapipe estimation finished: {output_dir}"
 
-msgid "【No.{pname}】関節スムージング準備開始"
-msgstr "[No.{pname}] Start preparation for joint smoothing"
+msgid "PoseTriplet 開始: {img_dir}"
+msgstr "PoseTriplet Start: {img_dir}"
 
-msgid "【No.{pname}】関節スムージング開始"
-msgstr "[No.{pname}] Joint smoothing start"
+msgid "【No.{pname}】Mediapipe 結果取得"
+msgstr "[No.{pname}] Get Mediapipe result"
 
-msgid "【No.{pname}】関節距離計測"
-msgstr "[No.{pname}] joint distance measurement"
+msgid "【No.{pname}】PoseTriplet 開始"
+msgstr "[No.{pname}] Start PoseTriplet"
 
-msgid "【No.{pname}】関節スムージング合成開始"
-msgstr "[No.{pname}] Joint smoothing synthesis start"
+msgid "【No.{pname}】PoseTriplet 結果取得"
+msgstr "[No.{pname}] Get PoseTriplet result"
 
-msgid "【No.{pname}】関節スムージング出力開始"
-msgstr "[No.{pname}] Joint smoothing output start"
+msgid "【No.{pname}】PoseTriplet 結果保存"
+msgstr "[No.{pname}] Save PoseTriplet result"
 
-msgid "関節スムージング処理終了: {img_dir}"
-msgstr "Finished joint smoothing: {img_dir}"
+msgid "PoseTriplet 結果保存完了: {output_dir_path}"
+msgstr "PoseTriplet result saved: {output_dir_path}"
 
-msgid "【No.{pname}】関節深度準備開始"
-msgstr "[No.{pname}] Joint depth preparation start"
+msgid "推定結果合成 処理開始: {img_dir}"
+msgstr "Inference result synthesis process started: {img_dir}"
 
-msgid "関節スムージングで予期せぬエラーが発生しました。"
-msgstr "Unexpected error in joint smoothing."
+msgid "推定結果合成 中央判定"
+msgstr "Estimation Result Synthesis Central Judgment"
 
-msgid "指定された深度推定ディレクトリが存在しません。\n深度推定が完了していない可能性があります。: {img_dir}"
-msgstr "The specified depth estimation directory does not exist.\nDepth estimation may not have completed: {img_dir}"
+msgid "【No.{pname}】推定結果合成 準備開始"
+msgstr "[No.{pname}] Estimation result synthesis preparation start"
+
+msgid "【No.{pname}】推定結果合成 合成開始"
+msgstr "[No.{pname}] Estimation Result Synthesis Synthesis Start"
+
+msgid "【No.{pname}】推定結果合成 出力開始"
+msgstr "[No.{pname}] Synthesis of estimated results Start output"
+
+msgid "推定結果合成 処理終了: {img_dir}"
+msgstr "Complete estimation result synthesis processing: {img_dir}"
 
 msgid "モーション生成処理開始: {img_dir}"
 msgstr "Motion generation process started: {img_dir}"
@@ -171,29 +149,17 @@ msgstr "Motion generation process started: {img_dir}"
 msgid "【No.{pname}】モーション結果位置計算開始"
 msgstr "[No.{pname}] motion result position calculation start"
 
-msgid "【No.{pname}】モーション(センター)計算開始"
-msgstr "[No.{pname}] motion (center) calculation start"
-
 msgid "【No.{pname}】モーション(回転)計算開始"
 msgstr "[No.{pname}] motion (rotation) calculation start"
 
 msgid "【No.{pname}】モーション(IK)計算開始"
 msgstr "[No.{pname}] motion (IK) calculation start"
 
+msgid "【No.{pname}】モーション(センター)計算開始"
+msgstr "[No.{pname}] motion (center) calculation start"
+
 msgid "【No.{pname}】モーション(回転)生成開始【{path}】"
 msgstr "[No.{pname}] motion (rotation) generation start [{path}]"
-
-msgid "【No.{pname}】モーション スムージング準備"
-msgstr "[No.{pname}] motion smoothing preparation"
-
-msgid "【No.{pname}】モーション スムージング開始"
-msgstr "[No.{pname}] motion smoothing start"
-
-msgid "【No.{pname}】モーション スムージング設定"
-msgstr "[No.{pname}] Motion smoothing setting"
-
-msgid "【No.{pname}】モーション(スムージング)生成開始【{path}】"
-msgstr "[No.{pname}] Motion (smoothing) generation start [{path}]"
 
 msgid "【No.{pname}】モーション 間引き準備"
 msgstr "[No.{pname}] motion thinning preparation"
@@ -203,3 +169,40 @@ msgstr "[No.{pname}] Motion (thinning) generation start [{path}]"
 
 msgid "モーション結果保存完了: {motion_dir_path}"
 msgstr "Motion result saved: {motion_dir_path}"
+
+
+msgid "3D姿勢推定(Mediapipe)推定処理開始: {img_dir}"
+msgstr "Start 3D pose estimation (Mediapipe) estimation processing: {img_dir}"
+
+msgid "指定された2D姿勢推定ディレクトリが存在しません。\n2D姿勢推定が完了していない可能性があります。: {img_dir}"
+msgstr "The specified 2D pose estimation directory does not exist.\n2D pose estimation may not have completed: {img_dir}"
+
+msgid "3D姿勢推定(PoseTriplet) 開始: {img_dir}"
+msgstr "3D Pose Estimation (PoseTriplet) Start: {img_dir}"
+
+msgid "指定された3D姿勢推定(Mediapipe)ディレクトリが存在しません。\n3D姿勢推定(Mediapipe)が完了していない可能性があります。: {img_dir}"
+msgstr "The specified 3D pose estimation (Mediapipe) directory does not exist.\n3D pose estimation (Mediapipe) may not have completed: {img_dir}"
+
+msgid "指定されたPoseTripletディレクトリが存在しません。\nPoseTripletが完了していない可能性があります。: {img_dir}"
+msgstr "The specified PoseTriplet directory does not exist.\nPoseTriplet may not have completed: {img_dir}"
+
+msgid "指定されたMixディレクトリが存在しません。\nMixが完了していない可能性があります。: {img_dir}"
+msgstr "The specified Mix directory does not exist.\nMix may not have completed: {img_dir}"
+
+msgid "Mediapipeで予期せぬエラーが発生しました。"
+msgstr "Mediapipe encountered an unexpected error."
+
+msgid "PoseTripletで予期せぬエラーが発生しました。"
+msgstr "An unexpected error occurred in PoseTriplet."
+
+msgid "推定結果合成で予期せぬエラーが発生しました。"
+msgstr "Unexpected error in estimation result synthesis."
+
+msgid "モーション生成で予期せぬエラーが発生しました。"
+msgstr "Unexpected error in motion generation."
+
+msgid "3D姿勢推定(Mediapipe) 推定処理終了: {output_dir}"
+msgstr "3D Pose Estimation (Mediapipe) End of estimation processing: {output_dir}"
+
+msgid "3D姿勢推定(PoseTriplet) 結果保存完了: {output_dir_path}"
+msgstr "3D pose estimation (PoseTriplet) result saving completed: {output_dir_path}"

@@ -6,11 +6,10 @@ from glob import glob
 import numpy as np
 from base.logger import MLogger
 from base.math import MVector3D
-from scipy.signal import savgol_filter
 from tqdm import tqdm
 
 from parts.config import DirName
-from parts.mediapipe import HAND_LANDMARKS, POSE_LANDMARKS
+from parts.mediapipe import HAND_LANDMARKS
 from parts.posetriplet import BODY_LANDMARKS
 
 logger = MLogger(__name__, level=MLogger.DEBUG)
@@ -19,7 +18,7 @@ logger = MLogger(__name__, level=MLogger.DEBUG)
 def execute(args):
     try:
         logger.info(
-            "関節スムージング処理開始: {img_dir}",
+            "推定結果合成 処理開始: {img_dir}",
             img_dir=args.img_dir,
             decoration=MLogger.DECORATION_BOX,
         )
@@ -34,16 +33,16 @@ def execute(args):
 
         if not os.path.exists(os.path.join(args.img_dir, DirName.POSETRIPLET.value)):
             logger.error(
-                "指定された深度推定ディレクトリが存在しません。\n深度推定が完了していない可能性があります。: {img_dir}",
+                "指定されたPoseTripletディレクトリが存在しません。\nPoseTripletが完了していない可能性があります。: {img_dir}",
                 img_dir=os.path.join(args.img_dir, DirName.POSETRIPLET.value),
                 decoration=MLogger.DECORATION_BOX,
             )
             return False
 
-        os.makedirs(os.path.join(args.img_dir, DirName.SMOOTH.value), exist_ok=True)
+        os.makedirs(os.path.join(args.img_dir, DirName.MIX.value), exist_ok=True)
 
         logger.info(
-            "関節深度準備開始",
+            "推定結果合成 中央判定",
             decoration=MLogger.DECORATION_LINE,
         )
 
@@ -87,7 +86,7 @@ def execute(args):
                 continue
 
             logger.info(
-                "【No.{pname}】関節スムージング準備開始",
+                "【No.{pname}】推定結果合成 準備開始",
                 pname=pname,
                 decoration=MLogger.DECORATION_LINE,
             )
@@ -122,12 +121,12 @@ def execute(args):
             smooth_joint_datas = joint_datas
 
             # logger.info(
-            #     "【No.{pname}】関節スムージング開始",
+            #     "【No.{pname}】推定結果合成 開始",
             #     pname=pname,
             #     decoration=MLogger.DECORATION_LINE,
             # )
 
-            # # スムージング
+            # # 合成
             # smooth_joint_datas = {}
             # for (joint_type, joint_name, axis), joints in tqdm(joint_datas.items(), desc=f"No.{pname} ... "):
             #     smooth_joint_datas[(joint_type, joint_name, axis)] = {}
@@ -243,7 +242,7 @@ def execute(args):
             # leg_most_straight_pelvis_y = smooth_joint_datas[("pt_joints", "Pelvis", "y")][leg_most_straight_fno]
 
             logger.info(
-                "【No.{pname}】関節スムージング合成開始",
+                "【No.{pname}】推定結果合成 合成開始",
                 pname=pname,
                 decoration=MLogger.DECORATION_LINE,
             )
@@ -502,25 +501,25 @@ def execute(args):
                         }
 
             logger.info(
-                "【No.{pname}】関節スムージング出力開始",
+                "【No.{pname}】推定結果合成 出力開始",
                 pname=pname,
                 decoration=MLogger.DECORATION_LINE,
             )
 
             with open(
-                os.path.join(args.img_dir, DirName.SMOOTH.value, f"{pname}.json"),
+                os.path.join(args.img_dir, DirName.MIX.value, f"{pname}.json"),
                 "w",
                 encoding="utf-8",
             ) as f:
                 json.dump(mix_joints, f, indent=4)
 
         logger.info(
-            "関節スムージング処理終了: {img_dir}",
+            "推定結果合成 処理終了: {img_dir}",
             img_dir=args.img_dir,
             decoration=MLogger.DECORATION_BOX,
         )
 
         return True
     except Exception as e:
-        logger.critical("関節スムージングで予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
+        logger.critical("推定結果合成で予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
         return False

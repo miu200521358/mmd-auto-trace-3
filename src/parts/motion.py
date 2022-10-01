@@ -11,7 +11,6 @@ from mmd.pmx.reader import PmxReader
 from mmd.vmd.collection import VmdMotion
 from mmd.vmd.part import VmdBoneFrame
 from mmd.vmd.writer import VmdWriter
-from scipy.signal import savgol_filter
 from tqdm import tqdm
 
 from parts.config import DirName
@@ -38,10 +37,10 @@ def execute(args):
             )
             return False
 
-        if not os.path.exists(os.path.join(args.img_dir, DirName.SMOOTH.value)):
+        if not os.path.exists(os.path.join(args.img_dir, DirName.MIX.value)):
             logger.error(
-                "指定されたスムージングディレクトリが存在しません。\nスムージングが完了していない可能性があります。: {img_dir}",
-                img_dir=os.path.join(args.img_dir, DirName.SMOOTH.value),
+                "指定されたMixディレクトリが存在しません。\nMixが完了していない可能性があります。: {img_dir}",
+                img_dir=os.path.join(args.img_dir, DirName.MIX.value),
                 decoration=MLogger.DECORATION_BOX,
             )
             return False
@@ -49,12 +48,10 @@ def execute(args):
         motion_dir_path = os.path.join(args.img_dir, DirName.MOTION.value)
         os.makedirs(motion_dir_path, exist_ok=True)
 
-        # process_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
-
         # トレース用モデルを読み込む
         trace_model = PmxReader().read_by_filepath(args.trace_rot_model_config)
 
-        for person_file_path in sorted(glob(os.path.join(args.img_dir, DirName.SMOOTH.value, "*.json"))):
+        for person_file_path in sorted(glob(os.path.join(args.img_dir, DirName.MIX.value, "*.json"))):
             pname, _ = os.path.splitext(os.path.basename(person_file_path))
 
             logger.info(

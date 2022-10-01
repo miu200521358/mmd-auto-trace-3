@@ -131,7 +131,7 @@ KEYPOINTS_SYMMETRY = ((4, 5, 6, 10, 11, 12), (1, 2, 3, 13, 14, 15))
 def execute(args):
     try:
         logger.info(
-            "深度推定 開始: {img_dir}",
+            "3D姿勢推定(PoseTriplet) 開始: {img_dir}",
             img_dir=args.img_dir,
             decoration=MLogger.DECORATION_BOX,
         )
@@ -146,7 +146,7 @@ def execute(args):
 
         if not os.path.exists(os.path.join(args.img_dir, DirName.MEDIAPIPE.value)):
             logger.error(
-                "指定された3D姿勢推定ディレクトリが存在しません。\n3D姿勢推定が完了していない可能性があります。: {img_dir}",
+                "指定された3D姿勢推定(Mediapipe)ディレクトリが存在しません。\n3D姿勢推定(Mediapipe)が完了していない可能性があります。: {img_dir}",
                 img_dir=os.path.join(args.img_dir, DirName.MEDIAPIPE.value),
                 decoration=MLogger.DECORATION_BOX,
             )
@@ -194,7 +194,7 @@ def execute(args):
             pname, _ = os.path.splitext(os.path.basename(persion_json_path))
 
             logger.info(
-                "【No.{pname}】姿勢推定 結果取得",
+                "【No.{pname}】Mediapipe 結果取得",
                 pname=pname,
                 decoration=MLogger.DECORATION_LINE,
             )
@@ -208,7 +208,7 @@ def execute(args):
                 keypoints_2d[fno] = np.array(frame_json_data["2d-keypoints"]).reshape(-1, 3)[:, :2]
 
             logger.info(
-                "【No.{pname}】深度推定 開始",
+                "【No.{pname}】PoseTriplet 開始",
                 pname=pname,
                 decoration=MLogger.DECORATION_LINE,
             )
@@ -244,7 +244,7 @@ def execute(args):
             prediction_world[:, :, 2] -= np.min(prediction_world[:, :, 2])
 
             logger.info(
-                "【No.{pname}】深度推定 結果取得",
+                "【No.{pname}】PoseTriplet 結果取得",
                 pname=pname,
                 decoration=MLogger.DECORATION_LINE,
             )
@@ -287,7 +287,7 @@ def execute(args):
                         personal_data[fno][joint_type] = json_datas[fidx][joint_type]
 
             logger.info(
-                "【No.{pname}】深度推定 結果保存",
+                "【No.{pname}】PoseTriplet 結果保存",
                 pname=pname,
                 decoration=MLogger.DECORATION_LINE,
             )
@@ -296,14 +296,14 @@ def execute(args):
                 json.dump(personal_data, f, indent=4)
 
         logger.info(
-            "深度推定 結果保存完了: {output_dir_path}",
+            "3D姿勢推定(PoseTriplet) 結果保存完了: {output_dir_path}",
             output_dir_path=output_dir_path,
             decoration=MLogger.DECORATION_BOX,
         )
 
         return True
     except Exception as e:
-        logger.critical("深度推定で予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
+        logger.critical("PoseTripletで予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
         return False
 
 

@@ -20,7 +20,7 @@ mp_holistic = mp.solutions.holistic
 def execute(args):
     try:
         logger.info(
-            "mediapipe推定処理開始: {img_dir}",
+            "3D姿勢推定(Mediapipe)推定処理開始: {img_dir}",
             img_dir=args.img_dir,
             decoration=MLogger.DECORATION_BOX,
         )
@@ -60,7 +60,7 @@ def execute(args):
                 pname, _ = os.path.splitext(os.path.basename(persion_json_path))
 
                 logger.info(
-                    "【No.{pname}】mediapipe 推定開始",
+                    "【No.{pname}】Mediapipe 推定開始",
                     pname=pname,
                     decoration=MLogger.DECORATION_LINE,
                 )
@@ -219,7 +219,7 @@ def execute(args):
                 mediapipe_json_path = os.path.join(output_dir_path, os.path.basename(persion_json_path))
 
                 logger.info(
-                    "【No.{pname}】mediapipe 推定結果出力",
+                    "【No.{pname}】Mediapipe 推定結果出力",
                     pname=pname,
                     decoration=MLogger.DECORATION_LINE,
                 )
@@ -228,14 +228,14 @@ def execute(args):
                     json.dump(json_datas, f, indent=4)
 
         logger.info(
-            "mediapipe 推定処理終了: {output_dir}",
+            "3D姿勢推定(Mediapipe) 推定処理終了: {output_dir}",
             output_dir=output_dir_path,
             decoration=MLogger.DECORATION_BOX,
         )
 
         return True
     except Exception as e:
-        logger.critical("mediapipe推定で予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
+        logger.critical("Mediapipeで予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
         return False
 
 

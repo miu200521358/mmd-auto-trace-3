@@ -118,100 +118,71 @@ msgstr ""
 msgid "Rendering {running}"
 msgstr ""
 
-
-msgid "深度推定 開始: {img_dir}"
-msgstr ""
-
-
-msgid "深度推定で予期せぬエラーが発生しました。"
-msgstr ""
-
-
-msgid "【No.{pname}】2D姿勢推定 結果取得"
-msgstr ""
-
-
-msgid "【No.{pname}】深度推定 開始"
-msgstr ""
-
-
-msgid "【No.{pname}】深度推定 結果取得"
-msgstr ""
-
-
-msgid "【No.{pname}】深度推定 結果保存"
-msgstr ""
-
-
-msgid "深度推定 結果保存完了: {output_dir_path}"
-msgstr ""
-
-
-msgid "mediapipe推定処理開始: {img_dir}"
-msgstr ""
-
-
-msgid "【No.{pname}】mediapipe 推定開始"
-msgstr ""
-
-
-msgid "mediapipe推定で予期せぬエラーが発生しました。"
-msgstr ""
-
-
 msgid "2D姿勢推定 結果保存完了: {outputpath}"
 msgstr ""
 
 
-msgid "【No.{pname}】mediapipe 推定結果出力"
+msgid "Mediapipe推定処理開始: {img_dir}"
 msgstr ""
 
 
-msgid "mediapipe 推定処理終了: {output_dir}"
+msgid "【No.{pname}】Mediapipe 推定開始"
 msgstr ""
 
 
-msgid "【No.{pname}】姿勢推定 結果取得"
+msgid "【No.{pname}】Mediapipe 推定結果出力"
 msgstr ""
 
 
-msgid "関節スムージング処理開始: {img_dir}"
+msgid "Mediapipe 推定処理終了: {output_dir}"
 msgstr ""
 
 
-msgid "【No.{pname}】関節スムージング準備開始"
+msgid "PoseTriplet 開始: {img_dir}"
 msgstr ""
 
 
-msgid "【No.{pname}】関節スムージング開始"
+msgid "【No.{pname}】Mediapipe 結果取得"
 msgstr ""
 
 
-msgid "【No.{pname}】関節距離計測"
+msgid "【No.{pname}】PoseTriplet 開始"
 msgstr ""
 
 
-msgid "【No.{pname}】関節スムージング合成開始"
+msgid "【No.{pname}】PoseTriplet 結果取得"
 msgstr ""
 
 
-msgid "【No.{pname}】関節スムージング出力開始"
+msgid "【No.{pname}】PoseTriplet 結果保存"
 msgstr ""
 
 
-msgid "関節スムージング処理終了: {img_dir}"
+msgid "PoseTriplet 結果保存完了: {output_dir_path}"
 msgstr ""
 
 
-msgid "【No.{pname}】関節深度準備開始"
+msgid "推定結果合成 処理開始: {img_dir}"
 msgstr ""
 
 
-msgid "関節スムージングで予期せぬエラーが発生しました。"
+msgid "推定結果合成 中央判定"
 msgstr ""
 
 
-msgid "指定された深度推定ディレクトリが存在しません。\n深度推定が完了していない可能性があります。: {img_dir}"
+msgid "【No.{pname}】推定結果合成 準備開始"
+msgstr ""
+
+
+msgid "【No.{pname}】推定結果合成 合成開始"
+msgstr ""
+
+
+msgid "【No.{pname}】推定結果合成 出力開始"
+msgstr ""
+
+
+msgid "推定結果合成 処理終了: {img_dir}"
 msgstr ""
 
 
@@ -223,10 +194,6 @@ msgid "【No.{pname}】モーション結果位置計算開始"
 msgstr ""
 
 
-msgid "【No.{pname}】モーション(センター)計算開始"
-msgstr ""
-
-
 msgid "【No.{pname}】モーション(回転)計算開始"
 msgstr ""
 
@@ -235,23 +202,11 @@ msgid "【No.{pname}】モーション(IK)計算開始"
 msgstr ""
 
 
+msgid "【No.{pname}】モーション(センター)計算開始"
+msgstr ""
+
+
 msgid "【No.{pname}】モーション(回転)生成開始【{path}】"
-msgstr ""
-
-
-msgid "【No.{pname}】モーション スムージング準備"
-msgstr ""
-
-
-msgid "【No.{pname}】モーション スムージング開始"
-msgstr ""
-
-
-msgid "【No.{pname}】モーション スムージング設定"
-msgstr ""
-
-
-msgid "【No.{pname}】モーション(スムージング)生成開始【{path}】"
 msgstr ""
 
 
@@ -264,5 +219,54 @@ msgstr ""
 
 
 msgid "モーション結果保存完了: {motion_dir_path}"
+msgstr ""
+
+
+
+msgid "3D姿勢推定(Mediapipe)推定処理開始: {img_dir}"
+msgstr ""
+
+
+msgid "指定された2D姿勢推定ディレクトリが存在しません。\n2D姿勢推定が完了していない可能性があります。: {img_dir}"
+msgstr ""
+
+
+msgid "3D姿勢推定(PoseTriplet) 開始: {img_dir}"
+msgstr ""
+
+
+msgid "指定された3D姿勢推定(Mediapipe)ディレクトリが存在しません。\n3D姿勢推定(Mediapipe)が完了していない可能性があります。: {img_dir}"
+msgstr ""
+
+
+msgid "指定されたPoseTripletディレクトリが存在しません。\nPoseTripletが完了していない可能性があります。: {img_dir}"
+msgstr ""
+
+
+msgid "指定されたMixディレクトリが存在しません。\nMixが完了していない可能性があります。: {img_dir}"
+msgstr ""
+
+
+msgid "Mediapipeで予期せぬエラーが発生しました。"
+msgstr ""
+
+
+msgid "PoseTripletで予期せぬエラーが発生しました。"
+msgstr ""
+
+
+msgid "推定結果合成で予期せぬエラーが発生しました。"
+msgstr ""
+
+
+msgid "モーション生成で予期せぬエラーが発生しました。"
+msgstr ""
+
+
+msgid "3D姿勢推定(Mediapipe) 推定処理終了: {output_dir}"
+msgstr ""
+
+
+msgid "3D姿勢推定(PoseTriplet) 結果保存完了: {output_dir_path}"
 msgstr ""
 
