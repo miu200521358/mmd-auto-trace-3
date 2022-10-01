@@ -138,9 +138,7 @@ class Bdef4(Deform):
         weight2: float,
         weight3: float,
     ):
-        super().__init__(
-            [index0, index1, index2, index3], [weight0, weight1, weight2, weight3], 4
-        )
+        super().__init__([index0, index1, index2, index3], [weight0, weight1, weight2, weight3], 4)
 
     def type(self) -> int:
         return 2
@@ -400,12 +398,8 @@ class IkLink(BaseModel):
         super().__init__()
         self.bone_index: int = bone_index or -1
         self.angle_limit: bool = angle_limit or False
-        self.min_angle_limit: BaseRotationModel = BaseRotationModel(
-            min_angle_limit_radians or MVector3D()
-        )
-        self.max_angle_limit: BaseRotationModel = BaseRotationModel(
-            max_angle_limit_radians or MVector3D()
-        )
+        self.min_angle_limit: BaseRotationModel = BaseRotationModel(min_angle_limit_radians or MVector3D())
+        self.max_angle_limit: BaseRotationModel = BaseRotationModel(max_angle_limit_radians or MVector3D())
 
 
 class Ik(BaseModel):
@@ -435,9 +429,7 @@ class Ik(BaseModel):
         super().__init__()
         self.bone_index = bone_index or -1
         self.loop_count = loop_count or 0
-        self.unit_rotation: BaseRotationModel = BaseRotationModel(
-            MVector3D(unit_radians or 0, 0, 0)
-        )
+        self.unit_rotation: BaseRotationModel = BaseRotationModel(MVector3D(unit_radians or 0, 0, 0))
         self.links: List[IkLink] = links or []
 
 
@@ -563,9 +555,7 @@ class BoneTree(BaseModel):
         self.bone = bone
         self.children: list[BoneTree] = []
 
-    def make_tree(
-        self, bones: list[Bone], bone_link_indecies: list[tuple[int, int]], index: int
-    ):
+    def make_tree(self, bones: list[Bone], bone_link_indecies: list[tuple[int, int]], index: int):
         if index >= len(bone_link_indecies):
             return
         child_index = bone_link_indecies[index][1]
@@ -860,9 +850,7 @@ class DisplaySlot(BaseIndexNameModel):
         表示枠要素, by default []
     """
 
-    def __init__(
-        self, name: str = None, english_name: str = None, special_flg: Switch = None
-    ):
+    def __init__(self, name: str = None, english_name: str = None, special_flg: Switch = None):
         super().__init__(name=name or "", english_name=english_name or "")
         self.special_flg = special_flg or Switch.OFF
         self.references: List[DisplaySlotReference] = []
@@ -1005,9 +993,7 @@ class RigidBody(BaseIndexNameModel):
         super().__init__(name=name or "", english_name=english_name or "")
         self.bone_index: int = bone_index or -1
         self.collision_group: int = collision_group or 0
-        self.no_collision_group: RigidBodyCollisionGroup = (
-            no_collision_group or RigidBodyCollisionGroup.NONE
-        )
+        self.no_collision_group: RigidBodyCollisionGroup = no_collision_group or RigidBodyCollisionGroup.NONE
         self.shape_type: RigidBodyShape = shape_type or RigidBodyShape.SPHERE
         self.shape_size: MVector3D = shape_size or MVector3D()
         self.shape_position: MVector3D = shape_position or MVector3D()
@@ -1074,12 +1060,8 @@ class JointParam(BaseModel):
         super().__init__()
         self.translation_limit_min = translation_limit_min or MVector3D()
         self.translation_limit_max = translation_limit_max or MVector3D()
-        self.rotation_limit_min: BaseRotationModel = BaseRotationModel(
-            rotation_limit_min_radians or MVector3D()
-        )
-        self.rotation_limit_max: BaseRotationModel = BaseRotationModel(
-            rotation_limit_max_radians or MVector3D()
-        )
+        self.rotation_limit_min: BaseRotationModel = BaseRotationModel(rotation_limit_min_radians or MVector3D())
+        self.rotation_limit_max: BaseRotationModel = BaseRotationModel(rotation_limit_max_radians or MVector3D())
         self.spring_constant_translation = spring_constant_translation or MVector3D()
         self.spring_constant_rotation = spring_constant_rotation or MVector3D()
 

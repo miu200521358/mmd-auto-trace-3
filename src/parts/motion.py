@@ -144,6 +144,8 @@ def execute(args):
                         cross_to_name = vmd_params["cross"][1] if "cross" in vmd_params else vmd_params["direction"][1]
                         cancel_names = vmd_params["cancel"]
 
+                        direction_local_x_axis: MVector3D = trace_model.bones.get_local_x_axis(direction_from_name)
+
                         for mov_bf in dest_motion.bones[target_bone_name]:
                             if mov_bf.index not in dest_motion.bones[direction_from_name] or mov_bf.index not in dest_motion.bones[direction_to_name]:
                                 # キーがない場合、スルーする
@@ -189,10 +191,49 @@ def execute(args):
                                 cancel_qq *= trace_org_motion.bones[cancel_name][mov_bf.index].rotation
 
                             bf = VmdBoneFrame(name=target_bone_name, index=mov_bf.index)
-                            bf.rotation = cancel_qq.inverse() * motion_qq * initial_qq.inverse()
+                            qq: MQuaternion = cancel_qq.inverse() * motion_qq * initial_qq.inverse()
+
+                            if "足首" in target_bone_name:
+                                # X方向だけ分離する
+                                bf.rotation = MQuaternion.from_euler_degrees(qq.to_euler_degrees().x, 0, 0)
+                            else:
+                                bf.rotation = qq
+
                             trace_org_motion.bones.append(bf)
 
                             pchar.update(1)
+
+            logger.info(
+                "【No.{pname}】モーション(センター)計算開始",
+                pname=pname,
+                decoration=MLogger.DECORATION_LINE,
+            )
+
+            for lower_bf in tqdm(trace_abs_mov_motion.bones["下半身"]):
+                fno = lower_bf.index
+
+                center_abs_pos: MVector3D = lower_bf.position
+                center_relative_pos: MVector3D = (
+                    center_abs_pos - trace_model.bones["下半身"].position + (trace_model.bones["グルーブ"].position - trace_model.bones["センター"].position)
+                )
+
+                center_pos: MVector3D = center_relative_pos.copy()
+                center_pos.y = 0
+
+                center_bf = VmdBoneFrame(name="センター", index=lower_bf.index)
+                center_bf.position = center_pos
+                trace_org_motion.bones.append(center_bf)
+
+                trace_org_motion.bones["左足ＩＫ"][fno].position += center_pos
+                trace_org_motion.bones["右足ＩＫ"][fno].position += center_pos
+
+                groove_pos: MVector3D = center_relative_pos.copy()
+                groove_pos.x = 0
+                groove_pos.z = 0
+
+                groove_bf = VmdBoneFrame(name="グルーブ", index=lower_bf.index)
+                groove_bf.position = groove_pos
+                trace_org_motion.bones.append(groove_bf)
 
             logger.info(
                 "【No.{pname}】モーション(IK)計算開始",
@@ -302,72 +343,11 @@ def execute(args):
 
                         leg_ik_bf = VmdBoneFrame(name=leg_ik_bone_name, index=fno)
                         leg_ik_bf.position = ankle_abs_pos - trace_model.bones[ankle_bone_name].position
+                        leg_ik_bf.position.y = max(0, leg_ik_bf.position.y)
                         leg_ik_bf.rotation = leg_ik_qq
                         trace_org_motion.bones.append(leg_ik_bf)
 
                         pchar.update(1)
-
-            logger.info(
-                "【No.{pname}】モーション(センター)計算開始",
-                pname=pname,
-                decoration=MLogger.DECORATION_LINE,
-            )
-
-            for lower_bf in tqdm(trace_abs_mov_motion.bones["下半身"]):
-                fno = lower_bf.index
-
-                center_abs_pos: MVector3D = lower_bf.position
-                left_ankle_abs_pos: MVector3D = trace_abs_mov_motion.bones["左足首"][lower_bf.index].position
-                right_ankle_abs_pos: MVector3D = trace_abs_mov_motion.bones["右足首"][lower_bf.index].position
-                left_heel_abs_pos: MVector3D = trace_abs_mov_motion.bones["左かかと"][lower_bf.index].position
-                right_heel_abs_pos: MVector3D = trace_abs_mov_motion.bones["右かかと"][lower_bf.index].position
-                left_toe_abs_pos: MVector3D = trace_abs_mov_motion.bones["左つま先"][lower_bf.index].position
-                right_toe_abs_pos: MVector3D = trace_abs_mov_motion.bones["右つま先"][lower_bf.index].position
-                botton_leg_y = np.min([left_heel_abs_pos.y, right_heel_abs_pos.y, left_toe_abs_pos.y, right_toe_abs_pos.y])
-                botton_leg_name = str(
-                    np.array(["左足首", "右足首", "左かかと", "右かかと", "左つま先", "右つま先"])[
-                        np.argmin(
-                            [
-                                left_ankle_abs_pos.y,
-                                right_ankle_abs_pos.y,
-                                left_heel_abs_pos.y,
-                                right_heel_abs_pos.y,
-                                left_toe_abs_pos.y,
-                                right_toe_abs_pos.y,
-                            ]
-                        )
-                    ]
-                )
-
-                bottom_adjust_y = botton_leg_y - bone_abs_poses[botton_leg_name].get(fno, MVector3D()).y
-                # if "足首" not in botton_leg_name:
-                #     bottom_adjust_y -= trace_org_motion.bones[f"{botton_leg_name[0]}足ＩＫ"][fno].position.y
-
-                center_relative_pos: MVector3D = (
-                    center_abs_pos - trace_model.bones["下半身"].position + (trace_model.bones["グルーブ"].position - trace_model.bones["センター"].position)
-                )
-
-                center_pos: MVector3D = center_relative_pos.copy()
-                center_pos.y = 0
-
-                center_bf = VmdBoneFrame(name="センター", index=lower_bf.index)
-                center_bf.position = center_pos
-                trace_org_motion.bones.append(center_bf)
-
-                trace_org_motion.bones["左足ＩＫ"][fno].position += center_pos
-                trace_org_motion.bones["右足ＩＫ"][fno].position += center_pos
-
-                groove_pos: MVector3D = center_relative_pos.copy()
-                groove_pos.x = 0
-                groove_pos.z = 0
-
-                groove_bf = VmdBoneFrame(name="グルーブ", index=lower_bf.index)
-                groove_bf.position = groove_pos
-                trace_org_motion.bones.append(groove_bf)
-
-                trace_org_motion.bones["左足ＩＫ"][fno].position.y = max(0, trace_org_motion.bones["左足ＩＫ"][fno].position.y + bottom_adjust_y)
-                trace_org_motion.bones["右足ＩＫ"][fno].position.y = max(0, trace_org_motion.bones["右足ＩＫ"][fno].position.y + bottom_adjust_y)
-                trace_org_motion.bones["グルーブ"][fno].position.y += botton_leg_y
 
             trace_org_motion_path = os.path.join(motion_dir_path, f"trace_no{pname}_original.vmd")
             logger.info(
@@ -537,10 +517,8 @@ def execute(args):
                 my_infections = get_infections(my_values, 0.05, 1)
                 mz_infections = get_infections(mz_values, 0.1, 1)
                 rot_infections = get_infections(rot_values, 0.001, 3)
-                # 体幹はY軸のオイラー角の変位（180度のフリップ）を検出する
-                rot_y_infections = get_infections(rot_y_values, 0.1, 1) if bone_name in ["上半身", "下半身"] else []
                 # 回転変動も検出する(180度だけだとどっち向きの回転か分からないので)
-                rot_y2_infections = get_y_infections(rot_y_values, 110) if bone_name in ["上半身", "下半身"] else []
+                rot_y_infections = get_y_infections(rot_y_values, 110) if bone_name in ["上半身", "下半身"] else []
 
                 infections = list(
                     sorted(
@@ -551,7 +529,6 @@ def execute(args):
                             | set(mz_infections)
                             | set(rot_infections)
                             | set(rot_y_infections)
-                            | set(rot_y2_infections)
                         )
                     )
                 )
@@ -702,14 +679,14 @@ VMD_CONNECTIONS = {
     },
     "左肩": {
         "direction": ("左肩", "左腕"),
-        "up": ("上半身", "上半身2", "首"),
-        "cancel": ("上半身",),
+        "up": ("上半身2", "首"),
+        "cancel": ("上半身", "上半身2"),
         "window_lengt": 5,
         "polyorder": 2,
     },
     "左腕": {
         "direction": ("左腕", "左ひじ"),
-        "up": ("左肩", "左腕"),
+        "up": ("左腕", "右腕"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -720,7 +697,7 @@ VMD_CONNECTIONS = {
     },
     "左ひじ": {
         "direction": ("左ひじ", "左手首"),
-        "up": ("左腕", "左ひじ"),
+        "up": ("左腕", "右腕"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -732,7 +709,7 @@ VMD_CONNECTIONS = {
     },
     "左手首": {
         "direction": ("左手首", "左人指１"),
-        "up": ("左ひじ", "左手首"),
+        "up": ("左腕", "右腕"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -745,7 +722,7 @@ VMD_CONNECTIONS = {
     },
     "右肩": {
         "direction": ("右肩", "右腕"),
-        "up": ("上半身", "首"),
+        "up": ("上半身2", "首"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -755,7 +732,7 @@ VMD_CONNECTIONS = {
     },
     "右腕": {
         "direction": ("右腕", "右ひじ"),
-        "up": ("右肩", "右腕"),
+        "up": ("左腕", "右腕"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -766,7 +743,7 @@ VMD_CONNECTIONS = {
     },
     "右ひじ": {
         "direction": ("右ひじ", "右手首"),
-        "up": ("右腕", "右ひじ"),
+        "up": ("左腕", "右腕"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -778,7 +755,7 @@ VMD_CONNECTIONS = {
     },
     "右手首": {
         "direction": ("右手首", "右人指１"),
-        "up": ("右ひじ", "右手首"),
+        "up": ("左腕", "右腕"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -798,7 +775,7 @@ VMD_CONNECTIONS = {
     },
     "左ひざ": {
         "direction": ("左ひざ", "左足首"),
-        "up": ("左足", "左ひざ"),
+        "up": ("左足", "右足"),
         "cancel": (
             "下半身",
             "左足",
@@ -808,7 +785,7 @@ VMD_CONNECTIONS = {
     },
     "左足首": {
         "direction": ("左足首", "左つま先"),
-        "up": ("左ひざ", "左足首"),
+        "up": ("左足", "右足"),
         "cancel": (
             "下半身",
             "左足",
@@ -819,14 +796,14 @@ VMD_CONNECTIONS = {
     },
     "右足": {
         "direction": ("右足", "右ひざ"),
-        "up": ("右足", "左足"),
+        "up": ("左足", "右足"),
         "cancel": ("下半身",),
         "window_lengt": 5,
         "polyorder": 2,
     },
     "右ひざ": {
         "direction": ("右ひざ", "右足首"),
-        "up": ("右足", "右ひざ"),
+        "up": ("左足", "右足"),
         "cancel": (
             "下半身",
             "右足",
@@ -836,7 +813,7 @@ VMD_CONNECTIONS = {
     },
     "右足首": {
         "direction": ("右足首", "右つま先"),
-        "up": ("右ひざ", "右足首"),
+        "up": ("左足", "右足"),
         "cancel": (
             "下半身",
             "右足",

@@ -270,3 +270,7 @@ msgstr ""
 msgid "3D姿勢推定(PoseTriplet) 結果保存完了: {output_dir_path}"
 msgstr ""
 
+
+msgid "【No.{pname}】推定結果合成 センター補正"
+msgstr ""
+

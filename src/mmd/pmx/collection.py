@@ -1,11 +1,9 @@
-from base.collection import (
-    BaseHashModel,
-    BaseIndexDictModel,
-    BaseIndexListModel,
-    BaseIndexNameListModel,
-)
+import numpy as np
+from base.collection import BaseHashModel, BaseIndexDictModel, BaseIndexListModel, BaseIndexNameListModel
+from base.math import MVector3D
 from mmd.pmx.part import (
     Bone,
+    BoneFlg,
     BoneTree,
     DisplaySlot,
     DrawFlg,
@@ -94,43 +92,25 @@ class Bones(BaseIndexNameListModel[Bone]):
         list[str]
             レイヤー順ボーン名リスト
         """
-        return [
-            b.name
-            for layer in range(self.get_max_layer() + 1)
-            for b in self.data
-            if b.layer == layer
-        ]
+        return [b.name for layer in range(self.get_max_layer() + 1) for b in self.data if b.layer == layer]
 
     def create_bone_links(self) -> dict[int, BoneTree]:
         # 根元ボーンリスト（親ボーンがないボーンリスト）
         bone_trees: dict[int, BoneTree] = dict(
-            [
-                (bidx, BoneTree(self[bidx]))
-                for bidx in list(
-                    set([b.index for b in self.data if 0 > b.parent_index])
-                )
-            ]
+            [(bidx, BoneTree(self[bidx])) for bidx in list(set([b.index for b in self.data if 0 > b.parent_index]))]
         )
 
         # 親ボーンとして登録されているボーンリスト
         parent_indices = list(set([b.parent_index for b in self.data]))
         # 末端ボーンリスト（親ボーンとして登録が1件もないボーンのリスト）
-        for end_bone_index in [
-            b.index
-            for b in self.data
-            if b.index not in parent_indices and b.index not in list(bone_trees.keys())
-        ]:
+        for end_bone_index in [b.index for b in self.data if b.index not in parent_indices and b.index not in list(bone_trees.keys())]:
             # レイヤー込みのINDEXリスト取得
             bone_link_indecies = sorted(self.create_bone_link_indecies(end_bone_index))
-            bone_trees[bone_link_indecies[0][1]].make_tree(
-                self.data, bone_link_indecies, index=1
-            )
+            bone_trees[bone_link_indecies[0][1]].make_tree(self.data, bone_link_indecies, index=1)
 
         return bone_trees
 
-    def create_bone_link_indecies(
-        self, child_idx: int, bone_link_indecies=None
-    ) -> list[tuple[int, int]]:
+    def create_bone_link_indecies(self, child_idx: int, bone_link_indecies=None) -> list[tuple[int, int]]:
         # 階層＞リスト順（＞FK＞IK＞付与）
         if not bone_link_indecies:
             bone_link_indecies = []
@@ -141,6 +121,41 @@ class Bones(BaseIndexNameListModel[Bone]):
                 return self.create_bone_link_indecies(b.index, bone_link_indecies)
 
         return bone_link_indecies
+
+    # ローカルX軸の取得
+    def get_local_x_axis(self, bone_name: str):
+        if bone_name not in self:
+            return MVector3D()
+
+        bone = self[bone_name]
+        to_pos = MVector3D()
+
+        if bone.fixed_axis != MVector3D():
+            # 軸制限がある場合、親からの向きを保持
+            fixed_x_axis = bone.fixed_axis.normalized()
+        else:
+            fixed_x_axis = MVector3D()
+
+        from_pos = self[bone.name].position
+        if BoneFlg.TAIL_IS_BONE not in bone.bone_flg and bone.tail_position != MVector3D():
+            # 表示先が相対パスの場合、保持
+            to_pos = from_pos + bone.tail_position
+        elif BoneFlg.TAIL_IS_BONE in bone.bone_flg and bone.tail_index >= 0 and bone.tail_index in self:
+            # 表示先が指定されているの場合、保持
+            to_pos = self[bone.tail_index].position
+        else:
+            # 表示先がない場合、とりあえず親ボーンからの向きにする
+            from_pos = self[bone.parent_index].position
+            to_pos = self[bone.name].position
+
+        # 軸制限の指定が無い場合、子の方向
+        x_axis = (to_pos - from_pos).normalized()
+
+        if fixed_x_axis != MVector3D() and np.sign(fixed_x_axis.x) != np.sign(x_axis.x):
+            # 軸制限の軸方向と計算上の軸方向が違う場合、逆ベクトル
+            x_axis = -fixed_x_axis
+
+        return x_axis
 
 
 class Morphs(BaseIndexNameListModel[Morph]):

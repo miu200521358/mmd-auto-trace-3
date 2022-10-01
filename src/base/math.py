@@ -1,5 +1,6 @@
 import operator
-from math import acos, cos, degrees, radians, sin, sqrt  # type: ignore
+from math import acos, cos, degrees, radians, sin, sqrt
+from re import T  # type: ignore
 from typing import Any, Union
 
 import numpy as np
@@ -424,10 +425,7 @@ class MVector4D(MVector):
             self.vector = x.copy()
 
     def to_log(self) -> str:
-        return (
-            f"[x={round(self.vector[0], 3)}, y={round(self.vector[1], 3)}, "
-            + f"z={round(self.vector[2], 3)}], w={round(self.vector[2], 3)}]"
-        )
+        return f"[x={round(self.vector[0], 3)}, y={round(self.vector[1], 3)}, " + f"z={round(self.vector[2], 3)}], w={round(self.vector[2], 3)}]"
 
     @property
     def y(self):
@@ -476,9 +474,7 @@ class MVectorDict:
         self.vectors[vkey] = v.vector
 
     def distances(self, v: MVector):
-        return np.linalg.norm(
-            (np.array(list(self.vectors.values())) - v.vector), ord=2, axis=1
-        )
+        return np.linalg.norm((np.array(list(self.vectors.values())) - v.vector), ord=2, axis=1)
 
     def nearest_distance(self, v: MVector) -> float:
         """
@@ -650,9 +646,7 @@ class MQuaternion(MVector):
         lengthSquared = xx + yy + zz + self.scalar**2
 
         if not np.isclose([lengthSquared, lengthSquared - 1.0], 0).any():
-            xx, xy, xz, xw, yy, yz, yw, zz, zw = (
-                np.array([xx, xy, xz, xw, yy, yz, yw, zz, zw]) / lengthSquared
-            )
+            xx, xy, xz, xw, yy, yz, yw, zz, zw = np.array([xx, xy, xz, xw, yy, yz, yw, zz, zw]) / lengthSquared
 
         pitch = np.arcsin(max(-1, min(1, -2.0 * (yz - xw))))
         yaw = 0
@@ -707,6 +701,73 @@ class MQuaternion(MVector):
         自分ともうひとつの値vとのtheta（変位量）を返す
         """
         return acos(min(1, max(-1, self.normalized().dot(v.normalized()))))
+
+    def separate_local_qq(self, global_x_axis: MVector3D):
+        # ローカル座標系（ボーンベクトルが（1，0，0）になる空間）の向き
+        local_axis = MVector3D(1, 0, 0)
+
+        # グローバル座標系（Ａスタンス）からローカル座標系（ボーンベクトルが（1，0，0）になる空間）への変換
+        global2local_qq = MQuaternion.rotate(global_x_axis, local_axis)
+        local2global_qq = MQuaternion.rotate(local_axis, global_x_axis)
+
+        mat_x1 = MMatrix4x4(identity=True)
+        mat_x1.rotate(self)  # 入力qq
+        mat_x1.translate(global_x_axis)  # グローバル軸方向に伸ばす
+        mat_x1_vec = mat_x1 * MVector3D()
+
+        # YZの回転量（自身のねじれを無視する）
+        yz_qq = MQuaternion.rotate(global_x_axis, mat_x1_vec)
+
+        # YZ回転からZ成分を抽出する --------------
+        mat_z1 = MMatrix4x4(identity=True)
+        mat_z1.rotate(yz_qq)  # YZの回転量
+        mat_z1.rotate(global2local_qq)  # グローバル軸の回転量からローカルの回転量に変換
+        mat_z1.translate(local_axis)  # ローカル軸方向に伸ばす
+
+        mat_z1_vec = mat_z1 * MVector3D()
+        mat_z1_vec.z = 0  # Z方向の移動量を潰す
+
+        # ローカル軸からZを潰した移動への回転量
+        local_z_qq = MQuaternion.rotate(local_axis, mat_z1_vec)
+
+        # ボーンローカル座標系の回転をグローバル座標系の回転に戻す
+        mat_z2 = MMatrix4x4(identity=True)
+        mat_z2.rotate(local_z_qq)  # ローカル軸上のZ回転
+        mat_z2.rotate(local2global_qq)  # ローカル軸上からグローバル軸上に変換
+
+        z_qq = mat_z2.to_quternion()
+
+        # YZ回転からY成分だけ取り出す -----------
+
+        mat_y1 = MMatrix4x4(identity=True)
+        mat_y1.rotate(yz_qq)  # グローバルYZの回転量
+
+        mat_y2 = MMatrix4x4(identity=True)
+        mat_y2.rotate(z_qq)  # グローバルZの回転量
+        mat_y2_qq = (mat_y1 * mat_y2.inverse()).to_quternion()
+
+        # X成分の捻れが混入したので、XY回転からYZ回転を取り出すことでXキャンセルをかける。
+        mat_y3 = MMatrix4x4(identity=True)
+        mat_y3.rotate(mat_y2_qq)
+        mat_y3.translate(global_x_axis)
+        mat_y3_vec = mat_y3 * MVector3D()
+
+        y_qq = MQuaternion.rotate(global_x_axis, mat_y3_vec)
+
+        # Xを再度求める -------------
+
+        mat_x4 = MMatrix4x4(identity=True)
+        mat_x4.rotate(self)
+
+        mat_x5 = MMatrix4x4(identity=True)
+        mat_x5.rotate(y_qq)
+
+        mat_x6 = MMatrix4x4(identity=True)
+        mat_x6.rotate(z_qq)
+
+        x_qq: MQuaternion = (mat_x5.inverse() * mat_x4 * mat_x6.inverse()).to_quternion()
+
+        return (x_qq, y_qq, z_qq, yz_qq)
 
     def to_matrix4x4(self):
         # q(w,x,y,z)から(x,y,z,w)に並べ替え.
@@ -1137,12 +1198,7 @@ class MMatrix4x4List(MVector):
 
     def __init__(self, keys: dict[str, list[str]]):
         self.vector = {}
-        self.vector = dict(
-            [
-                (k, [MMatrix4x4(identity=True) for _ in range(len(vs))])
-                for k, vs in keys.items()
-            ]
-        )
+        self.vector = dict([(k, [MMatrix4x4(identity=True) for _ in range(len(vs))]) for k, vs in keys.items()])
 
     def __setitem__(self, key: Any, value: MMatrix4x4):
         row, col = key
