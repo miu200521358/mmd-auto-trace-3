@@ -147,10 +147,12 @@ def execute(args):
                     ("mp_body_world_joints", "RHip"),
                     ("mp_body_world_joints", "RKnee"),
                     ("mp_body_world_joints", "RAnkle"),
+                    ("mp_body_world_joints", "RHeel"),
                     ("mp_body_world_joints", "RFootIndex"),
                     ("mp_body_world_joints", "LHip"),
                     ("mp_body_world_joints", "LKnee"),
                     ("mp_body_world_joints", "LAnkle"),
+                    ("mp_body_world_joints", "LHeel"),
                     ("mp_body_world_joints", "LFootIndex"),
                 ):
                     if not (
@@ -169,34 +171,34 @@ def execute(args):
                     continue
 
                 mp_joints = {}
-                for joint_name in ("LHip", "LKnee", "LAnkle", "LFootIndex", "RHip", "RKnee", "RAnkle", "RFootIndex"):
+                for joint_name in ("LHip", "LKnee", "LAnkle", "LHeel", "RHip", "RKnee", "RAnkle", "RHeel"):
                     mp_joints[joint_name] = MVector3D(
                         smooth_joint_datas[("mp_body_world_joints", joint_name, "x")][fno],
                         smooth_joint_datas[("mp_body_world_joints", joint_name, "y")][fno],
                         smooth_joint_datas[("mp_body_world_joints", joint_name, "z")][fno],
                     )
                 # 足全体の距離（しゃがんでたら短くなる）
-                mp_leg_ankle_lengths[fno] = np.sum(
-                    [mp_joints["LHip"].distance(mp_joints["LFootIndex"]), mp_joints["RHip"].distance(mp_joints["RFootIndex"])]
-                )
+                mp_leg_ankle_lengths[fno] = np.sum([mp_joints["LHip"].distance(mp_joints["LHeel"]), mp_joints["RHip"].distance(mp_joints["RHeel"])])
                 # 足関節自体の距離（しゃがんでも変わらないはず）
                 mp_joint_lengths[fno] = np.sum(
                     [
                         (
                             mp_joints["LHip"].distance(mp_joints["LKnee"])
                             + mp_joints["LKnee"].distance(mp_joints["LAnkle"])
-                            + mp_joints["LAnkle"].distance(mp_joints["LFootIndex"])
+                            + mp_joints["LAnkle"].distance(mp_joints["LHeel"])
                         ),
                         (
                             mp_joints["RHip"].distance(mp_joints["RKnee"])
                             + mp_joints["RKnee"].distance(mp_joints["RAnkle"])
-                            + mp_joints["RAnkle"].distance(mp_joints["RFootIndex"])
+                            + mp_joints["RAnkle"].distance(mp_joints["RHeel"])
                         ),
                     ]
                 )
                 # 足指のY位置（＝腰からの足指の距離）
                 mp_leg_foot_lengths[fno] = np.sum(
                     [
+                        smooth_joint_datas[("mp_body_world_joints", "LHeel", "y")][fno],
+                        smooth_joint_datas[("mp_body_world_joints", "RHeel", "y")][fno],
                         smooth_joint_datas[("mp_body_world_joints", "LFootIndex", "y")][fno],
                         smooth_joint_datas[("mp_body_world_joints", "RFootIndex", "y")][fno],
                     ]
@@ -219,14 +221,17 @@ def execute(args):
             leg_most_straight_idx = np.argsort(np.array(list(mp_joint_lengths.values()))[leg_straight_idxs])[len(leg_straight_idxs) // 2]
             # 足の長さが直立に近いキーフレ
             leg_most_straight_fno = np.array(list(mp_joint_lengths.keys()))[leg_straight_idxs[leg_most_straight_idx]]
-            # 直立時の足指の位置
-            leg_most_straight_foot_y = np.mean(
-                [
-                    smooth_joint_datas[("mp_body_world_joints", "LFootIndex", "y")].get(leg_most_straight_fno, 0),
-                    smooth_joint_datas[("mp_body_world_joints", "RFootIndex", "y")].get(leg_most_straight_fno, 0),
-                ]
+            # 直立時のかかとの位置（＝足を真っ直ぐに伸ばした状態での足の長さ）
+            leg_most_straight_length = abs(
+                np.min(
+                    [
+                        smooth_joint_datas[("mp_body_world_joints", "LHeel", "y")].get(leg_most_straight_fno, 0),
+                        smooth_joint_datas[("mp_body_world_joints", "RHeel", "y")].get(leg_most_straight_fno, 0),
+                    ]
+                )
+                - smooth_joint_datas[("mp_body_world_joints", "Pelvis", "y")].get(leg_most_straight_fno, 0)
             )
-
+            leg_most_straight_pelvis_y = smooth_joint_datas[("pt_joints", "Pelvis", "y")][leg_most_straight_fno]
             logger.info(
                 "【No.{pname}】関節スムージング合成開始",
                 pname=pname,
@@ -237,7 +242,51 @@ def execute(args):
             for fno in tqdm(
                 smooth_joint_datas[("pt_joints", "Pelvis", "x")].keys(),
             ):
-                mix_joints["joints"][fno] = {"body": {}, "left_hand": {}, "right_hand": {}, "face": {}}
+                mix_joints["joints"][fno] = {"body": {}, "left_hand": {}, "right_hand": {}, "face": {}, "2d": {}}
+
+                # 2Dの足情報を設定する
+                mix_joints["joints"][fno]["2d"] = frame_joints[str(fno)]["ap_joints"]
+
+                if not (
+                    ("mp_body_world_joints", "Pelvis", "x") in smooth_joint_datas
+                    and ("mp_body_world_joints", "Pelvis", "y") in smooth_joint_datas
+                    and ("mp_body_world_joints", "Pelvis", "z") in smooth_joint_datas
+                    and fno in smooth_joint_datas[("mp_body_world_joints", "Pelvis", "x")]
+                    and fno in smooth_joint_datas[("mp_body_world_joints", "Pelvis", "y")]
+                    and fno in smooth_joint_datas[("mp_body_world_joints", "Pelvis", "z")]
+                    and ("mp_body_world_joints", "LHeel", "x") in smooth_joint_datas
+                    and ("mp_body_world_joints", "LHeel", "y") in smooth_joint_datas
+                    and ("mp_body_world_joints", "LHeel", "z") in smooth_joint_datas
+                    and fno in smooth_joint_datas[("mp_body_world_joints", "LHeel", "x")]
+                    and fno in smooth_joint_datas[("mp_body_world_joints", "LHeel", "y")]
+                    and fno in smooth_joint_datas[("mp_body_world_joints", "LHeel", "z")]
+                    and ("mp_body_world_joints", "RHeel", "x") in smooth_joint_datas
+                    and ("mp_body_world_joints", "RHeel", "y") in smooth_joint_datas
+                    and ("mp_body_world_joints", "RHeel", "z") in smooth_joint_datas
+                    and fno in smooth_joint_datas[("mp_body_world_joints", "RHeel", "x")]
+                    and fno in smooth_joint_datas[("mp_body_world_joints", "RHeel", "y")]
+                    and fno in smooth_joint_datas[("mp_body_world_joints", "RHeel", "z")]
+                ):
+                    continue
+
+                leg_length = abs(
+                    np.min(
+                        [
+                            smooth_joint_datas[("mp_body_world_joints", "LHeel", "y")][fno],
+                            smooth_joint_datas[("mp_body_world_joints", "RHeel", "y")][fno],
+                            smooth_joint_datas[("mp_body_world_joints", "LFootIndex", "y")][fno],
+                            smooth_joint_datas[("mp_body_world_joints", "RFootIndex", "y")][fno],
+                        ]
+                    )
+                    - smooth_joint_datas[("mp_body_world_joints", "Pelvis", "y")][fno]
+                )
+
+                # かかとが接地するように調整する(しゃがんだ時は直立の長さ分縮めてセンターを下げられるようにする)
+                leg_y = min(
+                    leg_most_straight_length,
+                    leg_length,
+                ) + max(0, smooth_joint_datas[("pt_joints", "Pelvis", "y")][fno] - leg_most_straight_pelvis_y)
+
                 for joint_name in POSE_LANDMARKS + [
                     "Pelvis",
                     "Pelvis2",
@@ -260,7 +309,7 @@ def execute(args):
                     mix_joints["joints"][fno]["body"][joint_name] = {
                         "x": smooth_joint_datas[("mp_body_world_joints", joint_name, "x")][fno]
                         + smooth_joint_datas[("pt_joints", "Pelvis", "x")][fno],
-                        "y": smooth_joint_datas[("mp_body_world_joints", joint_name, "y")][fno] - leg_most_straight_foot_y,
+                        "y": smooth_joint_datas[("mp_body_world_joints", joint_name, "y")][fno] + leg_y,
                         "z": smooth_joint_datas[("mp_body_world_joints", joint_name, "z")][fno]
                         + smooth_joint_datas[("pt_joints", "Pelvis", "z")][fno]
                         - all_root_pos.z,
@@ -302,9 +351,9 @@ def execute(args):
                             continue
 
                         mix_joints["joints"][fno][hand_output_jtype][joint_name] = {
-                            "x": smooth_joint_datas[(hand_jtype, joint_name, "x")][fno] - hand_root_vec["x"],
-                            "y": smooth_joint_datas[(hand_jtype, joint_name, "y")][fno] - hand_root_vec["y"],
-                            "z": smooth_joint_datas[(hand_jtype, joint_name, "z")][fno] - hand_root_vec["z"],
+                            "x": smooth_joint_datas[(hand_jtype, joint_name, "x")][fno],
+                            "y": smooth_joint_datas[(hand_jtype, joint_name, "y")][fno],
+                            "z": smooth_joint_datas[(hand_jtype, joint_name, "z")][fno],
                         }
 
                     for joint_name in range(468):

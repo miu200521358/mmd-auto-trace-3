@@ -110,7 +110,8 @@
                 console.log("min_fno: " + min_fno);
               }
               console.log("fno: " + fno);
-              var bf_json = jsonData[fno]["body"];
+              console.log("jsonData[fno]: " + jsonData[fno]);
+              var bf_json = jsonData[fno]["pt_joints"];
               console.log("bf_json: " + bf_json);
               var bf_list = [];
               max_fno = fno;
@@ -121,9 +122,9 @@
                 var x = parseFloat(bf.x);
                 var y = parseFloat(bf.y);
                 var z = parseFloat(bf.z);
-                bf.x = x;
-                bf.y = z;
-                bf.z = y;
+                bf.x = x * 100;
+                bf.y = z * 100;
+                bf.z = y * 100;
                 bf_list.push(bf);
 
                 if (bf.x > max_x) { max_x = bf.x };
@@ -232,13 +233,13 @@
         bone_names[key] = poslist[i].name
       }
 
-      var order = [['Head', 'Nose', 'Neck', 'Spine'],
-      ['Neck', 'LShoulder', 'LElbow', 'LWrist', 'LIndex'],
-      ['Neck', 'RShoulder', 'RElbow', 'RWrist', 'RIndex'],
-      ['Pelvis', 'RHip', 'RKnee', 'RAnkle', 'RFootIndex'],
-      ['Pelvis', 'LHip', 'LKnee', 'LAnkle', 'LFootIndex'],
-      ['REye', 'Nose'],
-      ['LEye', 'Nose']];
+      var order = [['Head', 'Neck', 'Spine2', 'Spine'],
+      ['Neck', 'LShoulder', 'LElbow', 'LWrist'],
+      ['Neck', 'RShoulder', 'RElbow', 'RWrist'],
+      ['Pelvis', 'RHip', 'RKnee', 'RAnkle'],
+      ['Pelvis', 'LHip', 'LKnee', 'LAnkle'],
+      [],
+      []];
       var x = [];
       var y = [];
       var z = [];

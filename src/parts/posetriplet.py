@@ -11,8 +11,8 @@ sys.path.append(os.path.abspath(os.path.join(__file__, "../../PoseTriplet/estima
 import numpy as np
 import torch
 from base.logger import MLogger
-from PoseTriplet.estimator_inference.common.camera import \
-    normalize_screen_coordinates
+from PoseTriplet.estimator_inference.common.camera import (
+    camera_to_world, normalize_screen_coordinates)
 from PoseTriplet.estimator_inference.common.generators import \
     UnchunkedGenerator
 from PoseTriplet.estimator_inference.common.model import TemporalModel
@@ -83,6 +83,7 @@ HALPE_KEYPOINTS = {
     "Spine": 26,  # 計算して追加
 }
 
+
 # Halpe26 -> COCO
 HALPE_2_COCO_ORDER = (
     HALPE_KEYPOINTS["Pelvis"],
@@ -101,6 +102,26 @@ HALPE_2_COCO_ORDER = (
     HALPE_KEYPOINTS["RShoulder"],
     HALPE_KEYPOINTS["RElbow"],
     HALPE_KEYPOINTS["RWrist"],
+)
+
+# 学習したボーン名順番
+RESULT_JOINT_NAMES  = (
+    "Pelvis",
+    "RHip",
+    "RKnee",
+    "RAnkle",
+    "LHip",
+    "LKnee",
+    "LAnkle",
+    "Spine2",
+    "Neck",
+    "Head",
+    "LShoulder",
+    "LElbow",
+    "LWrist",
+    "RShoulder",
+    "RElbow",
+    "RWrist",
 )
 
 # 左右のキー番号
@@ -214,6 +235,14 @@ def execute(args):
             prediction -= prediction[:, :1, :]
             prediction += root_trajectory
 
+            # camera rotation
+            rot = np.array(
+                [0.14070565, -0.15007018, -0.7552408, 0.62232804], dtype=np.float32
+            )
+            prediction_world = camera_to_world(prediction, R=rot, t=0)
+            # 高さのリベース
+            prediction_world[:, :, 2] -= np.min(prediction_world[:, :, 2])
+
             logger.info(
                 "【No.{pname}】深度推定 結果取得",
                 pname=pname,
@@ -221,17 +250,41 @@ def execute(args):
             )
 
             personal_data = {}
-            for fno, fjoints in tqdm(zip(keypoints_2d.keys(), prediction.tolist()), desc=f"No.{pname} ... "):
+            for (fno, keypoints), fjoints in tqdm(zip(keypoints_2d.items(), prediction_world.tolist()), desc=f"No.{pname} ... "):
                 fidx = str(fno)
                 personal_data[fno] = {
-                    "pt_joints": {
-                        "Pelvis": {
-                            "x": fjoints[0][0] * 100,
-                            "y": fjoints[0][1] * 100,
-                            "z": fjoints[0][2] * 100,
+                    "ap_joints": {
+                        "LAnkle": {
+                            "x": float(keypoints[15][0]),
+                            "y": float(keypoints[15][1]),
+                        },
+                        "RAnkle": {
+                            "x": float(keypoints[16][0]),
+                            "y": float(keypoints[16][1]),
+                        },
+                        "LHeel": {
+                            "x": float(keypoints[24][0]),
+                            "y": float(keypoints[24][1]),
+                        },
+                        "RHeel": {
+                            "x": float(keypoints[25][0]),
+                            "y": float(keypoints[25][1]),
                         }
                     },
+                    "pt_joints": {
+                    },
                 }
+
+                for jname, fjoint in zip(RESULT_JOINT_NAMES, fjoints):
+                    personal_data[fno]["pt_joints"][jname] = {
+                        "x": -float(fjoint[0]),
+                        "y": float(fjoint[2]),
+                        "z": -float(fjoint[1]),
+                    }
+
+                # 上半身は下半身と同じ位置
+                personal_data[fno]["pt_joints"]["Spine"] = personal_data[fno]["pt_joints"]["Pelvis"]
+
                 for joint_type in ("mp_body_world_joints", "mp_left_hand_joints", "mp_right_hand_joints", "mp_face_joints"):
                     if joint_type in json_datas[fidx]:
                         personal_data[fno][joint_type] = json_datas[fidx][joint_type]

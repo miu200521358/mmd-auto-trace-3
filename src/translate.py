@@ -41,10 +41,7 @@ if __name__ == "__main__":
                     transed_msg_idxs = [
                         n + 1
                         for n, msg in enumerate(trans_messages)
-                        if "msgid" in msg
-                        and "msgstr" in trans_messages[n + 1]
-                        and msg_id in msg
-                        and '""' not in trans_messages[n + 1]
+                        if "msgid" in msg and "msgstr" in trans_messages[n + 1] and msg_id == msg and '""' not in trans_messages[n + 1]
                     ]
 
                     msg_str = msg_id

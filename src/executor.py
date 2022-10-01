@@ -59,6 +59,7 @@ if __name__ == "__main__":
     parser.add_argument("--verbose", type=int, dest="verbose", default=20, help="Log level")
     parser.add_argument("--log-mode", type=int, dest="log_mode", default=0, help="Log output mode")
     parser.add_argument("--lang", type=str, dest="lang", default="en", help="Language")
+    parser.add_argument("--hand-motion", dest="hand_motion", action="store_true", help="output hand motion")
 
     args = parser.parse_args()
     MLogger.initialize(level=args.verbose, mode=args.log_mode, lang=args.lang)
