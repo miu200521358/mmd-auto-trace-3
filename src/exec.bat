@@ -3,10 +3,10 @@
 cls
 
 @REM set PROCESS=prepare,alphapose,mediapipe,posetriplet,mix,motion
-@REM set PROCESS=prepare,alphapose,mediapipe,posetriplet
+set PROCESS=alphapose,mediapipe,posetriplet,mix,motion
 @REM set PROCESS=mediapipe,posetriplet,mix,motion
-set PROCESS=mix,motion
-@REM set PROCESS=posetriplet
+@REM set PROCESS=mix,motion
+@REM set PROCESS=motion
 set LOGMODE=0
 set LANG=ja
 @REM set HAND=--hand-motion
@@ -23,6 +23,7 @@ python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\01\h
 python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\03\night\night_mp4_20220929_151348" --process %PROCESS% %HAND% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\02\suisei\suisei_mp4_20220929_160938" --process %PROCESS% %HAND% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\01\paranoia\paranoia_full_mp4_20220929_165134" --process %PROCESS% %HAND% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+
 python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\01\burai\B_mp4_20221001_020621" --process %PROCESS% %HAND% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\02\rocket\rocket_30fps_mp4_20221001_023830" --process %PROCESS% %HAND% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\02\seven\seven_mp4_20221001_032751" --process %PROCESS% %HAND% --verbose 20 --log-mode %LOGMODE% --lang %LANG%

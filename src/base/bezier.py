@@ -66,10 +66,10 @@ class Interpolation(BaseModel):
         return int(round(round(t2, -6) / 1000000))
 
 
-def get_infections(values: list[float], threshold, decimals) -> list[int]:
+def get_infections(values: list[float], threshold, decimals) -> np.ndarray:
     extract_idxs = np.where(np.abs(np.round(np.diff(values), decimals)) > threshold)[0]
     if len(extract_idxs) <= 1:
-        return []
+        return np.array([])
 
     extracts = np.array(values)[extract_idxs]
     f_prime = np.gradient(extracts)
@@ -78,7 +78,7 @@ def get_infections(values: list[float], threshold, decimals) -> list[int]:
     return infections
 
 
-def get_y_infections(values: list[float], threshold) -> list[int]:
+def get_y_infections(values: list[float], threshold) -> np.ndarray:
     extract_idxs = []
     start_idx = 0
     end_idx = 1
@@ -90,7 +90,7 @@ def get_y_infections(values: list[float], threshold) -> list[int]:
             end_idx = start_idx + 1
         else:
             end_idx += 1
-    return extract_idxs
+    return np.array(extract_idxs)
 
 
 def create_interpolation(values: list[float]):

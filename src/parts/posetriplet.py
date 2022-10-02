@@ -200,11 +200,13 @@ def execute(args):
             )
 
             width = height = 0
+            color = []
             keypoints_2d = {}
             for fno, frame_json_data in tqdm(json_datas.items(), desc=f"No.{pname} ... "):
                 fno = int(fno)
                 width = int(frame_json_data["image"]["width"])
                 height = int(frame_json_data["image"]["height"])
+                color = frame_json_data["bbox"]["color"]
                 keypoints_2d[fno] = np.array(frame_json_data["2d-keypoints"]).reshape(-1, 3)[:, :2]
 
             logger.info(
@@ -253,6 +255,7 @@ def execute(args):
             for (fno, keypoints), fjoints in tqdm(zip(keypoints_2d.items(), prediction_world.tolist()), desc=f"No.{pname} ... "):
                 fidx = str(fno)
                 personal_data[fno] = {
+                    "color": color,
                     "ap_joints": {
                         "LAnkle": {
                             "x": float(keypoints[15][0]),

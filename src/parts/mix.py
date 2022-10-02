@@ -104,10 +104,12 @@ def execute(args):
             with open(personal_json_path, "r") as f:
                 frame_joints = json.load(f)
 
+            color = []
             max_fno = 0
             joint_datas = {}
             for fidx, frame_json_data in tqdm(frame_joints.items(), desc=f"No.{pname} ... "):
                 fno = int(fidx)
+                color = frame_json_data["color"]
                 for joint_type in ("pt_joints", "mp_body_world_joints", "mp_left_hand_joints", "mp_right_hand_joints", "mp_face_joints"):
                     if joint_type not in frame_json_data:
                         continue
@@ -274,7 +276,7 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
 
-            mix_joints = {"joints": {}}
+            mix_joints = {"color": color, "joints": {}}
             for fno in tqdm(
                 joint_datas[("pt_joints", "Pelvis", "x")].keys(),
             ):

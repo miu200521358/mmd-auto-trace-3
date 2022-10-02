@@ -7,7 +7,9 @@ import numpy as np
 from base.bezier import create_interpolation, get_infections, get_y_infections
 from base.logger import MLogger
 from base.math import MMatrix4x4, MQuaternion, MVector3D
+from mmd.pmx.collection import PmxModel
 from mmd.pmx.reader import PmxReader
+from mmd.pmx.writer import PmxWriter
 from mmd.vmd.collection import VmdMotion
 from mmd.vmd.part import VmdBoneFrame
 from mmd.vmd.writer import VmdWriter
@@ -50,6 +52,8 @@ def execute(args):
 
         # トレース用モデルを読み込む
         trace_model = PmxReader().read_by_filepath(args.trace_rot_model_config)
+        # トレース調整用モデルを読み込む
+        trace_check_model = PmxReader().read_by_filepath(args.trace_check_model_config)
 
         for person_file_path in sorted(glob(os.path.join(args.img_dir, DirName.MIX.value, "*.json"))):
             pname, _ = os.path.splitext(os.path.basename(person_file_path))
@@ -67,6 +71,17 @@ def execute(args):
             mix_data = {}
             with open(person_file_path, "r", encoding="utf-8") as f:
                 mix_data = json.load(f)
+
+            color = mix_data["color"]
+
+            # 番号付きでPMXを出力
+            copy_trace_check_model_path = os.path.join(motion_dir_path, f"trace_no{pname}.pmx")
+            copy_trace_check_model: PmxModel = trace_check_model.copy()
+            copy_trace_check_model.name = f"[{pname}]{copy_trace_check_model.name}"
+            copy_trace_check_model.materials["ボーン材質"].diffuse_color.x = color[0]
+            copy_trace_check_model.materials["ボーン材質"].diffuse_color.y = color[1]
+            copy_trace_check_model.materials["ボーン材質"].diffuse_color.z = color[2]
+            PmxWriter.write(copy_trace_check_model, copy_trace_check_model_path)
 
             if "joints" not in mix_data:
                 continue
@@ -143,8 +158,6 @@ def execute(args):
                         cross_from_name = vmd_params["cross"][0] if "cross" in vmd_params else vmd_params["direction"][0]
                         cross_to_name = vmd_params["cross"][1] if "cross" in vmd_params else vmd_params["direction"][1]
                         cancel_names = vmd_params["cancel"]
-
-                        direction_local_x_axis: MVector3D = trace_model.bones.get_local_x_axis(direction_from_name)
 
                         for mov_bf in dest_motion.bones[target_bone_name]:
                             if mov_bf.index not in dest_motion.bones[direction_from_name] or mov_bf.index not in dest_motion.bones[direction_to_name]:
@@ -504,7 +517,6 @@ def execute(args):
                 rot_values = []
                 rot_y_values = []
                 for fno in range(start_fno, end_fno):
-                    fno = start_fno + fno
                     pos = trace_org_motion.bones[bone_name][fno].position
                     mx_values.append(pos.x)
                     my_values.append(pos.y)
@@ -518,12 +530,12 @@ def execute(args):
                 mz_infections = get_infections(mz_values, 0.1, 1)
                 rot_infections = get_infections(rot_values, 0.001, 3)
                 # 回転変動も検出する(180度だけだとどっち向きの回転か分からないので)
-                rot_y_infections = get_y_infections(rot_y_values, 110) if bone_name in ["上半身", "下半身"] else []
+                rot_y_infections = get_y_infections(rot_y_values, 110) if bone_name in ["上半身", "下半身"] else np.array([])
 
                 infections = list(
                     sorted(
                         list(
-                            {start_fno, end_fno}
+                            {0, len(mx_values) - 1}
                             | set(mx_infections)
                             | set(my_infections)
                             | set(mz_infections)
@@ -533,16 +545,18 @@ def execute(args):
                     )
                 )
 
-                for sfno, efno in zip(infections[:-1], infections[1:]):
-                    if sfno == infections[0]:
+                for sfidx, efidx in zip(infections[:-1], infections[1:]):
+                    sfno = int(sfidx + start_fno)
+                    efno = int(efidx + start_fno)
+                    if sfidx == infections[0]:
                         start_bf = trace_org_motion.bones[bone_name][sfno]
                     else:
                         start_bf = trace_thining_motion.bones[bone_name][sfno]
                     end_bf = trace_org_motion.bones[bone_name][efno]
-                    end_bf.interpolations.translation_x = create_interpolation(mx_values[sfno:efno])
-                    end_bf.interpolations.translation_y = create_interpolation(my_values[sfno:efno])
-                    end_bf.interpolations.translation_z = create_interpolation(mz_values[sfno:efno])
-                    end_bf.interpolations.rotation = create_interpolation(rot_values[sfno:efno])
+                    end_bf.interpolations.translation_x = create_interpolation(mx_values[sfidx:efidx])
+                    end_bf.interpolations.translation_y = create_interpolation(my_values[sfidx:efidx])
+                    end_bf.interpolations.translation_z = create_interpolation(mz_values[sfidx:efidx])
+                    end_bf.interpolations.rotation = create_interpolation(rot_values[sfidx:efidx])
                     trace_thining_motion.bones.append(start_bf)
                     trace_thining_motion.bones.append(end_bf)
 

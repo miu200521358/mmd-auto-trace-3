@@ -274,3 +274,39 @@ msgstr ""
 msgid "【No.{pname}】推定結果合成 センター補正"
 msgstr ""
 
+
+msgid "-- 頂点データ出力終了({count})"
+msgstr ""
+
+
+msgid "-- 面データ出力終了({count})"
+msgstr ""
+
+
+msgid "-- テクスチャデータ出力終了({count})"
+msgstr ""
+
+
+msgid "-- 材質データ出力終了({count})"
+msgstr ""
+
+
+msgid "-- ボーンデータ出力終了({count})"
+msgstr ""
+
+
+msgid "-- モーフデータ出力終了({count})"
+msgstr ""
+
+
+msgid "-- 表示枠データ出力終了({count})"
+msgstr ""
+
+
+msgid "-- 剛体データ出力終了({count})"
+msgstr ""
+
+
+msgid "-- ジョイントデータ出力終了({count})"
+msgstr ""
+

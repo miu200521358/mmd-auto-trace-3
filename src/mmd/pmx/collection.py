@@ -122,6 +122,28 @@ class Bones(BaseIndexNameListModel[Bone]):
 
         return bone_link_indecies
 
+    # 末端位置を取得
+    def get_tail_position(self, bone_name: str):
+        if bone_name not in self:
+            return MVector3D()
+
+        bone = self[bone_name]
+        to_pos = MVector3D()
+
+        from_pos = self[bone.name].position
+        if BoneFlg.TAIL_IS_BONE not in bone.bone_flg and bone.tail_position != MVector3D():
+            # 表示先が相対パスの場合、保持
+            to_pos = from_pos + bone.tail_position
+        elif BoneFlg.TAIL_IS_BONE in bone.bone_flg and bone.tail_index >= 0 and bone.tail_index in self:
+            # 表示先が指定されているの場合、保持
+            to_pos = self[bone.tail_index].position
+        else:
+            # 表示先がない場合、とりあえず親ボーンからの向きにする
+            from_pos = self[bone.parent_index].position
+            to_pos = self[bone.name].position
+
+        return to_pos
+
     # ローカルX軸の取得
     def get_local_x_axis(self, bone_name: str):
         if bone_name not in self:
@@ -137,16 +159,7 @@ class Bones(BaseIndexNameListModel[Bone]):
             fixed_x_axis = MVector3D()
 
         from_pos = self[bone.name].position
-        if BoneFlg.TAIL_IS_BONE not in bone.bone_flg and bone.tail_position != MVector3D():
-            # 表示先が相対パスの場合、保持
-            to_pos = from_pos + bone.tail_position
-        elif BoneFlg.TAIL_IS_BONE in bone.bone_flg and bone.tail_index >= 0 and bone.tail_index in self:
-            # 表示先が指定されているの場合、保持
-            to_pos = self[bone.tail_index].position
-        else:
-            # 表示先がない場合、とりあえず親ボーンからの向きにする
-            from_pos = self[bone.parent_index].position
-            to_pos = self[bone.name].position
+        to_pos = self.get_tail_position(bone_name)
 
         # 軸制限の指定が無い場合、子の方向
         x_axis = (to_pos - from_pos).normalized()

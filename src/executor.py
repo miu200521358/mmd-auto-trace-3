@@ -43,10 +43,10 @@ if __name__ == "__main__":
     )
     parser.add_argument("--audio-file", type=str, dest="audio_file", default="", help="Audio file path")
     parser.add_argument(
-        "--trace-mov-model-config",
+        "--trace-check-model-config",
         type=str,
-        dest="trace_mov_model_config",
-        default=os.path.abspath(os.path.join(__file__, "../../data/pmx/trace_mov_model.pmx")),
+        dest="trace_check_model_config",
+        default=os.path.abspath(os.path.join(__file__, "../../data/pmx/trace_check_model.pmx")),
         help="MMD Model Bone pmx",
     )
     parser.add_argument(
