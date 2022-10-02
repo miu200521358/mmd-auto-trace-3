@@ -1,5 +1,6 @@
 import json
 import os
+from cmath import isclose
 from datetime import datetime
 from glob import glob
 
@@ -362,6 +363,45 @@ def execute(args):
 
                         pchar.update(1)
 
+            logger.info(
+                "【No.{pname}】モーション(IK)計算開始",
+                pname=pname,
+                decoration=MLogger.DECORATION_LINE,
+            )
+
+            with tqdm(
+                total=(2 * (end_fno - start_fno)),
+                desc=f"No.{pname} ... ",
+            ) as pchar:
+                for direction in ["左", "右"]:
+                    leg_ik_bone_name = f"{direction}足ＩＫ"
+
+                    leg_ik_xs = []
+                    leg_ik_ys = []
+                    leg_ik_zs = []
+                    for leg_ik_bf in trace_org_motion.bones[leg_ik_bone_name]:
+                        leg_ik_xs.append(leg_ik_bf.position.x)
+                        leg_ik_ys.append(leg_ik_bf.position.y)
+                        leg_ik_zs.append(leg_ik_bf.position.z)
+
+                    x_infections = get_infections(leg_ik_xs, 0.2, 1)
+                    y_infections = get_infections(leg_ik_ys, 0.3, 1)
+                    z_infections = get_infections(leg_ik_zs, 0.5, 1)
+
+                    infections = list(sorted(list({0, len(leg_ik_xs) - 1} | set(x_infections) | set(y_infections) | set(z_infections))))
+
+                    for sfidx, efidx in zip(infections[:-1], infections[1:]):
+                        sfno = int(sfidx + start_fno)
+                        efno = int(efidx + start_fno)
+
+                        start_pos = trace_org_motion.bones[leg_ik_bone_name][sfno].position
+                        end_pos = trace_org_motion.bones[leg_ik_bone_name][efno].position
+
+                        if np.isclose(start_pos.vector, end_pos.vector, atol=[0.3, 0.4, 0.6]).all():
+                            # 開始と終了が大体同じ場合、固定する
+                            for fno in range(sfno, efno + 1):
+                                trace_org_motion.bones[leg_ik_bone_name][fno].position = start_pos
+
             trace_org_motion_path = os.path.join(motion_dir_path, f"trace_no{pname}_original.vmd")
             logger.info(
                 "【No.{pname}】モーション(回転)生成開始【{path}】",
@@ -370,136 +410,6 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
             VmdWriter.write(trace_model.name, trace_org_motion, trace_org_motion_path)
-
-            # logger.info(
-            #     "【No.{pname}】モーション スムージング準備",
-            #     pname=pname,
-            #     decoration=MLogger.DECORATION_LINE,
-            # )
-
-            # joint_datas = {}
-            # joint_params = {}
-
-            # all_connections = [VMD_CONNECTIONS]
-            # if args.hand_motion:
-            #     all_connections.append(VMD_HAND_CONNECTIONS)
-
-            # # スムージング
-            # for fno in tqdm(range(start_fno, end_fno), desc=f"No.{pname} ... "):
-            #     # left_leg_ik_bf = trace_org_motion.bones["左足ＩＫ"][fno]
-            #     # right_leg_ik_bf = trace_org_motion.bones["右足ＩＫ"][fno]
-
-            #     # # とりあえずマイナスは打ち消す
-            #     # min_y = min(left_leg_ik_bf.position.y, right_leg_ik_bf.position.y)
-            #     # if min_y < 0:
-            #     #     groove_bf.position.y -= min_y
-
-            #     # left_leg_ik_bf.position.y = max(0, left_leg_ik_bf.position.y)
-            #     # right_leg_ik_bf.position.y = max(0, right_leg_ik_bf.position.y)
-
-            #     for bone_name in ["センター", "グルーブ", "左足ＩＫ", "右足ＩＫ"]:
-            #         if (bone_name, "mov", "x") not in joint_datas:
-            #             joint_datas[(bone_name, "mov", "x")] = []
-            #             joint_datas[(bone_name, "mov", "y")] = []
-            #             joint_datas[(bone_name, "mov", "z")] = []
-
-            #         pos = trace_org_motion.bones[bone_name][fno].position
-            #         joint_datas[(bone_name, "mov", "x")].append(pos.x)
-            #         joint_datas[(bone_name, "mov", "y")].append(pos.y)
-            #         joint_datas[(bone_name, "mov", "z")].append(pos.z)
-
-            #         joint_params[(bone_name, "mov")] = {
-            #             "window_lengt": VMD_CONNECTIONS[bone_name]["window_lengt"],
-            #             "polyorder": VMD_CONNECTIONS[bone_name]["polyorder"],
-            #         }
-
-            #     for target_connections in all_connections:
-            #         for bone_name in target_connections.keys():
-            #             if (bone_name, "rot", "x") not in joint_datas:
-            #                 joint_datas[(bone_name, "rot", "x")] = []
-            #                 joint_datas[(bone_name, "rot", "y")] = []
-            #                 joint_datas[(bone_name, "rot", "z")] = []
-            #                 joint_datas[(bone_name, "rot", "scalar")] = []
-
-            #             rot = trace_org_motion.bones[bone_name][fno].rotation
-            #             joint_datas[(bone_name, "rot", "x")].append(rot.x)
-            #             joint_datas[(bone_name, "rot", "y")].append(rot.y)
-            #             joint_datas[(bone_name, "rot", "z")].append(rot.z)
-            #             joint_datas[(bone_name, "rot", "scalar")].append(rot.scalar)
-
-            #             joint_params[(bone_name, "rot")] = {
-            #                 "window_lengt": target_connections[bone_name]["window_lengt"],
-            #                 "polyorder": target_connections[bone_name]["polyorder"],
-            #             }
-
-            # logger.info(
-            #     "【No.{pname}】モーション スムージング開始",
-            #     pname=pname,
-            #     decoration=MLogger.DECORATION_LINE,
-            # )
-
-            # # スムージング
-            # smooth_joint_datas = {}
-            # for (jname, jtype, axis), joints in tqdm(joint_datas.items(), desc=f"No.{pname} ... "):
-            #     smooth_joint_datas[(jname, jtype, axis)] = {}
-            #     if len(joints) > joint_params[(jname, jtype)]["window_lengt"]:
-            #         smooth_joint_datas[(jname, jtype, axis)] = savgol_filter(
-            #             joints, window_length=joint_params[(jname, jtype)]["window_lengt"], polyorder=joint_params[(jname, jtype)]["polyorder"]
-            #         )
-            #     else:
-            #         smooth_joint_datas[(jname, jtype, axis)] = joints
-
-            # for jname in ("左足ＩＫ", "右足ＩＫ"):
-            #     num = 5
-            #     ik_fix_axis_idxs = {}
-            #     for axis in ("x", "y", "z"):
-            #         avgs = np.convolve(smooth_joint_datas[(jname, "mov", axis)], np.ones(num) / num, "valid")
-            #         # 移動平均でデータ数が減るため、前と後ろに同じ値を繰り返しで補填する
-            #         fore_n = int((num - 1) / 2)
-            #         back_n = num - 1 - fore_n
-            #         ik_avgs = np.hstack((np.tile([avgs[0]], fore_n), avgs, np.tile([avgs[-1]], back_n)))
-
-            #     ik_fix_idxs = list(ik_fix_axis_idxs["x"] & ik_fix_axis_idxs["y"] & ik_fix_axis_idxs["z"])
-
-            # logger.info(
-            #     "【No.{pname}】モーション スムージング設定",
-            #     pname=pname,
-            #     decoration=MLogger.DECORATION_LINE,
-            # )
-
-            # trace_smooth_motion = VmdMotion()
-
-            # for (jname, jtype, axis), joints in tqdm(smooth_joint_datas.items(), desc=f"No.{pname} ... "):
-            #     for fidx, jvalue in enumerate(joints):
-            #         fno = start_fno + fidx
-            #         bf = trace_smooth_motion.bones[jname][fno]
-            #         if jtype == "mov":
-            #             if axis == "x":
-            #                 bf.position.x = jvalue
-            #             elif axis == "y":
-            #                 bf.position.y = jvalue
-            #             else:
-            #                 bf.position.z = jvalue
-            #         else:
-            #             if axis == "x":
-            #                 bf.rotation.x = jvalue
-            #             elif axis == "y":
-            #                 bf.rotation.y = jvalue
-            #             elif axis == "z":
-            #                 bf.rotation.z = jvalue
-            #             else:
-            #                 bf.rotation.scalar = jvalue
-            #                 bf.rotation.normalize()
-            #         trace_smooth_motion.bones.append(bf)
-
-            # trace_smooth_motion_path = os.path.join(motion_dir_path, f"trace_no{pname}_smooth.vmd")
-            # logger.info(
-            #     "【No.{pname}】モーション(スムージング)生成開始【{path}】",
-            #     pname=pname,
-            #     path=os.path.basename(trace_smooth_motion_path),
-            #     decoration=MLogger.DECORATION_LINE,
-            # )
-            # VmdWriter.write(trace_model.name, trace_smooth_motion, trace_smooth_motion_path)
 
             logger.info(
                 "【No.{pname}】モーション 間引き準備",
@@ -522,15 +432,19 @@ def execute(args):
                     my_values.append(pos.y)
                     mz_values.append(pos.z)
                     rot = trace_org_motion.bones[bone_name][fno].rotation
+                    # オイラー角にした時の長さ
                     rot_values.append(MQuaternion().dot(rot))
-                    rot_y_values.append(rot.to_euler_degrees().y)
+                    degrees = rot.to_euler_degrees()
+                    rot_y_values.append(degrees.y)
 
-                mx_infections = get_infections(mx_values, 0.05, 1)
-                my_infections = get_infections(my_values, 0.05, 1)
-                mz_infections = get_infections(mz_values, 0.1, 1)
-                rot_infections = get_infections(rot_values, 0.001, 3)
+                mx_infections = get_infections(mx_values, (0.1 if "足ＩＫ" in bone_name else 0.05), 1)
+                my_infections = get_infections(my_values, (0.1 if "足ＩＫ" in bone_name else 0.05), 1)
+                mz_infections = get_infections(mz_values, (0.2 if "足ＩＫ" in bone_name else 0.1), 1)
+                rot_infections = get_infections(rot_values, (0.01 if "足ＩＫ" in bone_name else 0.001), (2 if "足ＩＫ" in bone_name else 3))
                 # 回転変動も検出する(180度だけだとどっち向きの回転か分からないので)
-                rot_y_infections = get_y_infections(rot_y_values, 110) if bone_name in ["上半身", "下半身"] else np.array([])
+                rot_y_infections = np.array([])
+                if bone_name in ["上半身", "下半身"]:
+                    rot_y_infections = get_y_infections(rot_y_values, 110)
 
                 infections = list(
                     sorted(

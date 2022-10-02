@@ -147,6 +147,7 @@ def execute(args):
 
             left_ankle_infections = get_infections(list(left_ankle_ys.values()), 0.1, 1)
             right_ankle_infections = get_infections(list(right_ankle_ys.values()), 0.1, 1)
+            # 足首の高さの中央値が接地してると仮定する（＋ヒールとかがあるのでバッファ）
             median_ankle_y = (
                 np.median(
                     np.concatenate(
@@ -158,117 +159,6 @@ def execute(args):
                 )
                 + 15
             )
-
-            #     if len(joints) > 5:
-            #         smooth_vals = savgol_filter(list(joints.values()), window_length=5, polyorder=4)
-            #         for fno, fval in zip(joints.keys(), smooth_vals):
-            #             smooth_joint_datas[(joint_type, joint_name, axis)][fno] = fval
-            #     else:
-            #         smooth_joint_datas[(joint_type, joint_name, axis)] = joints
-
-            # logger.info(
-            #     "【No.{pname}】関節距離計測",
-            #     pname=pname,
-            #     decoration=MLogger.DECORATION_LINE,
-            # )
-
-            # # 足の全体の長さと個々の関節の長さから直立を見つける
-            # mp_leg_foot_lengths = {}
-            # mp_leg_ankle_lengths = {}
-            # mp_joint_lengths = {}
-            # for fno in tqdm(smooth_joint_datas[("pt_joints", "Pelvis", "x")].keys()):
-            #     is_target = True
-            #     for joint_type, joint_name in (
-            #         ("pt_joints", "Pelvis"),
-            #         ("mp_body_world_joints", "Pelvis"),
-            #         ("mp_body_world_joints", "RHip"),
-            #         ("mp_body_world_joints", "RKnee"),
-            #         ("mp_body_world_joints", "RAnkle"),
-            #         ("mp_body_world_joints", "RHeel"),
-            #         ("mp_body_world_joints", "RFootIndex"),
-            #         ("mp_body_world_joints", "LHip"),
-            #         ("mp_body_world_joints", "LKnee"),
-            #         ("mp_body_world_joints", "LAnkle"),
-            #         ("mp_body_world_joints", "LHeel"),
-            #         ("mp_body_world_joints", "LFootIndex"),
-            #     ):
-            #         if not (
-            #             (joint_type, joint_name, "x") in smooth_joint_datas
-            #             and (joint_type, joint_name, "y") in smooth_joint_datas
-            #             and (joint_type, joint_name, "z") in smooth_joint_datas
-            #             and fno in smooth_joint_datas[(joint_type, joint_name, "x")]
-            #             and fno in smooth_joint_datas[(joint_type, joint_name, "y")]
-            #             and fno in smooth_joint_datas[(joint_type, joint_name, "z")]
-            #         ):
-            #             # 計測対象が揃ってない場合、スルー
-            #             is_target = False
-            #             break
-
-            #     if not is_target:
-            #         continue
-
-            #     mp_joints = {}
-            #     for joint_name in ("LHip", "LKnee", "LAnkle", "LHeel", "RHip", "RKnee", "RAnkle", "RHeel"):
-            #         mp_joints[joint_name] = MVector3D(
-            #             smooth_joint_datas[("mp_body_world_joints", joint_name, "x")][fno],
-            #             smooth_joint_datas[("mp_body_world_joints", joint_name, "y")][fno],
-            #             smooth_joint_datas[("mp_body_world_joints", joint_name, "z")][fno],
-            #         )
-            #     # 足全体の距離（しゃがんでたら短くなる）
-            #     mp_leg_ankle_lengths[fno] = np.sum([mp_joints["LHip"].distance(mp_joints["LHeel"]), mp_joints["RHip"].distance(mp_joints["RHeel"])])
-            #     # 足関節自体の距離（しゃがんでも変わらないはず）
-            #     mp_joint_lengths[fno] = np.sum(
-            #         [
-            #             (
-            #                 mp_joints["LHip"].distance(mp_joints["LKnee"])
-            #                 + mp_joints["LKnee"].distance(mp_joints["LAnkle"])
-            #                 + mp_joints["LAnkle"].distance(mp_joints["LHeel"])
-            #             ),
-            #             (
-            #                 mp_joints["RHip"].distance(mp_joints["RKnee"])
-            #                 + mp_joints["RKnee"].distance(mp_joints["RAnkle"])
-            #                 + mp_joints["RAnkle"].distance(mp_joints["RHeel"])
-            #             ),
-            #         ]
-            #     )
-            #     # 足指のY位置（＝腰からの足指の距離）
-            #     mp_leg_foot_lengths[fno] = np.sum(
-            #         [
-            #             smooth_joint_datas[("mp_body_world_joints", "LHeel", "y")][fno],
-            #             smooth_joint_datas[("mp_body_world_joints", "RHeel", "y")][fno],
-            #             smooth_joint_datas[("mp_body_world_joints", "LFootIndex", "y")][fno],
-            #             smooth_joint_datas[("mp_body_world_joints", "RFootIndex", "y")][fno],
-            #         ]
-            #     )
-
-            # # 地面に対して直立しているキーフレのINDEXを取得する
-            # leg_straight_idxs = []
-            # for count in range(10, max_fno, 10):
-            #     # できるだけ関節距離の合計と足-足指間の距離の合計が等しいキーフレ
-            #     leg_ankle_straight_idxs = np.argsort(
-            #         np.abs(np.array(list(mp_joint_lengths.values())) - np.array(list(mp_leg_ankle_lengths.values())))
-            #     )[:count]
-            #     # できるだけ足の長さが長い（直立）キーフレ
-            #     leg_ground_straight_idxs = np.argsort(list(mp_leg_foot_lengths.values()))[:count]
-            #     leg_straight_idxs = list(set(leg_ankle_straight_idxs) & set(leg_ground_straight_idxs))
-            #     if leg_straight_idxs:
-            #         leg_straight_idxs = np.array(leg_straight_idxs)
-            #         break
-            # # 中央値を直立とみなす
-            # leg_most_straight_idx = np.argsort(np.array(list(mp_joint_lengths.values()))[leg_straight_idxs])[len(leg_straight_idxs) // 2]
-            # # 足の長さが直立に近いキーフレ
-            # leg_most_straight_fno = np.array(list(mp_joint_lengths.keys()))[leg_straight_idxs[leg_most_straight_idx]]
-            # # 直立時のかかとの位置（＝足を真っ直ぐに伸ばした状態での足の長さ）
-            # leg_most_straight_length = abs(
-            #     np.min(
-            #         [
-            #             smooth_joint_datas[("mp_body_world_joints", "LHeel", "y")].get(leg_most_straight_fno, 0),
-            #             smooth_joint_datas[("mp_body_world_joints", "RHeel", "y")].get(leg_most_straight_fno, 0),
-            #         ]
-            #     )
-            #     - smooth_joint_datas[("mp_body_world_joints", "Pelvis", "y")].get(leg_most_straight_fno, 0)
-            # )
-            # leg_most_straight_pelvis_y = smooth_joint_datas[("pt_joints", "Pelvis", "y")][leg_most_straight_fno]
 
             logger.info(
                 "【No.{pname}】推定結果合成 合成開始",
@@ -306,11 +196,6 @@ def execute(args):
                     and fno in joint_datas[("mp_body_world_joints", "RAnkle", "z")]
                 ):
                     continue
-
-                # min(
-                #     leg_most_straight_length,
-                #     leg_length,
-                # ) + min(0, smooth_joint_datas[("pt_joints", "Pelvis", "y")][fno] - leg_most_straight_pelvis_y)
 
                 for joint_name in BODY_LANDMARKS:
                     if not (

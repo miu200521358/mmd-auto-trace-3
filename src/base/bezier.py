@@ -75,7 +75,14 @@ def get_infections(values: list[float], threshold, decimals) -> np.ndarray:
     f_prime = np.gradient(extracts)
     infections = extract_idxs[np.where(np.diff(np.sign(f_prime)))[0]]
 
-    return infections
+    # IKの固定検出用(動かない箇所を検出)
+    fix_extract_idxs = np.where(np.isclose(np.abs(np.diff(values)), 0.0))[0]
+    if fix_extract_idxs.any():
+        fix_idxs = np.concatenate([[fix_extract_idxs[0]], np.where(np.diff(fix_extract_idxs) > 1)[0], [fix_extract_idxs[-1]]])
+    else:
+        fix_idxs = np.array([])
+
+    return np.sort(list(set(fix_idxs) | set(infections)))
 
 
 def get_y_infections(values: list[float], threshold) -> np.ndarray:

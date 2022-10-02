@@ -18,21 +18,24 @@ import yaml  # type: ignore
 from AlphaPose.alphapose.models import builder
 from AlphaPose.alphapose.utils.detector import DetectionLoader
 from AlphaPose.alphapose.utils.writer import DataWriter
-from AlphaPose.detector.apis import get_detector
-from AlphaPose.detector.yolo_api import YOLODetector
-from AlphaPose.detector.yolo_cfg import cfg as ycfg
 
-# from AlphaPose.detector.yolox_api import YOLOXDetector
-# from AlphaPose.detector.yolox_cfg import cfg as ycfg
-from AlphaPose.trackers import track
-from AlphaPose.trackers.tracker_api import Tracker
-from AlphaPose.trackers.tracker_cfg import cfg as tcfg
+# from AlphaPose.detector.yolo_api import YOLODetector
+# from AlphaPose.detector.yolo_cfg import cfg as ycfg
+from AlphaPose.detector.yolox_api import YOLOXDetector
+from AlphaPose.detector.yolox_cfg import cfg as ycfg
+
+# from AlphaPose.trackers import track
+# from AlphaPose.trackers.tracker_api import Tracker
+# from AlphaPose.trackers.tracker_cfg import cfg as tcfg
 from base.logger import MLogger
 from easydict import EasyDict as edict
 from PIL import Image
 from tqdm import tqdm
 
 from parts.config import DirName, FileName
+
+# from AlphaPose.detector.apis import get_detector
+
 
 logger = MLogger(__name__)
 
@@ -82,22 +85,22 @@ def execute(args):
             decoration=MLogger.DECORATION_LINE,
         )
 
-        # ycfg.MODEL_NAME = "yolox-x"
-        # ycfg.MODEL_WEIGHTS = "../data/alphapose/detector/yolox/yolox_x.pth"
-        # detector = YOLOXDetector(ycfg, argv)
-        ycfg.CONFIG = "AlphaPose/detector/yolo/cfg/yolov3-spp.cfg"
-        ycfg.WEIGHTS = "../data/alphapose/detector/yolo/yolov3-spp.weights"
-        detector = YOLODetector(ycfg, argv)
+        ycfg.MODEL_NAME = "yolox-x"
+        ycfg.MODEL_WEIGHTS = "../data/alphapose/detector/yolox/yolox_x.pth"
+        detector = YOLOXDetector(ycfg, argv)
+        # ycfg.CONFIG = "AlphaPose/detector/yolo/cfg/yolov3-spp.cfg"
+        # ycfg.WEIGHTS = "../data/alphapose/detector/yolo/yolov3-spp.weights"
+        # detector = YOLODetector(ycfg, argv)
         det_loader = DetectionLoader(input_source, detector, cfg, argv, batchSize=argv.detbatch, mode="image", queueSize=argv.qsize)
         det_loader.start()
 
         # Load pose model
         pose_model = builder.build_sppe(cfg.MODEL, preset_cfg=cfg.DATA_PRESET)
         pose_model.load_state_dict(torch.load(argv.checkpoint, map_location=argv.device))
-        tcfg.loadmodel = (
-            "../data/alphapose/tracker/osnet_ain_x1_0_msmt17_256x128_amsgrad_ep50_lr0.0015_coslr_b64_fb10_softmax_labsmth_flip_jitter.pth"
-        )
-        tracker = Tracker(tcfg, argv)
+        # tcfg.loadmodel = (
+        #     "../data/alphapose/tracker/osnet_ain_x1_0_msmt17_256x128_amsgrad_ep50_lr0.0015_coslr_b64_fb10_softmax_labsmth_flip_jitter.pth"
+        # )
+        # tracker = Tracker(tcfg, argv)
 
         if len(argv.gpus) > 1:
             pose_model = torch.nn.DataParallel(pose_model, device_ids=argv.gpus).to(argv.device)
@@ -133,7 +136,7 @@ def execute(args):
                     hm_j = pose_model(inps_j)
                     hm.append(hm_j)
                 hm = torch.cat(hm)
-                boxes, scores, ids, hm, cropped_boxes = track(tracker, argv, orig_img, inps, boxes, hm, cropped_boxes, im_name, scores)
+                # boxes, scores, ids, hm, cropped_boxes = track(tracker, argv, orig_img, inps, boxes, hm, cropped_boxes, im_name, scores)
                 hm = hm.cpu()
                 writer.save(boxes, scores, ids, hm, cropped_boxes, orig_img, im_name)
 
@@ -195,6 +198,8 @@ def execute(args):
         for json_data in tqdm(json_datas):
             # 人物INDEX別に保持
             person_idx = int(json_data["idx"])
+            fno = int(json_data["image_id"].replace(".png", ""))
+
             if person_idx not in personal_datas:
                 personal_datas[person_idx] = {}
             if person_idx not in all_bbox_areas:
@@ -202,7 +207,7 @@ def execute(args):
 
             kps = json_data["keypoints"]
             kps = np.array(kps).reshape(-1, 3)[:17, :2]
-            fno = int(json_data["image_id"].replace(".png", ""))
+
             personal_datas[person_idx][fno] = {
                 "image": {
                     "path": os.path.join(argv.inputpath, json_data["image_id"]),
@@ -390,7 +395,7 @@ def save_2d_image(image_path: str, person_idx: int, fno: int, keypoints: list, b
     cv2.putText(
         img,
         f"{person_idx:03d}",
-        ((bbox_x + bbox_w) + bbox_w // 3, (bbox_y + bbox_h) - 5),
+        ((bbox_x + bbox_w) + 5, (bbox_y + bbox_h) - 5),
         cv2.FONT_HERSHEY_SIMPLEX,
         1,
         color=tuple(pid_color),
@@ -404,7 +409,7 @@ def save_2d_image(image_path: str, person_idx: int, fno: int, keypoints: list, b
         cv2.FONT_HERSHEY_SIMPLEX,
         1,
         color=(182, 0, 182),
-        thickness=2,
+        thickness=bbx_thick,
     )
 
     # 同じファイルに上書き
@@ -459,8 +464,8 @@ def get_args_parser():
     parser.add_argument("--save_video", dest="save_video", help="whether to save rendered video", default=False, action="store_true")
     parser.add_argument("--vis_fast", dest="vis_fast", help="use fast rendering", action="store_true", default=False)
     """----------------------------- Tracking options -----------------------------"""
-    parser.add_argument("--pose_flow", dest="pose_flow", help="track humans in video with PoseFlow", action="store_true", default=False)
-    parser.add_argument("--pose_track", dest="pose_track", help="track humans in video with reid", action="store_true", default=True)
+    parser.add_argument("--pose_flow", dest="pose_flow", help="track humans in video with PoseFlow", action="store_true", default=True)
+    parser.add_argument("--pose_track", dest="pose_track", help="track humans in video with reid", action="store_true", default=False)
     return parser
 
 
