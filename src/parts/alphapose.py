@@ -202,7 +202,10 @@ def execute(args):
             if fno > max_fno:
                 max_fno = fno
 
-        all_person_blocks = {}
+        # 明らかに遠景の人物を除外する
+        threshold_bbox_area = (img.size[0] / 10) * (img.size[1] / 10)
+
+        all_extras_bboxs = {}
         for person_idx, personal_data in tqdm(personal_datas.items()):
             # 連続していないキーフレのペアリスト
             extract_fnos = np.array(
@@ -218,75 +221,80 @@ def execute(args):
                 )
             )
             for sfno, efno in zip(extract_fnos[:-1:2], extract_fnos[1::2]):
-                if (sfno, efno) not in all_person_blocks:
-                    all_person_blocks[(sfno, efno)] = []
-                all_person_blocks[(sfno, efno)].append(person_idx)
+                if (sfno, efno) not in all_extras_bboxs:
+                    all_extras_bboxs[(sfno, efno)] = {}
+                all_extras_bboxs[(sfno, efno)][person_idx] = []
+                for fno in range(sfno, efno + 1):
+                    all_extras_bboxs[(sfno, efno)][person_idx].append(personal_data[fno]["bbox"]["width"] * personal_data[fno]["bbox"]["height"])
 
         output_datas = {}
-        for sfno, efno in tqdm(sorted(all_person_blocks.keys())):
-            for pidx in all_person_blocks[sfno, efno].values():
-                person_idx = -1
-                if sfno == 0:
-                    # 最初はそのまま登録
-                    person_idx = len(output_datas)
-                    output_datas[person_idx] = {}
-                else:
-                    # 移植対象のBBOXの中心を求める
-                    px = personal_datas[pidx][sfno]["bbox"]["x"]
-                    py = personal_datas[pidx][sfno]["bbox"]["y"]
-                    pw = personal_datas[pidx][sfno]["bbox"]["width"]
-                    ph = personal_datas[pidx][sfno]["bbox"]["height"]
-                    pcenter = np.array([px, py]) + np.array([pw, ph]) / 2
-                    # Hipの位置
-                    phx = personal_datas[pidx][sfno]["2d-keypoints"][19 * 3]
-                    phy = personal_datas[pidx][sfno]["2d-keypoints"][19 * 3 + 1]
-                    phip = np.array([phx, phy])
+        for sfno, efno in tqdm(sorted(all_extras_bboxs.keys())):
+            for pidx, extras_bboxs in all_extras_bboxs[sfno, efno].items():
+                if np.median(extras_bboxs) > threshold_bbox_area:
+                    person_idx = -1
+                    if sfno == 0:
+                        # 最初はそのまま登録
+                        person_idx = len(output_datas)
+                        output_datas[person_idx] = {}
+                    else:
+                        # 移植対象のBBOXの中心を求める
+                        px = personal_datas[pidx][sfno]["bbox"]["x"]
+                        py = personal_datas[pidx][sfno]["bbox"]["y"]
+                        pw = personal_datas[pidx][sfno]["bbox"]["width"]
+                        ph = personal_datas[pidx][sfno]["bbox"]["height"]
+                        pcenter = np.array([px, py]) + np.array([pw, ph]) / 2
+                        # Hipの位置
+                        phx = personal_datas[pidx][sfno]["2d-keypoints"][19 * 3]
+                        phy = personal_datas[pidx][sfno]["2d-keypoints"][19 * 3 + 1]
+                        phip = np.array([phx, phy])
 
-                    ocenters = {}
-                    ohips = {}
-                    for ppidx, odata in output_datas.items():
-                        oefno = list(odata.keys())[-1]
-                        for n in range(1, 11):
-                            # 続きの場合、少し前のキーで終わってるブロックがあるか確認する
-                            if sfno - n <= oefno:
-                                # 最後のキーフレがひとつ前のキーで終わっている場合
-                                ox = odata[oefno]["bbox"]["x"]
-                                oy = odata[oefno]["bbox"]["y"]
-                                ow = odata[oefno]["bbox"]["width"]
-                                oh = odata[oefno]["bbox"]["height"]
-                                ocenter = np.array([ox, oy]) + np.array([ow, oh]) / 2
+                        ocenters = {}
+                        ohips = {}
+                        for ppidx, odata in output_datas.items():
+                            oefno = list(odata.keys())[-1]
+                            for n in range(1, 11):
+                                # 続きの場合、少し前のキーで終わってるブロックがあるか確認する
+                                if sfno - n <= oefno:
+                                    # 最後のキーフレがひとつ前のキーで終わっている場合
+                                    ox = odata[oefno]["bbox"]["x"]
+                                    oy = odata[oefno]["bbox"]["y"]
+                                    ow = odata[oefno]["bbox"]["width"]
+                                    oh = odata[oefno]["bbox"]["height"]
+                                    ocenter = np.array([ox, oy]) + np.array([ow, oh]) / 2
 
-                                # Hipの位置
-                                ohx = odata[oefno]["2d-keypoints"][19 * 3]
-                                ohy = odata[oefno]["2d-keypoints"][19 * 3 + 1]
-                                ohip = np.array([ohx, ohy])
+                                    # Hipの位置
+                                    ohx = odata[oefno]["2d-keypoints"][19 * 3]
+                                    ohy = odata[oefno]["2d-keypoints"][19 * 3 + 1]
+                                    ohip = np.array([ohx, ohy])
 
-                                if (
-                                    np.isclose(pcenter, ocenter, atol=np.array([128, 72])).all()
-                                    or np.isclose(phip, ohip, atol=np.array([128, 72])).all()
-                                ):
-                                    # 大体同じ位置にあるBBOXがあったら検討対象
-                                    ocenters[ppidx] = ocenter
-                                    ohips[ppidx] = ohip
+                                    if (
+                                        np.isclose(pcenter, ocenter, atol=np.array([64, 36])).all()
+                                        or np.isclose(phip, ohip, atol=np.array([64, 36])).all()
+                                    ):
+                                        # 大体同じ位置にあるBBOXがあったら検討対象
+                                        ocenters[ppidx] = ocenter
+                                        ohips[ppidx] = ohip
 
-                    if ocenters:
-                        # BBOXの中央とHipの位置から最も近いppidxを選ぶ
-                        person_idx = np.array(list(ocenters.keys()))[
-                            np.argmin(
-                                np.sum(
-                                    np.hstack([np.abs(np.array(list(ocenters.values())) - pcenter), np.abs(np.array(list(ohips.values())) - phip)]),
-                                    axis=1,
+                        if ocenters:
+                            # BBOXの中央とHipの位置から最も近いppidxを選ぶ
+                            person_idx = np.array(list(ocenters.keys()))[
+                                np.argmin(
+                                    np.sum(
+                                        np.hstack(
+                                            [np.abs(np.array(list(ocenters.values())) - pcenter), np.abs(np.array(list(ohips.values())) - phip)]
+                                        ),
+                                        axis=1,
+                                    )
                                 )
-                            )
-                        ]
+                            ]
 
-                if 0 > person_idx:
-                    # 最終的に求められなかった場合、新規に求める
-                    person_idx = len(output_datas)
-                    output_datas[person_idx] = {}
+                    if 0 > person_idx:
+                        # 最終的に求められなかった場合、新規に求める
+                        person_idx = len(output_datas)
+                        output_datas[person_idx] = {}
 
-                for fno in range(sfno, efno + 1):
-                    output_datas[person_idx][fno] = personal_datas[pidx][fno]
+                    for fno in range(sfno, efno + 1):
+                        output_datas[person_idx][fno] = personal_datas[pidx][fno]
 
         logger.info(
             "AlphaPose 結果保存",
