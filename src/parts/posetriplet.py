@@ -200,13 +200,13 @@ def execute(args):
             )
 
             width = height = 0
-            color = []
+            color = json_datas["color"]
             keypoints_2d = {}
-            for fno, frame_json_data in tqdm(json_datas.items(), desc=f"No.{pname} ... "):
+            for fno in tqdm(sorted([int(f) for f in json_datas["estimation"].keys()]), desc=f"No.{pname} ... "):
+                frame_json_data = json_datas["estimation"][str(fno)]
                 fno = int(fno)
                 width = int(frame_json_data["image"]["width"])
                 height = int(frame_json_data["image"]["height"])
-                color = frame_json_data["bbox"]["color"]
                 keypoints_2d[fno] = np.array(frame_json_data["2d-keypoints"]).reshape(-1, 3)[:, :2]
 
             logger.info(
@@ -251,11 +251,10 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
 
-            personal_data = {}
+            personal_data = {"color": color, "estimation": {}}
             for (fno, keypoints), fjoints in tqdm(zip(keypoints_2d.items(), prediction_world.tolist()), desc=f"No.{pname} ... "):
                 fidx = str(fno)
-                personal_data[fno] = {
-                    "color": color,
+                personal_data["estimation"][fno] = {
                     "ap_joints": {
                         "LAnkle": {
                             "x": float(keypoints[15][0]),
@@ -279,15 +278,15 @@ def execute(args):
                 }
 
                 for jname, fjoint in zip(BODY_LANDMARKS, fjoints):
-                    personal_data[fno]["pt_joints"][jname] = {
+                    personal_data["estimation"][fno]["pt_joints"][jname] = {
                         "x": -float(fjoint[0]) * 100,
                         "y": float(fjoint[2]) * 100,
                         "z": -float(fjoint[1]) * 100,
                     }
 
                 for joint_type in ("mp_body_world_joints", "mp_left_hand_joints", "mp_right_hand_joints", "mp_face_joints"):
-                    if joint_type in json_datas[fidx]:
-                        personal_data[fno][joint_type] = json_datas[fidx][joint_type]
+                    if joint_type in json_datas["estimation"][fidx]:
+                        personal_data["estimation"][fno][joint_type] = json_datas["estimation"][fidx][joint_type]
 
             logger.info(
                 "【No.{pname}】PoseTriplet 結果保存",

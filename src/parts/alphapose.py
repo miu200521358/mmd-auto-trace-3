@@ -7,6 +7,7 @@ import shutil
 import sys
 import time
 from glob import glob
+from unittest import result
 
 sys.path.append(os.path.abspath(os.path.join(__file__, "../../AlphaPose")))
 
@@ -18,24 +19,19 @@ import yaml  # type: ignore
 from AlphaPose.alphapose.models import builder
 from AlphaPose.alphapose.utils.detector import DetectionLoader
 from AlphaPose.alphapose.utils.writer import DataWriter
-
 # from AlphaPose.detector.yolo_api import YOLODetector
 # from AlphaPose.detector.yolo_cfg import cfg as ycfg
 from AlphaPose.detector.yolox_api import YOLOXDetector
 from AlphaPose.detector.yolox_cfg import cfg as ycfg
-
-# from AlphaPose.trackers import track
-# from AlphaPose.trackers.tracker_api import Tracker
-# from AlphaPose.trackers.tracker_cfg import cfg as tcfg
+from AlphaPose.trackers import track
+from AlphaPose.trackers.tracker_api import Tracker
+from AlphaPose.trackers.tracker_cfg import cfg as tcfg
 from base.logger import MLogger
 from easydict import EasyDict as edict
 from PIL import Image
 from tqdm import tqdm
 
 from parts.config import DirName, FileName
-
-# from AlphaPose.detector.apis import get_detector
-
 
 logger = MLogger(__name__)
 
@@ -97,10 +93,10 @@ def execute(args):
         # Load pose model
         pose_model = builder.build_sppe(cfg.MODEL, preset_cfg=cfg.DATA_PRESET)
         pose_model.load_state_dict(torch.load(argv.checkpoint, map_location=argv.device))
-        # tcfg.loadmodel = (
-        #     "../data/alphapose/tracker/osnet_ain_x1_0_msmt17_256x128_amsgrad_ep50_lr0.0015_coslr_b64_fb10_softmax_labsmth_flip_jitter.pth"
-        # )
-        # tracker = Tracker(tcfg, argv)
+        tcfg.loadmodel = (
+            "../data/alphapose/tracker/osnet_ain_x1_0_msmt17_256x128_amsgrad_ep50_lr0.0015_coslr_b64_fb10_softmax_labsmth_flip_jitter.pth"
+        )
+        tracker = Tracker(tcfg, argv)
 
         if len(argv.gpus) > 1:
             pose_model = torch.nn.DataParallel(pose_model, device_ids=argv.gpus).to(argv.device)
@@ -136,7 +132,7 @@ def execute(args):
                     hm_j = pose_model(inps_j)
                     hm.append(hm_j)
                 hm = torch.cat(hm)
-                # boxes, scores, ids, hm, cropped_boxes = track(tracker, argv, orig_img, inps, boxes, hm, cropped_boxes, im_name, scores)
+                boxes, scores, ids, hm, cropped_boxes = track(tracker, argv, orig_img, inps, boxes, hm, cropped_boxes, im_name, scores)
                 hm = hm.cpu()
                 writer.save(boxes, scores, ids, hm, cropped_boxes, orig_img, im_name)
 
@@ -162,37 +158,15 @@ def execute(args):
         with open(os.path.join(argv.outputpath, FileName.ALPHAPOSE_RESULT.value), "r") as f:
             json_datas = json.load(f)
 
-        # person_idx を数える
-        person_idxs = []
-        for json_data in tqdm(json_datas):
-            person_idxs.append(json_data["idx"])
-
-        # 追跡画像用色生成
-        random.seed(13)
-        pids = list(set(person_idxs))
-        cmap = plt.get_cmap("rainbow")
-        pid_colors = [cmap(i) for i in np.linspace(0, 1, len(pids))]
-        random.shuffle(pid_colors)
-        pid_colors_opencv = [(np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in pid_colors]
-
-        target_image_path = os.path.join(argv.outputpath, FileName.ALPHAPOSE_IMAGE.value)
-        prev_image_id = ""
         max_fno = 0
         personal_datas = {}
-
-        img = Image.open(glob(os.path.join(argv.inputpath, "*.png"))[0])
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        out = cv2.VideoWriter(
-            os.path.join(args.img_dir, DirName.ALPHAPOSE.value, FileName.ALPHAPOSE_VIDEO.value),
-            fourcc,
-            30.0,
-            (img.size[0], img.size[1]),
-        )
 
         logger.info(
             "AlphaPose 結果分類",
             decoration=MLogger.DECORATION_LINE,
         )
+
+        img = Image.open(glob(os.path.join(argv.inputpath, "*.png"))[0])
 
         all_bbox_areas = {}
         for json_data in tqdm(json_datas):
@@ -205,9 +179,6 @@ def execute(args):
             if person_idx not in all_bbox_areas:
                 all_bbox_areas[person_idx] = []
 
-            kps = json_data["keypoints"]
-            kps = np.array(kps).reshape(-1, 3)[:17, :2]
-
             personal_datas[person_idx][fno] = {
                 "image": {
                     "path": os.path.join(argv.inputpath, json_data["image_id"]),
@@ -219,59 +190,168 @@ def execute(args):
                     "y": json_data["box"][1],
                     "width": json_data["box"][2],
                     "height": json_data["box"][3],
-                    "color": [
-                        float(pid_colors_opencv[person_idx - 1][2]) / 255,
-                        float(pid_colors_opencv[person_idx - 1][1]) / 255,
-                        float(pid_colors_opencv[person_idx - 1][0]) / 255,
-                    ],
                 },
                 "2d-keypoints": json_data["keypoints"],
             }
 
             all_bbox_areas[person_idx].append(float(json_data["box"][2]) * float(json_data["box"][3]))
 
-            if prev_image_id != json_data["image_id"]:
-                # 前の画像IDが入ってる場合、動画出力
-                if prev_image_id:
-                    out.write(cv2.imread(target_image_path))
-                # 前と画像が違う場合、1枚だけコピー
-                shutil.copy(os.path.join(argv.inputpath, json_data["image_id"]), target_image_path)
-
-            save_2d_image(
-                target_image_path,
-                person_idx,
-                fno,
-                json_data["keypoints"],
-                json_data["box"],
-                pid_colors_opencv[person_idx - 1],
-            )
-
-            prev_image_id = json_data["image_id"]
             if fno > max_fno:
                 max_fno = fno
 
-        # 最後の1枚を出力
-        out.write(cv2.imread(target_image_path))
+        # BBOX閾値計算
+        max_bbox_area_max = np.max([np.max(bbox_areas) for _, bbox_areas in all_bbox_areas.items()])
+        min_bbox_area_min = np.min([np.min(bbox_areas) for _, bbox_areas in all_bbox_areas.items()])
+        threshold_bbox_area = min_bbox_area_min + (max_bbox_area_max - min_bbox_area_min) * 0.2
 
-        out.release()
-        cv2.destroyAllWindows()
-
-        is_targets = dict([(person_idx, True) for person_idx in all_bbox_areas.keys()])
-        bbox_area_medians = dict([(person_idx, np.median(bbox_areas)) for person_idx, bbox_areas in all_bbox_areas.items()])
-        if np.max(list(bbox_area_medians.values())) - np.min(list(bbox_area_medians.values())) > np.mean(list(bbox_area_medians.values())):
-            is_targets = dict(
-                [(person_idx, bbox_area_medians[person_idx] > np.mean(list(bbox_area_medians.values()))) for person_idx in all_bbox_areas.keys()]
+        all_extras_bboxs = {}
+        for person_idx, personal_data in tqdm(personal_datas.items()):
+            # 連続していないキーフレのペアリスト
+            extract_fnos = np.array(
+                sorted(
+                    np.concatenate(
+                        [
+                            [list(personal_data.keys())[0]],
+                            np.array(list(personal_data.keys()))[np.where(np.diff(np.array(list(personal_data.keys()))) > 1)[0]],
+                            np.array(list(personal_data.keys()))[np.where(np.diff(np.array(list(personal_data.keys()))) > 1)[0] + 1],
+                            [list(personal_data.keys())[-1]],
+                        ]
+                    ).tolist()
+                )
             )
+            for sfno, efno in zip(extract_fnos[:-1:2], extract_fnos[1::2]):
+                if (sfno, efno) not in all_extras_bboxs:
+                    all_extras_bboxs[(sfno, efno)] = {}
+                all_extras_bboxs[(sfno, efno)][person_idx] = []
+                for fno in range(sfno, efno + 1):
+                    all_extras_bboxs[(sfno, efno)][person_idx].append(personal_data[fno]["bbox"]["width"] * personal_data[fno]["bbox"]["height"])
+
+        output_datas = {}
+        for sfno, efno in tqdm(sorted(all_extras_bboxs.keys())):
+            for pidx, extras_bboxs in all_extras_bboxs[sfno, efno].items():
+                if np.median(extras_bboxs) > threshold_bbox_area:
+                    person_idx = -1
+                    if sfno == 0:
+                        # 最初はそのまま登録
+                        person_idx = len(output_datas)
+                        output_datas[person_idx] = {}
+                    else:
+                        # 移植対象のBBOXの中心を求める
+                        px = personal_datas[pidx][sfno]["bbox"]["x"]
+                        py = personal_datas[pidx][sfno]["bbox"]["y"]
+                        pw = personal_datas[pidx][sfno]["bbox"]["width"]
+                        ph = personal_datas[pidx][sfno]["bbox"]["height"]
+                        pcenter = np.array([px, py]) + np.array([pw, ph]) / 2
+
+                        for ppidx, odata in output_datas.items():
+                            oefno = list(odata.keys())[-1]
+                            for n in range(1, 11):
+                                # 続きの場合、少し前のキーで終わってるブロックがあるか確認する
+                                if sfno - n <= oefno:
+                                    # 最後のキーフレがひとつ前のキーで終わっている場合
+                                    ox = odata[oefno]["bbox"]["x"]
+                                    oy = odata[oefno]["bbox"]["y"]
+                                    ow = odata[oefno]["bbox"]["width"]
+                                    oh = odata[oefno]["bbox"]["height"]
+                                    ocenter = np.array([ox, oy]) + np.array([ow, oh]) / 2
+
+                                    if np.isclose(pcenter, ocenter, atol=np.array([80, 80])).all():
+                                        # 大体同じ中央にあるBBOXがあったら追加（キーフレの拡張はしない。後ろで移動したら大体切り替わる）
+                                        person_idx = ppidx
+                                        break
+                            if 0 <= person_idx:
+                                break
+
+                    if 0 > person_idx:
+                        # 最終的に求められなかった場合、新規に求める
+                        person_idx = len(output_datas)
+                        output_datas[person_idx] = {}
+
+                    for fno in range(sfno, efno + 1):
+                        output_datas[person_idx][fno] = personal_datas[pidx][fno]
 
         logger.info(
             "AlphaPose 結果保存",
             decoration=MLogger.DECORATION_LINE,
         )
 
-        for person_idx, personal_data in tqdm(personal_datas.items()):
-            if is_targets[person_idx] and 5 < len(personal_data.keys()):
-                with open(os.path.join(args.img_dir, DirName.ALPHAPOSE.value, f"{person_idx:03d}.json"), "w") as f:
-                    json.dump(personal_data, f, indent=4)
+        # 一定以上ある場合はOK
+        result_datas = {}
+        for pidx, odatas in output_datas.items():
+            if len(odatas) > 5:
+                result_datas[len(result_datas)] = odatas
+
+        # 追跡画像用色生成
+        cmap = plt.get_cmap("gist_rainbow")
+        pid_colors = np.array([cmap(i) for i in np.linspace(0, 1, len(result_datas))])
+        idxs = np.arange(len(result_datas))
+        # 適当にばらけさせる
+        cidxs = np.concatenate([np.where(idxs % 3 == 0)[0], np.where(idxs % 3 == 1)[0], np.where(idxs % 3 == 2)[0]])
+        pid_colors_opencv = [(np.array((c[2], c[1], c[0])) * 255).astype(int).tolist() for c in pid_colors[cidxs]]
+
+        output_frames = {}
+        for person_idx, result_data in tqdm(result_datas.items()):
+            json_data = {
+                "color": [
+                    float(pid_colors_opencv[person_idx][2]) / 255,
+                    float(pid_colors_opencv[person_idx][1]) / 255,
+                    float(pid_colors_opencv[person_idx][0]) / 255,
+                ],
+                "estimation": result_data,
+            }
+
+            with open(os.path.join(args.img_dir, DirName.ALPHAPOSE.value, f"{(person_idx + 1):03d}.json"), "w") as f:
+                json.dump(json_data, f, indent=4)
+
+            for fno, rdata in result_data.items():
+                if fno not in output_frames:
+                    output_frames[fno] = []
+                output_frames[fno].append(
+                    {
+                        "color": pid_colors_opencv[person_idx],
+                        "person_idx": person_idx,
+                        "image": rdata["image"],
+                        "bbox": rdata["bbox"],
+                        "2d-keypoints": rdata["2d-keypoints"],
+                    }
+                )
+
+        logger.info(
+            "AlphaPose 映像出力",
+            decoration=MLogger.DECORATION_LINE,
+        )
+
+        target_image_path = os.path.join(argv.outputpath, FileName.ALPHAPOSE_IMAGE.value)
+
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        out = cv2.VideoWriter(
+            os.path.join(args.img_dir, DirName.ALPHAPOSE.value, FileName.ALPHAPOSE_VIDEO.value),
+            fourcc,
+            30.0,
+            (img.size[0], img.size[1]),
+        )
+
+        for fno in tqdm(sorted(output_frames.keys())):
+            person_frames = output_frames[fno]
+            shutil.copy(os.path.join(argv.inputpath, person_frames[0]["image"]["path"]), target_image_path)
+
+            for person_frame in person_frames:
+                # 人物INDEX別に画像に書き込み
+
+                save_2d_image(
+                    target_image_path,
+                    person_frame["person_idx"],
+                    fno,
+                    person_frame["2d-keypoints"],
+                    person_frame["bbox"],
+                    person_frame["color"],
+                )
+
+            # 書き込み出力
+            out.write(cv2.imread(target_image_path))
+
+        out.release()
+        cv2.destroyAllWindows()
 
         logger.info(
             "2D姿勢推定 結果保存完了: {outputpath}",
@@ -285,7 +365,7 @@ def execute(args):
         return False
 
 
-def save_2d_image(image_path: str, person_idx: int, fno: int, keypoints: list, bbox: list, pid_color: tuple):
+def save_2d_image(image_path: str, person_idx: int, fno: int, keypoints: list, bbox: dict, pid_color: tuple):
     img = cv2.imread(image_path)
     kps = np.array(keypoints).reshape(-1, 3)
 
@@ -348,10 +428,10 @@ def save_2d_image(image_path: str, person_idx: int, fno: int, keypoints: list, b
             color=tuple(pid_color),
         )
 
-    bbox_x = int(bbox[0])
-    bbox_y = int(bbox[1])
-    bbox_w = int(bbox[2])
-    bbox_h = int(bbox[3])
+    bbox_x = int(bbox["x"])
+    bbox_y = int(bbox["y"])
+    bbox_w = int(bbox["width"])
+    bbox_h = int(bbox["height"])
     bbx_thick = 3
     cv2.line(
         img,
@@ -384,7 +464,7 @@ def save_2d_image(image_path: str, person_idx: int, fno: int, keypoints: list, b
 
     cv2.putText(
         img,
-        f"{person_idx:03d}",
+        f"{(person_idx + 1):03d}",
         (bbox_x + bbox_w // 3, bbox_y - 5),
         cv2.FONT_HERSHEY_SIMPLEX,
         1,
@@ -394,7 +474,7 @@ def save_2d_image(image_path: str, person_idx: int, fno: int, keypoints: list, b
 
     cv2.putText(
         img,
-        f"{person_idx:03d}",
+        f"{(person_idx + 1):03d}",
         ((bbox_x + bbox_w) + 5, (bbox_y + bbox_h) - 5),
         cv2.FONT_HERSHEY_SIMPLEX,
         1,
@@ -464,8 +544,8 @@ def get_args_parser():
     parser.add_argument("--save_video", dest="save_video", help="whether to save rendered video", default=False, action="store_true")
     parser.add_argument("--vis_fast", dest="vis_fast", help="use fast rendering", action="store_true", default=False)
     """----------------------------- Tracking options -----------------------------"""
-    parser.add_argument("--pose_flow", dest="pose_flow", help="track humans in video with PoseFlow", action="store_true", default=True)
-    parser.add_argument("--pose_track", dest="pose_track", help="track humans in video with reid", action="store_true", default=False)
+    parser.add_argument("--pose_flow", dest="pose_flow", help="track humans in video with PoseFlow", action="store_true", default=False)
+    parser.add_argument("--pose_track", dest="pose_track", help="track humans in video with reid", action="store_true", default=True)
     return parser
 
 

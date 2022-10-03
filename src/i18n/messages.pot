@@ -310,3 +310,7 @@ msgstr ""
 msgid "-- ジョイントデータ出力終了({count})"
 msgstr ""
 
+
+msgid "AlphaPose 映像出力"
+msgstr ""
+

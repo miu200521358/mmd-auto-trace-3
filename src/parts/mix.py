@@ -56,8 +56,8 @@ def execute(args):
             with open(personal_json_path, "r") as f:
                 frame_joints = json.load(f)
 
-            for fno in frame_joints.keys():
-                if "pt_joints" in frame_joints[fno] and "mp_body_world_joints" in frame_joints[fno]:
+            for fno in frame_joints["estimation"].keys():
+                if "pt_joints" in frame_joints["estimation"][fno] and "mp_body_world_joints" in frame_joints["estimation"][fno]:
                     # PoseTripletの情報がある最初のキーフレを選択する
                     target_pnames.append(pname)
                     break
@@ -68,9 +68,9 @@ def execute(args):
             if fno not in all_root_poses:
                 all_root_poses[fno] = {}
             all_root_poses[fno][pname] = MVector3D(
-                frame_joints[fno]["pt_joints"]["Pelvis"]["x"],
-                frame_joints[fno]["pt_joints"]["Pelvis"]["y"],
-                frame_joints[fno]["pt_joints"]["Pelvis"]["z"],
+                frame_joints["estimation"][fno]["pt_joints"]["Pelvis"]["x"],
+                frame_joints["estimation"][fno]["pt_joints"]["Pelvis"]["y"],
+                frame_joints["estimation"][fno]["pt_joints"]["Pelvis"]["z"],
             )
 
         start_fno = list(sorted(list(all_root_poses.keys())))[0]
@@ -104,12 +104,10 @@ def execute(args):
             with open(personal_json_path, "r") as f:
                 frame_joints = json.load(f)
 
-            color = []
             max_fno = 0
             joint_datas = {}
-            for fidx, frame_json_data in tqdm(frame_joints.items(), desc=f"No.{pname} ... "):
+            for fidx, frame_json_data in tqdm(frame_joints["estimation"].items(), desc=f"No.{pname} ... "):
                 fno = int(fidx)
-                color = frame_json_data["color"]
                 for joint_type in ("pt_joints", "mp_body_world_joints", "mp_left_hand_joints", "mp_right_hand_joints", "mp_face_joints"):
                     if joint_type not in frame_json_data:
                         continue
@@ -166,14 +164,14 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
 
-            mix_joints = {"color": color, "joints": {}}
+            mix_joints = {"color": frame_joints["color"], "joints": {}}
             for fno in tqdm(
                 joint_datas[("pt_joints", "Pelvis", "x")].keys(),
             ):
                 mix_joints["joints"][fno] = {"body": {}, "left_hand": {}, "right_hand": {}, "face": {}, "2d": {}}
 
                 # 2Dの足情報を設定する
-                mix_joints["joints"][fno]["2d"] = frame_joints[str(fno)]["ap_joints"]
+                mix_joints["joints"][fno]["2d"] = frame_joints["estimation"][str(fno)]["ap_joints"]
 
                 if not (
                     ("mp_body_world_joints", "Pelvis", "x") in joint_datas

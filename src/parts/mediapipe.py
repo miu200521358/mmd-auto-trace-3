@@ -53,10 +53,6 @@ def execute(args):
                 with open(persion_json_path, "r") as f:
                     json_datas = json.load(f)
 
-                if len(json_datas.keys()) < 5:
-                    # 短すぎるのはスルー
-                    continue
-
                 pname, _ = os.path.splitext(os.path.basename(persion_json_path))
 
                 logger.info(
@@ -67,7 +63,7 @@ def execute(args):
 
                 for n, (fidx, frame_json_data) in enumerate(
                     tqdm(
-                        json_datas.items(),
+                        json_datas["estimation"].items(),
                         desc=f"No.{pname} ... ",
                     ),
                 ):
