@@ -52,7 +52,7 @@ msgid "2D姿勢推定で予期せぬエラーが発生しました。"
 msgstr "Unexpected error in 2D pose estimation."
 
 msgid "学習モデル準備開始: {checkpoint}"
-msgstr "Training model preparation started: {checkpoint}"
+msgstr "Learning model preparation started: {checkpoint}"
 
 msgid "AlphaPose開始"
 msgstr "Start AlphaPose"
@@ -79,16 +79,16 @@ msgid "動画準備で予期せぬエラーが発生しました。"
 msgstr "An unexpected error occurred while preparing the video."
 
 msgid "2D姿勢推定 開始: {img_dir}"
-msgstr "2D pose estimation start: {img_dir}"
+msgstr "2D posture estimation started: {img_dir}"
 
 msgid "入力動画のサイズが調整後に40で割り切れません。調整前({W}x{H}) -> 調整後({width}x{org_height})\n適切なサイズ({height})になるまで上辺を塗りつぶします。\n{video_file}"
-msgstr "The input video size is not divisible by 40 after adjustment.Before adjustment({W}x{H}) -> After adjustment({width}x{org_height})\nIt will be the appropriate size({height}) Fill top edge up to \n{video_file}"
+msgstr "The size of the input video is not divisible by 40 after adjustment.Before adjustment({W}x{H}) -> After adjustment({width}x{org_height})\nIt will be the appropriate size({height}) Fill top edge up to \n{video_file}"
 
 msgid "AlphaPose 結果分類"
-msgstr "AlphaPose Outcome Classification"
+msgstr "ALPHAPOSE results"
 
 msgid "AlphaPose 結果分類準備"
-msgstr "AlphaPose Outcome Classification Preparation"
+msgstr "Alphapose results preparation"
 
 msgid "Rendering {running}"
 msgstr "Rendering {running}"
@@ -206,3 +206,36 @@ msgstr "3D Pose Estimation (Mediapipe) End of estimation processing: {output_dir
 
 msgid "3D姿勢推定(PoseTriplet) 結果保存完了: {output_dir_path}"
 msgstr "3D pose estimation (PoseTriplet) result saving completed: {output_dir_path}"
+
+msgid "【No.{pname}】推定結果合成 センター補正"
+msgstr "[No.{pname}] Estimation Result Synthesis Center Correction"
+
+msgid "-- 頂点データ出力終了({count})"
+msgstr "-- vertex data output end ({count})"
+
+msgid "-- 面データ出力終了({count})"
+msgstr "-- End face data output ({count})"
+
+msgid "-- テクスチャデータ出力終了({count})"
+msgstr "-- End of texture data output ({count})"
+
+msgid "-- 材質データ出力終了({count})"
+msgstr "-- end of material data output ({count})"
+
+msgid "-- ボーンデータ出力終了({count})"
+msgstr "-- end bone data output ({count})"
+
+msgid "-- モーフデータ出力終了({count})"
+msgstr "-- end of morph data output ({count})"
+
+msgid "-- 表示枠データ出力終了({count})"
+msgstr "-- end of display frame data output ({count})"
+
+msgid "-- 剛体データ出力終了({count})"
+msgstr "-- end rigid body data output ({count})"
+
+msgid "-- ジョイントデータ出力終了({count})"
+msgstr "-- end joint data output ({count})"
+
+msgid "AlphaPose 映像出力"
+msgstr "AlphaPose video output"

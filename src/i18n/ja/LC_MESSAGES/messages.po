@@ -206,3 +206,36 @@ msgstr "3D姿勢推定(Mediapipe) 推定処理終了: {output_dir}"
 
 msgid "3D姿勢推定(PoseTriplet) 結果保存完了: {output_dir_path}"
 msgstr "3D姿勢推定(PoseTriplet) 結果保存完了: {output_dir_path}"
+
+msgid "【No.{pname}】推定結果合成 センター補正"
+msgstr "【No.{pname}】推定結果合成 センター補正"
+
+msgid "-- 頂点データ出力終了({count})"
+msgstr "-- 頂点データ出力終了({count})"
+
+msgid "-- 面データ出力終了({count})"
+msgstr "-- 面データ出力終了({count})"
+
+msgid "-- テクスチャデータ出力終了({count})"
+msgstr "-- テクスチャデータ出力終了({count})"
+
+msgid "-- 材質データ出力終了({count})"
+msgstr "-- 材質データ出力終了({count})"
+
+msgid "-- ボーンデータ出力終了({count})"
+msgstr "-- ボーンデータ出力終了({count})"
+
+msgid "-- モーフデータ出力終了({count})"
+msgstr "-- モーフデータ出力終了({count})"
+
+msgid "-- 表示枠データ出力終了({count})"
+msgstr "-- 表示枠データ出力終了({count})"
+
+msgid "-- 剛体データ出力終了({count})"
+msgstr "-- 剛体データ出力終了({count})"
+
+msgid "-- ジョイントデータ出力終了({count})"
+msgstr "-- ジョイントデータ出力終了({count})"
+
+msgid "AlphaPose 映像出力"
+msgstr "AlphaPose 映像出力"
