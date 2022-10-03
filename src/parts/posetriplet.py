@@ -199,14 +199,13 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
 
-            width = height = 0
             color = json_datas["color"]
+            width = int(json_datas["image"]["width"])
+            height = int(json_datas["image"]["height"])
             keypoints_2d = {}
             for fno in tqdm(sorted([int(f) for f in json_datas["estimation"].keys()]), desc=f"No.{pname} ... "):
                 frame_json_data = json_datas["estimation"][str(fno)]
                 fno = int(fno)
-                width = int(frame_json_data["image"]["width"])
-                height = int(frame_json_data["image"]["height"])
                 keypoints_2d[fno] = np.array(frame_json_data["2d-keypoints"]).reshape(-1, 3)[:, :2]
 
             logger.info(

@@ -51,8 +51,8 @@ msgstr "指定された処理用ディレクトリが存在しません。: {img
 msgid "2D姿勢推定で予期せぬエラーが発生しました。"
 msgstr "2D姿勢推定で予期せぬエラーが発生しました。"
 
-msgid "学習モデル準備開始: {checkpoint}"
-msgstr "学習モデル準備開始: {checkpoint}"
+msgid "学習モデル準備開始"
+msgstr "学習モデル準備開始"
 
 msgid "AlphaPose開始"
 msgstr "AlphaPose開始"

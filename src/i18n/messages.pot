@@ -63,7 +63,7 @@ msgid "2D姿勢推定で予期せぬエラーが発生しました。"
 msgstr ""
 
 
-msgid "学習モデル準備開始: {checkpoint}"
+msgid "学習モデル準備開始"
 msgstr ""
 
 
@@ -312,5 +312,9 @@ msgstr ""
 
 
 msgid "AlphaPose 映像出力"
+msgstr ""
+
+
+msgid "学習モデル準備開始: {checkpoint}"
 msgstr ""
 

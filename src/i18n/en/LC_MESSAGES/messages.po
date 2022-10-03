@@ -51,8 +51,8 @@ msgstr "The specified processing directory does not exist: {img_dir}"
 msgid "2D姿勢推定で予期せぬエラーが発生しました。"
 msgstr "Unexpected error in 2D pose estimation."
 
-msgid "学習モデル準備開始: {checkpoint}"
-msgstr "Learning model preparation started: {checkpoint}"
+msgid "学習モデル準備開始"
+msgstr "Learning model preparation started"
 
 msgid "AlphaPose開始"
 msgstr "Start AlphaPose"
