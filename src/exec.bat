@@ -15,8 +15,8 @@ set HAND=
 @REM python executor.py --video-file "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\02\buster\buster_0-1700.mp4" --process %PROCESS% %HAND% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --img-dir "E:\\MMD\\MikuMikuDance_v926x64\\Work\\201805_auto\\02\\buster\buster_0-1700_mp4_20221001_233113" --process %PROCESS% %HAND% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 
-python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\03\bbf\bbf_mp4_20220928_105958" --process %PROCESS% %HAND% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\02\buster\buster_mp4_20220928_114021" --process %PROCESS% %HAND% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\03\bbf\bbf_mp4_20220928_105958" --process %PROCESS% %HAND% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\03\ivory\ivory_mp4_20220928_121801" --process %PROCESS% %HAND% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\03\night\night_mp4_20220929_151348" --process %PROCESS% %HAND% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\01\snobbism\snobbism_mp4_20220928_112703" --process %PROCESS% %HAND% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
