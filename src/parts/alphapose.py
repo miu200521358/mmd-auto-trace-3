@@ -250,9 +250,10 @@ def execute(args):
 
                         ocenters = {}
                         ohips = {}
+                        ofnos = {}
                         for ppidx, odata in output_datas.items():
                             oefno = list(odata.keys())[-1]
-                            for n in range(1, 11):
+                            for n in range(1, 6):
                                 # 続きの場合、少し前のキーで終わってるブロックがあるか確認する
                                 if sfno - n <= oefno:
                                     # 最後のキーフレがひとつ前のキーで終わっている場合
@@ -274,6 +275,8 @@ def execute(args):
                                         # 大体同じ位置にあるBBOXがあったら検討対象
                                         ocenters[ppidx] = ocenter
                                         ohips[ppidx] = ohip
+                                        ofnos[ppidx] = np.array([oefno, oefno])
+                                        break
 
                         if ocenters:
                             # BBOXの中央とHipの位置から最も近いppidxを選ぶ
@@ -281,15 +284,19 @@ def execute(args):
                                 np.argmin(
                                     np.sum(
                                         np.hstack(
-                                            [np.abs(np.array(list(ocenters.values())) - pcenter), np.abs(np.array(list(ohips.values())) - phip)]
+                                            [
+                                                np.abs(np.array(list(ocenters.values())) - pcenter),
+                                                np.abs(np.array(list(ohips.values())) - phip),
+                                                np.abs(np.array(list(ofnos.values())) - sfno) * 100,
+                                            ]
                                         ),
                                         axis=1,
                                     )
                                 )
                             ]
 
-                    if 0 > person_idx:
-                        # 最終的に求められなかった場合、新規に求める
+                    if 0 > person_idx or (person_idx in output_datas and sfno in output_datas[person_idx]):
+                        # 最終的に求められなかった場合、もしくは既に割り当て済みの場合、新規に求める
                         person_idx = len(output_datas)
                         output_datas[person_idx] = {}
 
