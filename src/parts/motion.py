@@ -421,6 +421,9 @@ def execute(args):
 
             # 間引き
             for bone_name in tqdm(trace_org_motion.bones.names()):
+                if bone_name == "全ての親":
+                    continue
+
                 mx_values = []
                 my_values = []
                 mz_values = []
