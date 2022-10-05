@@ -322,9 +322,9 @@ def execute(args):
         cidxs = np.concatenate(
             [
                 np.where(idxs % 5 == 0)[0],
-                np.where(idxs % 5 == 1)[0],
+                np.where(idxs % 5 == 1)[0][::-1],
                 np.where(idxs % 5 == 2)[0],
-                np.where(idxs % 5 == 3)[0],
+                np.where(idxs % 5 == 3)[0][::-1],
                 np.where(idxs % 5 == 4)[0],
             ]
         )
