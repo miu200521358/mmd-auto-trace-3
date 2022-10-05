@@ -17,6 +17,7 @@ from PoseTriplet.estimator_inference.common.generators import \
     UnchunkedGenerator
 from PoseTriplet.estimator_inference.common.model import TemporalModel
 from PoseTriplet.estimator_inference.common.utils import evaluate
+from scipy.signal import savgol_filter
 from tqdm import tqdm
 
 from parts.config import DirName
@@ -206,7 +207,7 @@ def execute(args):
             for fno in tqdm(sorted([int(f) for f in json_datas["estimation"].keys()]), desc=f"No.{pname} ... "):
                 frame_json_data = json_datas["estimation"][str(fno)]
                 fno = int(fno)
-                keypoints_2d[fno] = np.array(frame_json_data["2d-keypoints"]).reshape(-1, 3)[:, :2]
+                keypoints_2d[fno] = np.array(frame_json_data["2d-keypoints"]).reshape(-1, 3)
 
             logger.info(
                 "【No.{pname}】PoseTriplet 開始",
@@ -309,11 +310,37 @@ def execute(args):
 
 
 def fetch_keypoint(keypoints: np.ndarray, width: int, height: int):
+    kps = keypoints.copy()
+    for _ in range(5):
+        # 信頼度が低いものはまず前で補間する(0F目はスルー)
+        low_score_rows, low_score_cols = np.where(kps[1:, :, 2] < 0.6)
+        low_score_rows += 1
+        # 前のキーフレが信頼度が高かった場合、そちらで上書き
+        prev_hight_score_idxs = np.where(kps[low_score_rows - 1, low_score_cols, 2] > 0.6)[0]
+        kps[low_score_rows[prev_hight_score_idxs], low_score_cols[prev_hight_score_idxs]] = kps[(low_score_rows - 1)[prev_hight_score_idxs], low_score_cols[prev_hight_score_idxs]].copy()
+        # まだ信頼度が低いものは後で補間する(最後はスルー)
+        low_score_rows, low_score_cols = np.where(kps[:-1, :, 2] < 0.6)
+        # 後のキーフレが信頼度が高かった場合、そちらで上書き
+        prev_hight_score_idxs = np.where(kps[low_score_rows + 1, low_score_cols, 2] > 0.6)[0]
+        kps[low_score_rows[prev_hight_score_idxs], low_score_cols[prev_hight_score_idxs]] = kps[(low_score_rows + 1)[prev_hight_score_idxs], low_score_cols[prev_hight_score_idxs]].copy()
+    
     # Keypointの並び順を調整する
-    spine = 0.5 * (keypoints[:, HALPE_KEYPOINTS["Neck"]] + keypoints[:, HALPE_KEYPOINTS["Pelvis"]])
+    spine = 0.5 * (kps[:, HALPE_KEYPOINTS["Neck"]] + kps[:, HALPE_KEYPOINTS["Pelvis"]])
     combine = np.transpose([spine], (1, 0, 2))
-    combine_kp = np.concatenate([keypoints, combine], axis=1)
-    keypoints_imgunnorm = combine_kp[:, HALPE_2_COCO_ORDER].copy()
+    combine_kp = np.concatenate([kps, combine], axis=1)
+    ordered_kps = combine_kp[:, HALPE_2_COCO_ORDER, :2].copy()
+
+    # スムージング
+    keypoints_imgunnorm = savgol_filter(
+        ordered_kps.copy(),
+        window_length=3,
+        polyorder=2,
+        deriv=0,
+        delta=1.0,
+        axis=0,
+        mode="interp",
+        cval=0.0,
+    )
 
     # 正方形に合わせる
     if width > height:  # up down padding
