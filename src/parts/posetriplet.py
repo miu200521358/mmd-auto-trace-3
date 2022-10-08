@@ -243,11 +243,11 @@ def execute(args):
                 # [0.14070565, -0.15007018, -0.7552408, 0.62232804], dtype=np.float32
                 # '[x=-2.955, y=-23.569, z=-100.406]'
                 # # MQuaternion.from_euler_degrees(-2.955, 0, -100.406).to_log()
-                [0.0165, -0.01981, -0.76806, 0.63986], dtype=np.float32
-                # # MQuaternion.from_euler_degrees(-2.955, -68.569, -100.406).to_log()
-                # [0.41901, -0.3768, -0.64391, 0.51752], dtype=np.float32
-                # # MQuaternion.from_euler_degrees(-2.955, 23.569, -100.406).to_log()
-                # [-0.17302, 0.11129, -0.7485, 0.63042], dtype=np.float32
+                # [0.0165, -0.01981, -0.76806, 0.63986], dtype=np.float32
+                # # MQuaternion.from_euler_degrees(0, 0, -100.406).to_log() 
+                # [0.0, 0.0, -0.76832, 0.64007], dtype=np.float32
+                # MQuaternion.from_euler_degrees(0, 0, -90).to_log()
+                [0.0, 0.0, -0.70711, 0.70711], dtype=np.float32
             )
             prediction_world = camera_to_world(prediction, R=rot, t=0)
             # 高さのリベース
