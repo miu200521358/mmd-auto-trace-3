@@ -133,30 +133,42 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
 
-            # 踵の位置を推定
+            hip_ys = {"L": {}, "R": {}}
+            knee_ys = {"L": {}, "R": {}}
+            ankle_ys = {"L": {}, "R": {}}
+            leg_lengths = {"L": {}, "R": {}}
+            for direction in ("L", "R"):
+                for fno in tqdm(joint_datas["pt_joints", f"{direction}Hip", "y"].keys(), desc=f"No.{pname} ... "):
+                    if (
+                        fno in joint_datas["pt_joints", "Pelvis", "x"]
+                        and fno in joint_datas["pt_joints", f"{direction}Hip", "x"]
+                        and fno in joint_datas["pt_joints", f"{direction}Knee", "x"]
+                        and fno in joint_datas["pt_joints", f"{direction}Ankle", "x"]
+                    ):
+                        hip_ys[direction][fno] = joint_datas["pt_joints", f"{direction}Hip", "y"][fno]
+                        knee_ys[direction][fno] = joint_datas["pt_joints", f"{direction}Knee", "y"][fno]
+                        ankle_ys[direction][fno] = joint_datas["pt_joints", f"{direction}Ankle", "y"][fno]
 
-            left_ankle_ys = {}
-            for fno, fval in tqdm(joint_datas["pt_joints", "LAnkle", "y"].items(), desc=f"No.{pname} ... "):
-                left_ankle_ys[fno] = fval
+                        hip_pos = MVector3D(
+                            joint_datas["pt_joints", f"{direction}Hip", "x"][fno],
+                            joint_datas["pt_joints", f"{direction}Hip", "y"][fno],
+                            joint_datas["pt_joints", f"{direction}Hip", "z"][fno],
+                        )
+                        knee_pos = MVector3D(
+                            joint_datas["pt_joints", f"{direction}Knee", "x"][fno],
+                            joint_datas["pt_joints", f"{direction}Knee", "y"][fno],
+                            joint_datas["pt_joints", f"{direction}Knee", "z"][fno],
+                        )
+                        ankle_pos = MVector3D(
+                            joint_datas["pt_joints", f"{direction}Ankle", "x"][fno],
+                            joint_datas["pt_joints", f"{direction}Ankle", "y"][fno],
+                            joint_datas["pt_joints", f"{direction}Ankle", "z"][fno],
+                        )
 
-            right_ankle_ys = {}
-            for fno, fval in tqdm(joint_datas["pt_joints", "RAnkle", "y"].items(), desc=f"No.{pname} ... "):
-                right_ankle_ys[fno] = fval
+                        leg_lengths[direction][fno] = hip_pos.distance(knee_pos) + knee_pos.distance(ankle_pos)
 
-            left_ankle_infections = get_infections(list(left_ankle_ys.values()), 0.1, 1)
-            right_ankle_infections = get_infections(list(right_ankle_ys.values()), 0.1, 1)
-            # 足首の高さの中央値が接地してると仮定する（＋ヒールとかがあるのでバッファ）
-            median_ankle_y = (
-                np.median(
-                    np.concatenate(
-                        [
-                            np.array(list(left_ankle_ys.values()))[left_ankle_infections],
-                            np.array(list(right_ankle_ys.values()))[right_ankle_infections],
-                        ]
-                    )
-                )
-                + 15
-            )
+            median_leg_length = np.median(list(leg_lengths["L"].values()) + list(leg_lengths["L"].values()))
+            median_ankle_y = np.median([list(ankle_ys["L"].values()), list(ankle_ys["R"].values())])
 
             logger.info(
                 "【No.{pname}】推定結果合成 合成開始",
@@ -175,25 +187,28 @@ def execute(args):
 
                 if not (
                     ("mp_body_world_joints", "Pelvis", "x") in joint_datas
-                    and ("mp_body_world_joints", "Pelvis", "y") in joint_datas
-                    and ("mp_body_world_joints", "Pelvis", "z") in joint_datas
                     and fno in joint_datas[("mp_body_world_joints", "Pelvis", "x")]
-                    and fno in joint_datas[("mp_body_world_joints", "Pelvis", "y")]
-                    and fno in joint_datas[("mp_body_world_joints", "Pelvis", "z")]
                     and ("mp_body_world_joints", "LAnkle", "x") in joint_datas
-                    and ("mp_body_world_joints", "LAnkle", "y") in joint_datas
-                    and ("mp_body_world_joints", "LAnkle", "z") in joint_datas
                     and fno in joint_datas[("mp_body_world_joints", "LAnkle", "x")]
-                    and fno in joint_datas[("mp_body_world_joints", "LAnkle", "y")]
-                    and fno in joint_datas[("mp_body_world_joints", "LAnkle", "z")]
                     and ("mp_body_world_joints", "RAnkle", "x") in joint_datas
-                    and ("mp_body_world_joints", "RAnkle", "y") in joint_datas
-                    and ("mp_body_world_joints", "RAnkle", "z") in joint_datas
                     and fno in joint_datas[("mp_body_world_joints", "RAnkle", "x")]
-                    and fno in joint_datas[("mp_body_world_joints", "RAnkle", "y")]
-                    and fno in joint_datas[("mp_body_world_joints", "RAnkle", "z")]
+                    and fno in hip_ys["L"]
+                    and fno in knee_ys["L"]
+                    and fno in ankle_ys["L"]
                 ):
                     continue
+
+                min_ankle_y = np.min([ankle_ys["L"][fno], ankle_ys["R"][fno]])
+                max_hip_y = np.max([hip_ys["L"][fno], hip_ys["R"][fno]])
+                adjust_y = median_ankle_y
+                if (max_hip_y - min(median_ankle_y, min_ankle_y)) < median_leg_length:
+                    # 足から足首中央までの長さ が足の長さの中央値一定より短い場合、どっちかの足は接地してるとみなす
+                    if ankle_ys["R"][fno] <= ankle_ys["L"][fno]:
+                        # 右足のが低い場合、右足で接地してると見なして、右足首のY位置に合わせる
+                        adjust_y = ankle_ys["R"][fno]
+                    elif ankle_ys["R"][fno] > ankle_ys["L"][fno]:
+                        # 左足のが低い場合、左足で接地してると見なして、左足首のY位置に合わせる
+                        adjust_y = ankle_ys["L"][fno]
 
                 for joint_name in BODY_LANDMARKS:
                     if not (
@@ -208,9 +223,14 @@ def execute(args):
 
                     mix_joints["joints"][fno]["body"][joint_name] = {
                         "x": joint_datas[("pt_joints", joint_name, "x")][fno] - all_root_pos.x,
-                        "y": joint_datas[("pt_joints", joint_name, "y")][fno] - median_ankle_y,
+                        "y": max(0, joint_datas[("pt_joints", joint_name, "y")][fno] - adjust_y),
                         "z": joint_datas[("pt_joints", joint_name, "z")][fno] - all_root_pos.z,
                     }
+
+                    if 10 < mix_joints["joints"][fno]["body"][joint_name]["y"] and (
+                        "Ankle" in joint_name or "Heel" in joint_name or "FootIndex" in joint_name
+                    ):
+                        mix_joints["joints"][fno]["body"][joint_name]["y"] *= 1.4
 
                 for jname in [
                     "Pelvis2",
@@ -257,7 +277,7 @@ def execute(args):
                             and fno in joint_datas[("mp_body_world_joints", f"{direction}Index", axis)]
                             and fno in joint_datas[("mp_body_world_joints", f"{direction}Thumb", axis)]
                             and fno in joint_datas[("mp_body_world_joints", f"{direction}Wrist", "score")]
-                            and joint_datas[("mp_body_world_joints", f"{direction}Wrist", "score")][fno] > 0.8
+                            and joint_datas[("mp_body_world_joints", f"{direction}Wrist", "score")][fno] > 0.9
                         ):
                             if f"{direction}Pinky" not in mix_joints["joints"][fno]["body"]:
                                 mix_joints["joints"][fno]["body"][f"{direction}Pinky"] = {}
@@ -289,7 +309,7 @@ def execute(args):
                             and fno in joint_datas[("mp_body_world_joints", f"{direction}Heel", axis)]
                             and fno in joint_datas[("mp_body_world_joints", f"{direction}FootIndex", axis)]
                             and fno in joint_datas[("mp_body_world_joints", f"{direction}Ankle", "score")]
-                            and joint_datas[("mp_body_world_joints", f"{direction}Ankle", "score")][fno] > 0.8
+                            and joint_datas[("mp_body_world_joints", f"{direction}Ankle", "score")][fno] > 0.9
                         ):
                             if f"{direction}Heel" not in mix_joints["joints"][fno]["body"]:
                                 mix_joints["joints"][fno]["body"][f"{direction}Heel"] = {}
