@@ -580,6 +580,9 @@ class MQuaternion(MVector):
     def xyz(self) -> MVector3D:
         return MVector3D(self.vector.components[1:])
 
+    def to_log(self) -> str:
+        return f"[x={round(self.x, 5)}, y={round(self.y, 5)}, " + f"z={round(self.z, 5)}, scalar={round(self.scalar, 5)}]"
+
     def effective(self):
         self.vector.components[np.isnan(self.vector.components)] = 0
         self.vector.components[np.isinf(self.vector.components)] = 0
