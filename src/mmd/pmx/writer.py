@@ -4,38 +4,14 @@ from math import isinf, isnan
 from base.base import BaseModel
 from base.logger import MLogger
 from mmd.pmx.collection import PmxModel
-from mmd.pmx.part import (
-    Bdef1,
-    Bdef2,
-    Bdef4,
-    Bone,
-    BoneFlg,
-    BoneMorphOffset,
-    DeformType,
-    DisplaySlot,
-    DisplaySlotReference,
-    DisplayType,
-    DrawFlg,
-    Face,
-    GroupMorphOffset,
-    Ik,
-    IkLink,
-    Joint,
-    Material,
-    MaterialMorphCalcMode,
-    MaterialMorphOffset,
-    Morph,
-    MorphPanel,
-    MorphType,
-    RigidBody,
-    RigidBodyCollisionGroup,
-    Sdef,
-    Texture,
-    ToonSharing,
-    UvMorphOffset,
-    Vertex,
-    VertexMorphOffset,
-)
+from mmd.pmx.part import (Bdef1, Bdef2, Bdef4, Bone, BoneFlg, BoneMorphOffset,
+                          DeformType, DisplaySlot, DisplaySlotReference,
+                          DisplayType, DrawFlg, Face, GroupMorphOffset, Ik,
+                          IkLink, Joint, Material, MaterialMorphCalcMode,
+                          MaterialMorphOffset, Morph, MorphPanel, MorphType,
+                          RigidBody, RigidBodyCollisionGroup, Sdef, Texture,
+                          ToonSharing, UvMorphOffset, Vertex,
+                          VertexMorphOffset)
 from tqdm import tqdm
 
 logger = MLogger(__name__)
@@ -155,7 +131,7 @@ class PmxWriter(BaseModel):
 
                 write_number(fout, TYPE_FLOAT, float(vertex.edge_factor), True)
 
-            logger.info("-- 頂点データ出力終了({count})", count=len(model.vertices))
+            logger.debug("-- 頂点データ出力終了({count})", count=len(model.vertices))
 
             # 面の数
             fout.write(struct.pack(TYPE_INT, len(model.faces) * 3))
@@ -165,7 +141,7 @@ class PmxWriter(BaseModel):
                 for vidx in face.vertices:
                     fout.write(struct.pack(vertex_idx_type, vidx))
 
-            logger.info("-- 面データ出力終了({count})", count=len(model.faces))
+            logger.debug("-- 面データ出力終了({count})", count=len(model.faces))
 
             # テクスチャの数
             fout.write(struct.pack(TYPE_INT, len(model.textures)))
@@ -174,7 +150,7 @@ class PmxWriter(BaseModel):
             for tex_path in model.textures:
                 write_text(fout, tex_path, "")
 
-            logger.info("-- テクスチャデータ出力終了({count})", count=len(model.textures))
+            logger.debug("-- テクスチャデータ出力終了({count})", count=len(model.textures))
 
             # 材質の数
             fout.write(struct.pack(TYPE_INT, len(model.materials)))
@@ -227,7 +203,7 @@ class PmxWriter(BaseModel):
                 # 材質に対応する面(頂点)数
                 write_number(fout, TYPE_INT, material.vertices_count)
 
-            logger.info("-- 材質データ出力終了({count})", count=len(model.materials))
+            logger.debug("-- 材質データ出力終了({count})", count=len(model.materials))
 
             # ボーンの数
             fout.write(struct.pack(TYPE_INT, len(model.bones)))
@@ -306,7 +282,7 @@ class PmxWriter(BaseModel):
                             write_number(fout, TYPE_FLOAT, float(link.max_angle_limit.radians.y))
                             write_number(fout, TYPE_FLOAT, float(link.max_angle_limit.radians.z))
 
-            logger.info("-- ボーンデータ出力終了({count})", count=len(model.bones))
+            logger.debug("-- ボーンデータ出力終了({count})", count=len(model.bones))
 
             # モーフの数
             write_number(fout, TYPE_INT, len(model.morphs))
@@ -383,7 +359,7 @@ class PmxWriter(BaseModel):
                         fout.write(struct.pack(morph_idx_type, offset.morph_index))
                         write_number(fout, TYPE_FLOAT, float(offset.morph_factor))
 
-            logger.info("-- モーフデータ出力終了({count})", count=len(model.morphs))
+            logger.debug("-- モーフデータ出力終了({count})", count=len(model.morphs))
 
             # 表示枠の数
             write_number(fout, TYPE_INT, len(model.display_slots))
@@ -407,7 +383,7 @@ class PmxWriter(BaseModel):
                         # モーフIndex
                         fout.write(struct.pack(morph_idx_type, reference.display_index))
 
-            logger.info("-- 表示枠データ出力終了({count})", count=len(model.display_slots))
+            logger.debug("-- 表示枠データ出力終了({count})", count=len(model.display_slots))
 
             # 剛体の数
             write_number(fout, TYPE_INT, len(list(model.rigidbodies)))
@@ -449,7 +425,7 @@ class PmxWriter(BaseModel):
                 # 1  : byte	| 剛体の物理演算 - 0:ボーン追従(static) 1:物理演算(dynamic) 2:物理演算 + Bone位置合わせ
                 fout.write(struct.pack(TYPE_BYTE, rigidbody.mode))
 
-            logger.info("-- 剛体データ出力終了({count})", count=len(model.rigidbodies))
+            logger.debug("-- 剛体データ出力終了({count})", count=len(model.rigidbodies))
 
             # ジョイントの数
             write_number(fout, TYPE_INT, len(list(model.joints)))
@@ -497,7 +473,7 @@ class PmxWriter(BaseModel):
                 write_number(fout, TYPE_FLOAT, float(joint.param.spring_constant_rotation.y))
                 write_number(fout, TYPE_FLOAT, float(joint.param.spring_constant_rotation.z))
 
-            logger.info("-- ジョイントデータ出力終了({count})", count=len(model.joints))
+            logger.debug("-- ジョイントデータ出力終了({count})", count=len(model.joints))
 
 
 def define_write_index(size: int, is_vertex=False) -> tuple[int, str]:
