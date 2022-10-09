@@ -98,7 +98,7 @@ def execute(args):
             )
 
         # 元のフレームを30fpsで計算し直した場合の1Fごとの該当フレーム数
-        interpolations = np.round(np.arange(0, count + 1, fps / 30)).astype(np.int32)
+        interpolations = np.round(np.arange(0, count, fps / 30)).astype(np.int32)
 
         i = 0
         for n in tqdm(range(count)):
@@ -129,9 +129,10 @@ def execute(args):
                 # opencv用に変換
                 out_frame = img_as_ubyte(img)
 
-                # PNG出力
-                cv2.imwrite(os.path.join(process_img_dir, DirName.FRAMES.value, f"{i:012}.png"), out_frame)
-                i += 1
+                for _ in range(np.where(interpolations == n)[0].shape[0]):
+                    # PNG出力(FPSが小さい場合複数個出る場合もある)
+                    cv2.imwrite(os.path.join(process_img_dir, DirName.FRAMES.value, f"{i:012}.png"), out_frame)
+                    i += 1
 
         # 終わったら開放
         cap.release()
