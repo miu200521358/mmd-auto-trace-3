@@ -167,8 +167,13 @@ def execute(args):
 
                         leg_lengths[direction][fno] = hip_pos.distance(knee_pos) + knee_pos.distance(ankle_pos)
 
-            median_leg_length = np.median(list(leg_lengths["L"].values()) + list(leg_lengths["L"].values()))
-            median_ankle_y = np.median([list(ankle_ys["L"].values()), list(ankle_ys["R"].values())])
+            median_leg_length = np.median(list(leg_lengths["L"].values()) + list(leg_lengths["R"].values()))
+            mean_ankle_y = np.mean(
+                [
+                    np.mean([list(ankle_ys["L"].values()), list(ankle_ys["R"].values())]),
+                    np.median([list(ankle_ys["L"].values()), list(ankle_ys["R"].values())]),
+                ]
+            )
 
             logger.info(
                 "【No.{pname}】推定結果合成 合成開始",
@@ -200,8 +205,8 @@ def execute(args):
 
                 min_ankle_y = np.min([ankle_ys["L"][fno], ankle_ys["R"][fno]])
                 max_hip_y = np.max([hip_ys["L"][fno], hip_ys["R"][fno]])
-                adjust_y = median_ankle_y
-                if (max_hip_y - min(median_ankle_y, min_ankle_y)) < median_leg_length:
+                adjust_y = mean_ankle_y
+                if (max_hip_y - min(mean_ankle_y, min_ankle_y)) < median_leg_length:
                     # 足から足首中央までの長さ が足の長さの中央値一定より短い場合、どっちかの足は接地してるとみなす
                     if ankle_ys["R"][fno] <= ankle_ys["L"][fno]:
                         # 右足のが低い場合、右足で接地してると見なして、右足首のY位置に合わせる
