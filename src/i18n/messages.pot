@@ -318,3 +318,15 @@ msgstr ""
 msgid "学習モデル準備開始: {checkpoint}"
 msgstr ""
 
+
+msgid "【No.{pname}】推定結果合成 スムージング"
+msgstr ""
+
+
+msgid "AlphaPose 開始: {img_dir}"
+msgstr ""
+
+
+msgid "AlphaPose 結果保存完了: {outputpath}"
+msgstr ""
+

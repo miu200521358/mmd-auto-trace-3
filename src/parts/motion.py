@@ -96,7 +96,7 @@ def execute(args):
                 for jname, joint in frames["body"].items():
                     if jname not in PMX_CONNECTIONS:
                         continue
-                    bf = VmdBoneFrame(name=PMX_CONNECTIONS[jname], index=fno)
+                    bf = VmdBoneFrame(name=PMX_CONNECTIONS[jname]["jname"], index=fno)
                     bf.position = MVector3D(
                         float(joint["x"]) * MIKU_CM,
                         float(joint["y"]) * MIKU_CM,
@@ -107,7 +107,7 @@ def execute(args):
                 for jname, joint in frames["2d"].items():
                     if jname not in PMX_CONNECTIONS:
                         continue
-                    bf = VmdBoneFrame(name=PMX_CONNECTIONS[jname], index=fno)
+                    bf = VmdBoneFrame(name=PMX_CONNECTIONS[jname]["jname"], index=fno)
                     bf.position = MVector3D(
                         float(joint["x"]),
                         float(joint["y"]),
@@ -160,7 +160,7 @@ def execute(args):
                         cross_to_name = vmd_params["cross"][1] if "cross" in vmd_params else vmd_params["direction"][1]
                         cancel_names = vmd_params["cancel"]
 
-                        for mov_bf in dest_motion.bones[target_bone_name]:
+                        for mov_bf in dest_motion.bones[direction_from_name]:
                             if mov_bf.index not in dest_motion.bones[direction_from_name] or mov_bf.index not in dest_motion.bones[direction_to_name]:
                                 # キーがない場合、スルーする
                                 pchar.update(1)
@@ -499,41 +499,41 @@ def execute(args):
 
 
 PMX_CONNECTIONS = {
-    "Spine": "上半身",
-    "Spine2": "上半身2",
-    "Neck": "首",
-    "Nose": "鼻",
-    "Head": "頭",
-    "REye": "右目",
-    "LEye": "左目",
-    "REar": "右耳",
-    "LEar": "左耳",
-    "Pelvis": "下半身",
-    "Pelvis2": "下半身2",
-    "LHip": "左足",
-    "RHip": "右足",
-    "LKnee": "左ひざ",
-    "RKnee": "右ひざ",
-    "LAnkle": "左足首",
-    "RAnkle": "右足首",
-    "LFootIndex": "左つま先",
-    "RFootIndex": "右つま先",
-    "LHeel": "左かかと",
-    "RHeel": "右かかと",
-    "LCollar": "左肩",
-    "RCollar": "右肩",
-    "LShoulder": "左腕",
-    "RShoulder": "右腕",
-    "LElbow": "左ひじ",
-    "RElbow": "右ひじ",
-    "LWrist": "左手首",
-    "RWrist": "右手首",
-    "RPinky": "右小指１",
-    "LPinky": "左小指１",
-    "RIndex": "右人指１",
-    "LIndex": "左人指１",
-    "RThumb": "右親指０",
-    "LThumb": "左親指０",
+    "Spine": {"jname": "上半身", "direction": "upper"},
+    "Spine2": {"jname": "上半身2", "direction": "upper"},
+    "Neck": {"jname": "首", "direction": "upper"},
+    "Nose": {"jname": "鼻", "direction": "upper"},
+    "Head": {"jname": "頭", "direction": "upper"},
+    "REye": {"jname": "右目", "direction": "upper"},
+    "LEye": {"jname": "左目", "direction": "upper"},
+    "REar": {"jname": "右耳", "direction": "upper"},
+    "LEar": {"jname": "左耳", "direction": "upper"},
+    "LCollar": {"jname": "左肩", "direction": "upper"},
+    "RCollar": {"jname": "右肩", "direction": "upper"},
+    "LShoulder": {"jname": "左腕", "direction": "upper"},
+    "RShoulder": {"jname": "右腕", "direction": "upper"},
+    "LElbow": {"jname": "左ひじ", "direction": "upper"},
+    "RElbow": {"jname": "右ひじ", "direction": "upper"},
+    "LWrist": {"jname": "左手首", "direction": "upper"},
+    "RWrist": {"jname": "右手首", "direction": "upper"},
+    "RPinky": {"jname": "右小指１", "direction": "upper"},
+    "LPinky": {"jname": "左小指１", "direction": "upper"},
+    "RIndex": {"jname": "右人指１", "direction": "upper"},
+    "LIndex": {"jname": "左人指１", "direction": "upper"},
+    "RThumb": {"jname": "右親指０", "direction": "upper"},
+    "LThumb": {"jname": "左親指０", "direction": "upper"},
+    "Pelvis": {"jname": "下半身", "direction": "lower"},
+    "Pelvis2": {"jname": "下半身2", "direction": "lower"},
+    "LHip": {"jname": "左足", "direction": "lower"},
+    "RHip": {"jname": "右足", "direction": "lower"},
+    "LKnee": {"jname": "左ひざ", "direction": "lower"},
+    "RKnee": {"jname": "右ひざ", "direction": "lower"},
+    "LAnkle": {"jname": "左足首", "direction": "lower"},
+    "RAnkle": {"jname": "右足首", "direction": "lower"},
+    "LFootIndex": {"jname": "左つま先", "direction": "lower"},
+    "RFootIndex": {"jname": "右つま先", "direction": "lower"},
+    "LHeel": {"jname": "左かかと", "direction": "lower"},
+    "RHeel": {"jname": "右かかと", "direction": "lower"},
 }
 
 
@@ -588,7 +588,7 @@ VMD_CONNECTIONS = {
         "polyorder": 2,
     },
     "首": {
-        "direction": ("首", "頭"),
+        "direction": ("首", "鼻"),
         "up": ("左腕", "右腕"),
         "cancel": (
             "上半身",
@@ -598,7 +598,7 @@ VMD_CONNECTIONS = {
         "polyorder": 2,
     },
     "頭": {
-        "direction": ("首", "頭"),
+        "direction": ("首", "鼻"),
         "up": ("左耳", "右耳"),
         "cancel": (
             "上半身",

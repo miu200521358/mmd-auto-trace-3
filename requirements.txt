@@ -10,9 +10,7 @@ PyYAML==6.0
 pycocotools==2.0.5
 git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox
 munkres==1.1.4
-
-# mediapipe
-mediapipe==0.8.11
+chumpy
 
 # mmd
 numpy-quaternion==2022.4.2

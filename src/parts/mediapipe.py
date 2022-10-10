@@ -44,7 +44,7 @@ def execute(args):
         output_dir_path = os.path.join(args.img_dir, DirName.MEDIAPIPE.value)
         os.makedirs(output_dir_path, exist_ok=True)
 
-        with mp_holistic.Holistic(model_complexity=2, min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+        with mp_holistic.Holistic(model_complexity=2, min_detection_confidence=0.3, min_tracking_confidence=0.3) as holistic:
             for persion_json_path in glob(os.path.join(args.img_dir, DirName.ALPHAPOSE.value, "*.json")):
                 if FileName.ALPHAPOSE_RESULT.value in persion_json_path:
                     continue
@@ -113,18 +113,10 @@ def execute(args):
                                 "score": float(landmark.visibility),
                             }
 
-                        for jname in (
-                            "Pelvis",
-                            "Pelvis2",
-                            "Spine",
-                            "Neck",
-                            "Head",
-                            "LCollar",
-                            "RCollar",
-                        ):
+                        for jname in ADD_POSE_LANDMARKS:
                             frame_json_data["mp_body_world_joints"][jname] = {}
 
-                        for axis in ["x", "y", "z"]:
+                        for axis in ["x", "y", "z", "score"]:
                             # 下半身
                             frame_json_data["mp_body_world_joints"]["Pelvis"][axis] = np.mean(
                                 [
@@ -155,25 +147,25 @@ def execute(args):
                                     frame_json_data["mp_body_world_joints"]["RShoulder"][axis],
                                 ]
                             )
+                            # 上半身2
+                            frame_json_data["mp_body_world_joints"]["Spine2"][axis] = np.mean(
+                                [
+                                    frame_json_data["mp_body_world_joints"]["Neck"][axis],
+                                    frame_json_data["mp_body_world_joints"]["Spine"][axis],
+                                ]
+                            )
                             # 左肩
                             frame_json_data["mp_body_world_joints"]["LCollar"][axis] = np.mean(
                                 [
+                                    frame_json_data["mp_body_world_joints"]["Neck"][axis],
                                     frame_json_data["mp_body_world_joints"]["LShoulder"][axis],
-                                    frame_json_data["mp_body_world_joints"]["RShoulder"][axis],
                                 ]
                             )
                             # 右肩
                             frame_json_data["mp_body_world_joints"]["RCollar"][axis] = np.mean(
                                 [
-                                    frame_json_data["mp_body_world_joints"]["LShoulder"][axis],
+                                    frame_json_data["mp_body_world_joints"]["Neck"][axis],
                                     frame_json_data["mp_body_world_joints"]["RShoulder"][axis],
-                                ]
-                            )
-                            # 頭
-                            frame_json_data["mp_body_world_joints"]["Head"][axis] = np.mean(
-                                [
-                                    frame_json_data["mp_body_world_joints"]["LEar"][axis],
-                                    frame_json_data["mp_body_world_joints"]["REar"][axis],
                                 ]
                             )
 
@@ -265,6 +257,16 @@ POSE_LANDMARKS = [
     "LHeel",
     "RFootIndex",
     "LFootIndex",
+]
+
+ADD_POSE_LANDMARKS = [
+    "Pelvis",
+    "Pelvis2",
+    "Spine",
+    "Spine2",
+    "Neck",
+    "LCollar",
+    "RCollar",
 ]
 
 HAND_LANDMARKS = [

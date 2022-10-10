@@ -20,7 +20,7 @@ import torch
 import yaml  # type: ignore
 from AlphaPose.alphapose.models import builder
 from AlphaPose.alphapose.utils.detector import DetectionLoader
-from AlphaPose.alphapose.utils.writer_smpl import DataWriterSMPL
+from AlphaPose.alphapose.utils.writer import DataWriter
 
 # from AlphaPose.detector.yolo_api import YOLODetector
 # from AlphaPose.detector.yolo_cfg import cfg as ycfg
@@ -38,43 +38,11 @@ from parts.config import DirName, FileName
 
 logger = MLogger(__name__)
 
-SMPL_JOINT_29 = {
-    "pelvis": 0,
-    "left_hip": 1,
-    "right_hip": 2,
-    "spine1": 3,
-    "left_knee": 4,
-    "right_knee": 5,
-    "spine2": 6,
-    "left_ankle": 7,
-    "right_ankle": 8,
-    "spine3": 9,
-    "left_foot": 10,
-    "right_foot": 11,
-    "neck": 12,
-    "left_collar": 13,
-    "right_collar": 14,
-    "jaw": 15,
-    "left_shoulder": 16,
-    "right_shoulder": 17,
-    "left_elbow": 18,
-    "right_elbow": 19,
-    "left_wrist": 20,
-    "right_wrist": 21,
-    "left_thumb": 22,
-    "right_thumb": 23,
-    "head": 24,
-    "left_middle": 25,
-    "right_middle": 26,
-    "left_bigtoe": 27,
-    "right_bigtoe": 28,
-}
-
 
 def execute(args):
     try:
         logger.info(
-            "AlphaPose 開始: {img_dir}",
+            "2D姿勢推定 開始: {img_dir}",
             img_dir=args.img_dir,
             decoration=MLogger.DECORATION_BOX,
         )
@@ -141,7 +109,7 @@ def execute(args):
                 pose_model.to(argv.device)
             pose_model.eval()
 
-            writer = DataWriterSMPL(cfg, argv, save_video=False, queueSize=argv.qsize).start()
+            writer = DataWriter(cfg, argv, save_video=False, queueSize=argv.qsize).start()
 
             logger.info(
                 "AlphaPose 開始",
@@ -158,25 +126,20 @@ def execute(args):
                         continue
                     # Pose Estimation
                     inps = inps.to(argv.device)
-                    pose_output = pose_model(inps)
-
-                    old_ids = torch.arange(boxes.shape[0]).long()
-                    _, _, ids, new_ids, _ = track(tracker, argv, orig_img, inps, boxes, old_ids, cropped_boxes, im_name, scores)
-                    new_ids = new_ids.long()
-
-                    boxes = boxes[new_ids]
-                    cropped_boxes = cropped_boxes[new_ids]
-                    scores = scores[new_ids]
-
-                    smpl_output = {
-                        "pred_uvd_jts": pose_output.pred_uvd_jts.cpu()[new_ids],
-                        "maxvals": pose_output.maxvals.cpu()[new_ids],
-                        "transl": pose_output.transl.cpu()[new_ids],
-                        "pred_vertices": pose_output.pred_vertices.cpu()[new_ids],
-                        "pred_xyz_jts_24": pose_output.pred_xyz_jts_24_struct.cpu()[new_ids] * 2,  # convert to meters
-                    }
-
-                    writer.save(boxes, scores, ids, smpl_output, cropped_boxes, orig_img, im_name)
+                    datalen = inps.size(0)
+                    leftover = 0
+                    if (datalen) % argv.posebatch:
+                        leftover = 1
+                    num_batches = datalen // argv.posebatch + leftover
+                    hm = []
+                    for j in range(num_batches):
+                        inps_j = inps[j * argv.posebatch : min((j + 1) * argv.posebatch, datalen)]
+                        hm_j = pose_model(inps_j)
+                        hm.append(hm_j)
+                    hm = torch.cat(hm)
+                    boxes, scores, ids, hm, cropped_boxes = track(tracker, argv, orig_img, inps, boxes, hm, cropped_boxes, im_name, scores)
+                    hm = hm.cpu()
+                    writer.save(boxes, scores, ids, hm, cropped_boxes, orig_img, im_name)
 
             running_str = "."
             while writer.running():
@@ -232,7 +195,6 @@ def execute(args):
                     "height": json_data["box"][3],
                 },
                 "ap-2d-keypoints": json_data["keypoints"],
-                "ap-3d-keypoints": json_data["pred_xyz_jts"],
             }
 
             all_bbox_areas[person_idx].append(float(json_data["box"][2]) * float(json_data["box"][3]))
@@ -440,14 +402,14 @@ def execute(args):
         cv2.destroyAllWindows()
 
         logger.info(
-            "AlphaPose 結果保存完了: {outputpath}",
+            "2D姿勢推定 結果保存完了: {outputpath}",
             outputpath=argv.outputpath,
             decoration=MLogger.DECORATION_BOX,
         )
 
         return True
     except Exception as e:
-        logger.critical("AlphaPose で予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
+        logger.critical("2D姿勢推定で予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
         return False
 
 
@@ -455,36 +417,33 @@ def save_2d_image(image_path: str, person_idx: int, fno: int, keypoints: list, b
     img = cv2.imread(image_path)
     kps = np.array(keypoints).reshape(-1, 3)
 
-    # alphapose\models\layers\smpl\SMPL.py
+    # https://github.com/Fang-Haoshu/Halpe-FullBody
     SKELETONS = [
-        (SMPL_JOINT_29["pelvis"], SMPL_JOINT_29["spine1"]),
-        (SMPL_JOINT_29["spine1"], SMPL_JOINT_29["spine2"]),
-        (SMPL_JOINT_29["spine2"], SMPL_JOINT_29["spine3"]),
-        (SMPL_JOINT_29["spine3"], SMPL_JOINT_29["neck"]),
-        (SMPL_JOINT_29["neck"], SMPL_JOINT_29["jaw"]),
-        (SMPL_JOINT_29["jaw"], SMPL_JOINT_29["head"]),
-        (SMPL_JOINT_29["pelvis"], SMPL_JOINT_29["left_hip"]),
-        (SMPL_JOINT_29["left_hip"], SMPL_JOINT_29["left_knee"]),
-        (SMPL_JOINT_29["left_knee"], SMPL_JOINT_29["left_ankle"]),
-        (SMPL_JOINT_29["left_ankle"], SMPL_JOINT_29["left_foot"]),
-        (SMPL_JOINT_29["left_ankle"], SMPL_JOINT_29["left_bigtoe"]),
-        (SMPL_JOINT_29["spine3"], SMPL_JOINT_29["left_collar"]),
-        (SMPL_JOINT_29["left_collar"], SMPL_JOINT_29["left_shoulder"]),
-        (SMPL_JOINT_29["left_shoulder"], SMPL_JOINT_29["left_elbow"]),
-        (SMPL_JOINT_29["left_elbow"], SMPL_JOINT_29["left_wrist"]),
-        (SMPL_JOINT_29["left_wrist"], SMPL_JOINT_29["left_thumb"]),
-        (SMPL_JOINT_29["left_wrist"], SMPL_JOINT_29["left_middle"]),
-        (SMPL_JOINT_29["pelvis"], SMPL_JOINT_29["right_hip"]),
-        (SMPL_JOINT_29["right_hip"], SMPL_JOINT_29["right_knee"]),
-        (SMPL_JOINT_29["right_knee"], SMPL_JOINT_29["right_ankle"]),
-        (SMPL_JOINT_29["right_ankle"], SMPL_JOINT_29["right_foot"]),
-        (SMPL_JOINT_29["right_ankle"], SMPL_JOINT_29["right_bigtoe"]),
-        (SMPL_JOINT_29["spine3"], SMPL_JOINT_29["right_collar"]),
-        (SMPL_JOINT_29["right_collar"], SMPL_JOINT_29["right_shoulder"]),
-        (SMPL_JOINT_29["right_shoulder"], SMPL_JOINT_29["right_elbow"]),
-        (SMPL_JOINT_29["right_elbow"], SMPL_JOINT_29["right_wrist"]),
-        (SMPL_JOINT_29["right_wrist"], SMPL_JOINT_29["right_thumb"]),
-        (SMPL_JOINT_29["right_wrist"], SMPL_JOINT_29["right_middle"]),
+        (19, 11),  # Hip, LHip
+        (19, 12),  # Hip, RHip
+        (19, 18),  # Hip, Neck
+        (18, 5),  # Neck, LShoulder
+        (18, 6),  # Neck, RShoulder
+        (18, 0),  # Neck, Nose
+        (0, 1),  # Nose, LEye
+        (0, 2),  # Nose, REye
+        (0, 17),  # Nose, Head
+        (1, 3),  # LEye, LEar
+        (2, 4),  # REye, REar
+        (5, 7),  # LShoulder, LElbow
+        (7, 9),  # LElbow, LWrist
+        (6, 8),  # RShoulder, RElbow
+        (8, 10),  # RElbow, RWrist
+        (11, 13),  # LHip, LKnee
+        (13, 15),  # LKnee, LAnkle
+        (12, 14),  # RHip, Rknee
+        (14, 16),  # Rknee, RAnkle
+        (15, 20),  # LAnkle, LBigToe
+        (15, 22),  # LAnkle, LSmallToe
+        (15, 24),  # LAnkle, LHeel
+        (16, 21),  # RAnkle, RBigToe
+        (16, 23),  # RAnkle, RSmallToe
+        (16, 25),  # RAnkle, RHeel
     ]
 
     for j1, j2 in SKELETONS:
@@ -590,15 +549,11 @@ def get_args_parser():
     """----------------------------- Demo options -----------------------------"""
     parser = argparse.ArgumentParser(description="AlphaPose Demo")
     parser.add_argument(
-        "--cfg",
-        type=str,
-        default="../data/alphapose/config/256x192_adam_lr1e-3-res34_smpl_24_3d_base_2x_mix.yaml",
-        help="experiment configure file name",
+        "--cfg", type=str, default="AlphaPose/configs/halpe_26/resnet/256x192_res50_lr1e-3_1x.yaml", help="experiment configure file name"
     )
-    parser.add_argument("--checkpoint", type=str, default="../data/alphapose/checkpoint/pretrained_w_cam.pth", help="checkpoint file name")
-
+    parser.add_argument("--checkpoint", type=str, default="../data/alphapose/checkpoint/halpe26_fast_res50_256x192.pth", help="checkpoint file name")
     parser.add_argument("--sp", default=False, action="store_true", help="Use single process for pytorch")
-    parser.add_argument("--detector", dest="detector", help="detector name", default="yolox")
+    parser.add_argument("--detector", dest="detector", help="detector name", default="tracker")
     parser.add_argument("--detfile", dest="detfile", help="detection result file", default="")
     parser.add_argument("--indir", dest="inputpath", help="image-directory", default="")
     parser.add_argument("--list", dest="inputlist", help="image-list", default="")
@@ -607,7 +562,6 @@ def get_args_parser():
     parser.add_argument("--save_img", default=False, action="store_true", help="save result as image")
     parser.add_argument("--vis", default=False, action="store_true", help="visualize image")
     parser.add_argument("--showbox", default=False, action="store_true", help="visualize human bbox")
-    parser.add_argument("--show_skeleton", default=True, action="store_true", help="visualize 3d human skeleton")
     parser.add_argument("--profile", default=False, action="store_true", help="add speed profiling at screen output")
     parser.add_argument("--format", type=str, help="save in the format of cmu or coco or openpose, option: coco/cmu/open")
     parser.add_argument("--min_box_area", type=int, default=0, help="min box area to filter out")
@@ -628,7 +582,7 @@ def get_args_parser():
         help="choose which cuda device to use by index and input comma to use multi gpus, e.g. 0,1,2,3. (input -1 for cpu only)",
     )
     parser.add_argument(
-        "--qsize", type=int, dest="qsize", default=1024, help="the length of result buffer, where reducing it will lower requirement of cpu memory"
+        "--qsize", type=int, dest="qsize", default=128, help="the length of result buffer, where reducing it will lower requirement of cpu memory"
     )
     parser.add_argument("--flip", default=False, action="store_true", help="enable flip testing")
     parser.add_argument("--debug", default=False, action="store_true", help="print detail information")
@@ -640,7 +594,6 @@ def get_args_parser():
     """----------------------------- Tracking options -----------------------------"""
     parser.add_argument("--pose_flow", dest="pose_flow", help="track humans in video with PoseFlow", action="store_true", default=False)
     parser.add_argument("--pose_track", dest="pose_track", help="track humans in video with reid", action="store_true", default=True)
-
     return parser
 
 

@@ -11,7 +11,6 @@ sys.path.append(os.path.abspath(os.path.join(__file__, "../../PoseTriplet/estima
 import numpy as np
 import torch
 from base.logger import MLogger
-from base.math import MQuaternion, MVector3D
 from PoseTriplet.estimator_inference.common.camera import (
     camera_to_world, normalize_screen_coordinates)
 from PoseTriplet.estimator_inference.common.generators import \
@@ -129,7 +128,6 @@ BODY_LANDMARKS  = (
 # 左右のキー番号
 KEYPOINTS_SYMMETRY = ((4, 5, 6, 10, 11, 12), (1, 2, 3, 13, 14, 15))
 
-
 def execute(args):
     try:
         logger.info(
@@ -208,7 +206,7 @@ def execute(args):
             for fno in tqdm(sorted([int(f) for f in json_datas["estimation"].keys()]), desc=f"No.{pname} ... "):
                 frame_json_data = json_datas["estimation"][str(fno)]
                 fno = int(fno)
-                keypoints_2d[fno] = np.array(frame_json_data["2d-keypoints"]).reshape(-1, 3)
+                keypoints_2d[fno] = np.array(frame_json_data["ap-2d-keypoints"]).reshape(-1, 3)
 
             logger.info(
                 "【No.{pname}】PoseTriplet 開始",

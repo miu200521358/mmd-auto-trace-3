@@ -5,6 +5,6 @@ git merge master
 
 cd ..
 
-rem git submodule foreach git pull origin master
+rem git pull origin master
 
 

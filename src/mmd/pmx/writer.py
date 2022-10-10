@@ -4,15 +4,19 @@ from math import isinf, isnan
 from base.base import BaseModel
 from base.logger import MLogger
 from mmd.pmx.collection import PmxModel
-from mmd.pmx.part import (Bdef1, Bdef2, Bdef4, Bone, BoneFlg, BoneMorphOffset,
-                          DeformType, DisplaySlot, DisplaySlotReference,
-                          DisplayType, DrawFlg, Face, GroupMorphOffset, Ik,
-                          IkLink, Joint, Material, MaterialMorphCalcMode,
-                          MaterialMorphOffset, Morph, MorphPanel, MorphType,
-                          RigidBody, RigidBodyCollisionGroup, Sdef, Texture,
-                          ToonSharing, UvMorphOffset, Vertex,
-                          VertexMorphOffset)
-from tqdm import tqdm
+from mmd.pmx.part import (
+    Bdef1,
+    Bdef2,
+    Bdef4,
+    BoneFlg,
+    BoneMorphOffset,
+    GroupMorphOffset,
+    MaterialMorphOffset,
+    Sdef,
+    ToonSharing,
+    UvMorphOffset,
+    VertexMorphOffset,
+)
 
 logger = MLogger(__name__)
 
@@ -72,7 +76,7 @@ class PmxWriter(BaseModel):
             fout.write(struct.pack(TYPE_INT, len(model.vertices)))
 
             # 頂点データ
-            for vertex in tqdm(model.vertices):
+            for vertex in model.vertices:
                 # position
                 write_number(fout, TYPE_FLOAT, float(vertex.position.x))
                 write_number(fout, TYPE_FLOAT, float(vertex.position.y))
@@ -137,7 +141,7 @@ class PmxWriter(BaseModel):
             fout.write(struct.pack(TYPE_INT, len(model.faces) * 3))
 
             # 面データ
-            for face in tqdm(model.faces):
+            for face in model.faces:
                 for vidx in face.vertices:
                     fout.write(struct.pack(vertex_idx_type, vidx))
 
@@ -156,7 +160,7 @@ class PmxWriter(BaseModel):
             fout.write(struct.pack(TYPE_INT, len(model.materials)))
 
             # 材質データ
-            for midx, material in enumerate(tqdm(model.materials)):
+            for midx, material in enumerate(model.materials):
                 # 材質名
                 write_text(fout, material.name, f"Material {midx}")
                 write_text(fout, material.english_name, f"Material {midx}")
@@ -208,7 +212,7 @@ class PmxWriter(BaseModel):
             # ボーンの数
             fout.write(struct.pack(TYPE_INT, len(model.bones)))
 
-            for bidx, bone in enumerate(tqdm(model.bones)):
+            for bidx, bone in enumerate(model.bones):
                 # ボーン名
                 write_text(fout, bone.name, f"Bone {bidx}")
                 write_text(fout, bone.english_name, f"Bone {bidx}")
@@ -287,7 +291,7 @@ class PmxWriter(BaseModel):
             # モーフの数
             write_number(fout, TYPE_INT, len(model.morphs))
 
-            for midx, morph in enumerate(tqdm(model.morphs)):
+            for midx, morph in enumerate(model.morphs):
                 # モーフ名
                 write_text(fout, morph.name, f"Morph {midx}")
                 write_text(fout, morph.english_name, f"Morph {midx}")
@@ -364,7 +368,7 @@ class PmxWriter(BaseModel):
             # 表示枠の数
             write_number(fout, TYPE_INT, len(model.display_slots))
 
-            for didx, display_slot in enumerate(tqdm(model.display_slots)):
+            for didx, display_slot in enumerate(model.display_slots):
                 # 表示枠名
                 write_text(fout, display_slot.name, f"Display {didx}")
                 write_text(fout, display_slot.english_name, f"Display {didx}")
@@ -388,7 +392,7 @@ class PmxWriter(BaseModel):
             # 剛体の数
             write_number(fout, TYPE_INT, len(list(model.rigidbodies)))
 
-            for ridx, rigidbody in enumerate(tqdm(model.rigidbodies)):
+            for ridx, rigidbody in enumerate(model.rigidbodies):
                 # 剛体名
                 write_text(fout, rigidbody.name, f"Rigidbody {ridx}")
                 write_text(fout, rigidbody.english_name, f"Rigidbody {ridx}")
@@ -430,7 +434,7 @@ class PmxWriter(BaseModel):
             # ジョイントの数
             write_number(fout, TYPE_INT, len(list(model.joints)))
 
-            for jidx, joint in enumerate(tqdm(model.joints)):
+            for jidx, joint in enumerate(model.joints):
                 # ジョイント名
                 write_text(fout, joint.name, f"Joint {jidx}")
                 write_text(fout, joint.english_name, f"Joint {jidx}")

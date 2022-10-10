@@ -128,3 +128,4 @@ dmypy.json
 *.pt
 src/cython-bbox/
 trace_model_*.pmx
+*.pkl
