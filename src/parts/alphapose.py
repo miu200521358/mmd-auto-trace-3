@@ -34,41 +34,9 @@ from easydict import EasyDict as edict
 from PIL import Image
 from tqdm import tqdm
 
-from parts.config import DirName, FileName
+from parts.config import DirName, FileName, SMPL_JOINT_29
 
 logger = MLogger(__name__)
-
-SMPL_JOINT_29 = {
-    "pelvis": 0,
-    "left_hip": 1,
-    "right_hip": 2,
-    "spine1": 3,
-    "left_knee": 4,
-    "right_knee": 5,
-    "spine2": 6,
-    "left_ankle": 7,
-    "right_ankle": 8,
-    "spine3": 9,
-    "left_foot": 10,
-    "right_foot": 11,
-    "neck": 12,
-    "left_collar": 13,
-    "right_collar": 14,
-    "jaw": 15,
-    "left_shoulder": 16,
-    "right_shoulder": 17,
-    "left_elbow": 18,
-    "right_elbow": 19,
-    "left_wrist": 20,
-    "right_wrist": 21,
-    "left_thumb": 22,
-    "right_thumb": 23,
-    "head": 24,
-    "left_middle": 25,
-    "right_middle": 26,
-    "left_bigtoe": 27,
-    "right_bigtoe": 28,
-}
 
 
 def execute(args):
@@ -457,34 +425,34 @@ def save_2d_image(image_path: str, person_idx: int, fno: int, keypoints: list, b
 
     # alphapose\models\layers\smpl\SMPL.py
     SKELETONS = [
-        (SMPL_JOINT_29["pelvis"], SMPL_JOINT_29["spine1"]),
-        (SMPL_JOINT_29["spine1"], SMPL_JOINT_29["spine2"]),
-        (SMPL_JOINT_29["spine2"], SMPL_JOINT_29["spine3"]),
-        (SMPL_JOINT_29["spine3"], SMPL_JOINT_29["neck"]),
-        (SMPL_JOINT_29["neck"], SMPL_JOINT_29["jaw"]),
-        (SMPL_JOINT_29["jaw"], SMPL_JOINT_29["head"]),
-        (SMPL_JOINT_29["pelvis"], SMPL_JOINT_29["left_hip"]),
-        (SMPL_JOINT_29["left_hip"], SMPL_JOINT_29["left_knee"]),
-        (SMPL_JOINT_29["left_knee"], SMPL_JOINT_29["left_ankle"]),
-        (SMPL_JOINT_29["left_ankle"], SMPL_JOINT_29["left_foot"]),
-        (SMPL_JOINT_29["left_ankle"], SMPL_JOINT_29["left_bigtoe"]),
-        (SMPL_JOINT_29["spine3"], SMPL_JOINT_29["left_collar"]),
-        (SMPL_JOINT_29["left_collar"], SMPL_JOINT_29["left_shoulder"]),
-        (SMPL_JOINT_29["left_shoulder"], SMPL_JOINT_29["left_elbow"]),
-        (SMPL_JOINT_29["left_elbow"], SMPL_JOINT_29["left_wrist"]),
-        (SMPL_JOINT_29["left_wrist"], SMPL_JOINT_29["left_thumb"]),
-        (SMPL_JOINT_29["left_wrist"], SMPL_JOINT_29["left_middle"]),
-        (SMPL_JOINT_29["pelvis"], SMPL_JOINT_29["right_hip"]),
-        (SMPL_JOINT_29["right_hip"], SMPL_JOINT_29["right_knee"]),
-        (SMPL_JOINT_29["right_knee"], SMPL_JOINT_29["right_ankle"]),
-        (SMPL_JOINT_29["right_ankle"], SMPL_JOINT_29["right_foot"]),
-        (SMPL_JOINT_29["right_ankle"], SMPL_JOINT_29["right_bigtoe"]),
-        (SMPL_JOINT_29["spine3"], SMPL_JOINT_29["right_collar"]),
-        (SMPL_JOINT_29["right_collar"], SMPL_JOINT_29["right_shoulder"]),
-        (SMPL_JOINT_29["right_shoulder"], SMPL_JOINT_29["right_elbow"]),
-        (SMPL_JOINT_29["right_elbow"], SMPL_JOINT_29["right_wrist"]),
-        (SMPL_JOINT_29["right_wrist"], SMPL_JOINT_29["right_thumb"]),
-        (SMPL_JOINT_29["right_wrist"], SMPL_JOINT_29["right_middle"]),
+        (SMPL_JOINT_29["Pelvis"], SMPL_JOINT_29["Spine1"]),
+        (SMPL_JOINT_29["Spine1"], SMPL_JOINT_29["Spine2"]),
+        (SMPL_JOINT_29["Spine2"], SMPL_JOINT_29["Spine3"]),
+        (SMPL_JOINT_29["Spine3"], SMPL_JOINT_29["Neck"]),
+        (SMPL_JOINT_29["Neck"], SMPL_JOINT_29["Jaw"]),
+        (SMPL_JOINT_29["Jaw"], SMPL_JOINT_29["Head"]),
+        (SMPL_JOINT_29["Pelvis"], SMPL_JOINT_29["LHip"]),
+        (SMPL_JOINT_29["LHip"], SMPL_JOINT_29["LKnee"]),
+        (SMPL_JOINT_29["LKnee"], SMPL_JOINT_29["LAnkle"]),
+        (SMPL_JOINT_29["LAnkle"], SMPL_JOINT_29["LFoot"]),
+        (SMPL_JOINT_29["LAnkle"], SMPL_JOINT_29["LBigtoe"]),
+        (SMPL_JOINT_29["Spine3"], SMPL_JOINT_29["LCollar"]),
+        (SMPL_JOINT_29["LCollar"], SMPL_JOINT_29["LShoulder"]),
+        (SMPL_JOINT_29["LShoulder"], SMPL_JOINT_29["LElbow"]),
+        (SMPL_JOINT_29["LElbow"], SMPL_JOINT_29["LWrist"]),
+        (SMPL_JOINT_29["LWrist"], SMPL_JOINT_29["LThumb"]),
+        (SMPL_JOINT_29["LWrist"], SMPL_JOINT_29["LMiddle"]),
+        (SMPL_JOINT_29["Pelvis"], SMPL_JOINT_29["RHip"]),
+        (SMPL_JOINT_29["RHip"], SMPL_JOINT_29["RKnee"]),
+        (SMPL_JOINT_29["RKnee"], SMPL_JOINT_29["RAnkle"]),
+        (SMPL_JOINT_29["RAnkle"], SMPL_JOINT_29["RFoot"]),
+        (SMPL_JOINT_29["RAnkle"], SMPL_JOINT_29["RBigtoe"]),
+        (SMPL_JOINT_29["Spine3"], SMPL_JOINT_29["RCollar"]),
+        (SMPL_JOINT_29["RCollar"], SMPL_JOINT_29["RShoulder"]),
+        (SMPL_JOINT_29["RShoulder"], SMPL_JOINT_29["RElbow"]),
+        (SMPL_JOINT_29["RElbow"], SMPL_JOINT_29["RWrist"]),
+        (SMPL_JOINT_29["RWrist"], SMPL_JOINT_29["RThumb"]),
+        (SMPL_JOINT_29["RWrist"], SMPL_JOINT_29["RMiddle"]),
     ]
 
     for j1, j2 in SKELETONS:

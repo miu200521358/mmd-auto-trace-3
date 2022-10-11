@@ -12,6 +12,9 @@ git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox
 munkres==1.1.4
 chumpy
 
+# MultiPose
+TorchSUL==0.1.28
+
 # mmd
 numpy-quaternion==2022.4.2
 bezier==2021.2.12

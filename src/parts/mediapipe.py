@@ -41,7 +41,7 @@ def execute(args):
             )
             return False
 
-        output_dir_path = os.path.join(args.img_dir, DirName.MEDIAPIPE.value)
+        output_dir_path = os.path.join(args.img_dir, DirName.MULTIPOSE.value)
         os.makedirs(output_dir_path, exist_ok=True)
 
         with mp_holistic.Holistic(model_complexity=2, min_detection_confidence=0.3, min_tracking_confidence=0.3) as holistic:

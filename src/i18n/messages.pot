@@ -330,3 +330,23 @@ msgstr ""
 msgid "AlphaPose 結果保存完了: {outputpath}"
 msgstr ""
 
+
+msgid "MultiPose 推定処理開始: {img_dir}"
+msgstr ""
+
+
+msgid "【No.{pname}】MultiPose 推定開始"
+msgstr ""
+
+
+msgid "【No.{pname}】MultiPose 推定結果出力"
+msgstr ""
+
+
+msgid "MultiPose 推定処理終了: {output_dir}"
+msgstr ""
+
+
+msgid "【No.{pname}】AlphaPose 結果取得"
+msgstr ""
+

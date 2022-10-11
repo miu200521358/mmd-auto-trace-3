@@ -67,7 +67,6 @@ def execute(args):
 
             trace_abs_mov_motion = VmdMotion()
             trace_2d_motion = VmdMotion()
-            trace_abs_hand_mov_motion = VmdMotion()
 
             mix_data = {}
             with open(person_file_path, "r", encoding="utf-8") as f:
@@ -96,7 +95,7 @@ def execute(args):
                 for jname, joint in frames["body"].items():
                     if jname not in PMX_CONNECTIONS:
                         continue
-                    bf = VmdBoneFrame(name=PMX_CONNECTIONS[jname]["jname"], index=fno)
+                    bf = VmdBoneFrame(name=PMX_CONNECTIONS[jname], index=fno)
                     bf.position = MVector3D(
                         float(joint["x"]) * MIKU_CM,
                         float(joint["y"]) * MIKU_CM,
@@ -104,29 +103,16 @@ def execute(args):
                     )
                     trace_abs_mov_motion.bones.append(bf)
 
-                for jname, joint in frames["2d"].items():
-                    if jname not in PMX_CONNECTIONS:
-                        continue
-                    bf = VmdBoneFrame(name=PMX_CONNECTIONS[jname]["jname"], index=fno)
-                    bf.position = MVector3D(
-                        float(joint["x"]),
-                        float(joint["y"]),
-                        0,
-                    )
-                    trace_2d_motion.bones.append(bf)
-
-                if args.hand_motion:
-                    for direction, jp_direction in (("left", "左"), ("right", "右")):
-                        for jname, joint in frames[f"{direction}_hand"].items():
-                            if jname not in PMX_HAND_CONNECTIONS:
-                                continue
-                            bf = VmdBoneFrame(name=PMX_HAND_CONNECTIONS[jname].format(direction=jp_direction), index=fno)
-                            bf.position = MVector3D(
-                                float(joint["x"]),
-                                float(joint["y"]),
-                                float(joint["z"]),
-                            )
-                            trace_abs_hand_mov_motion.bones.append(bf)
+                # for jname, joint in frames["2d"].items():
+                #     if jname not in PMX_CONNECTIONS:
+                #         continue
+                #     bf = VmdBoneFrame(name=PMX_CONNECTIONS[jname], index=fno)
+                #     bf.position = MVector3D(
+                #         float(joint["x"]),
+                #         float(joint["y"]),
+                #         0,
+                #     )
+                #     trace_2d_motion.bones.append(bf)
 
                 if fno > end_fno:
                     end_fno = fno
@@ -140,82 +126,82 @@ def execute(args):
             )
 
             with tqdm(
-                total=((len(VMD_CONNECTIONS) + (len(VMD_HAND_CONNECTIONS) if args.hand_motion else 0)) * (end_fno - start_fno)),
+                total=(len(VMD_CONNECTIONS) * (end_fno - start_fno)),
                 desc=f"No.{pname} ... ",
             ) as pchar:
 
-                dest_connections = [(VMD_CONNECTIONS, trace_abs_mov_motion)]
-                if args.hand_motion:
-                    dest_connections.append((VMD_HAND_CONNECTIONS, trace_abs_hand_mov_motion))
+                for target_bone_name, vmd_params in VMD_CONNECTIONS.items():
+                    if "direction" not in vmd_params:
+                        pchar.update((end_fno - start_fno))
+                        continue
+                    direction_from_name = vmd_params["direction"][0]
+                    direction_to_name = vmd_params["direction"][1]
+                    up_from_name = vmd_params["up"][0]
+                    up_to_name = vmd_params["up"][1]
+                    cross_from_name = vmd_params["cross"][0] if "cross" in vmd_params else vmd_params["direction"][0]
+                    cross_to_name = vmd_params["cross"][1] if "cross" in vmd_params else vmd_params["direction"][1]
+                    cancel_names = vmd_params["cancel"]
 
-                for target_connections, dest_motion in dest_connections:
-                    for target_bone_name, vmd_params in target_connections.items():
-                        if "direction" not in vmd_params:
-                            continue
-                        direction_from_name = vmd_params["direction"][0]
-                        direction_to_name = vmd_params["direction"][1]
-                        up_from_name = vmd_params["up"][0]
-                        up_to_name = vmd_params["up"][1]
-                        cross_from_name = vmd_params["cross"][0] if "cross" in vmd_params else vmd_params["direction"][0]
-                        cross_to_name = vmd_params["cross"][1] if "cross" in vmd_params else vmd_params["direction"][1]
-                        cancel_names = vmd_params["cancel"]
-
-                        for mov_bf in dest_motion.bones[direction_from_name]:
-                            if mov_bf.index not in dest_motion.bones[direction_from_name] or mov_bf.index not in dest_motion.bones[direction_to_name]:
-                                # キーがない場合、スルーする
-                                pchar.update(1)
-                                continue
-
-                            bone_direction = (
-                                trace_model.bones[direction_to_name].position - trace_model.bones[direction_from_name].position
-                            ).normalized()
-
-                            bone_up = (trace_model.bones[up_to_name].position - trace_model.bones[up_from_name].position).normalized()
-
-                            bone_cross = (trace_model.bones[cross_to_name].position - trace_model.bones[cross_from_name].position).normalized()
-
-                            bone_cross_vec: MVector3D = bone_up.cross(bone_cross).normalized()
-
-                            initial_qq = MQuaternion.from_direction(bone_direction, bone_cross_vec)
-
-                            direction_from_abs_pos = dest_motion.bones[direction_from_name][mov_bf.index].position
-
-                            direction_to_abs_pos = dest_motion.bones[direction_to_name][mov_bf.index].position
-
-                            direction: MVector3D = (direction_to_abs_pos - direction_from_abs_pos).normalized()
-
-                            up_from_abs_pos = dest_motion.bones[up_from_name][mov_bf.index].position
-
-                            up_to_abs_pos = dest_motion.bones[up_to_name][mov_bf.index].position
-
-                            up: MVector3D = (up_to_abs_pos - up_from_abs_pos).normalized()
-
-                            cross_from_abs_pos = dest_motion.bones[cross_from_name][mov_bf.index].position
-
-                            cross_to_abs_pos = dest_motion.bones[cross_to_name][mov_bf.index].position
-
-                            cross: MVector3D = (cross_to_abs_pos - cross_from_abs_pos).normalized()
-
-                            motion_cross_vec: MVector3D = up.cross(cross).normalized()
-
-                            motion_qq = MQuaternion.from_direction(direction, motion_cross_vec)
-
-                            cancel_qq = MQuaternion()
-                            for cancel_name in cancel_names:
-                                cancel_qq *= trace_org_motion.bones[cancel_name][mov_bf.index].rotation
-
-                            bf = VmdBoneFrame(name=target_bone_name, index=mov_bf.index)
-                            qq: MQuaternion = cancel_qq.inverse() * motion_qq * initial_qq.inverse()
-
-                            if "足首" in target_bone_name:
-                                # X方向だけ分離する
-                                bf.rotation = MQuaternion.from_euler_degrees(qq.to_euler_degrees().x, 0, 0)
-                            else:
-                                bf.rotation = qq
-
-                            trace_org_motion.bones.append(bf)
-
+                    for mov_bf in trace_abs_mov_motion.bones[direction_from_name]:
+                        if (
+                            mov_bf.index not in trace_abs_mov_motion.bones[direction_from_name]
+                            or mov_bf.index not in trace_abs_mov_motion.bones[direction_to_name]
+                        ):
+                            # キーがない場合、スルーする
                             pchar.update(1)
+                            continue
+
+                        bone_direction = (
+                            trace_model.bones[direction_to_name].position - trace_model.bones[direction_from_name].position
+                        ).normalized()
+
+                        bone_up = (trace_model.bones[up_to_name].position - trace_model.bones[up_from_name].position).normalized()
+                        bone_cross = (trace_model.bones[cross_to_name].position - trace_model.bones[cross_from_name].position).normalized()
+                        bone_cross_vec: MVector3D = bone_up.cross(bone_cross).normalized()
+
+                        initial_qq = MQuaternion.from_direction(bone_direction, bone_cross_vec)
+
+                        direction_from_abs_pos = trace_abs_mov_motion.bones[direction_from_name][mov_bf.index].position
+                        direction_to_abs_pos = trace_abs_mov_motion.bones[direction_to_name][mov_bf.index].position
+                        direction: MVector3D = (direction_to_abs_pos - direction_from_abs_pos).normalized()
+
+                        up_from_abs_pos = trace_abs_mov_motion.bones[up_from_name][mov_bf.index].position
+                        up_to_abs_pos = trace_abs_mov_motion.bones[up_to_name][mov_bf.index].position
+                        up: MVector3D = (up_to_abs_pos - up_from_abs_pos).normalized()
+
+                        cross_from_abs_pos = trace_abs_mov_motion.bones[cross_from_name][mov_bf.index].position
+                        cross_to_abs_pos = trace_abs_mov_motion.bones[cross_to_name][mov_bf.index].position
+                        cross: MVector3D = (cross_to_abs_pos - cross_from_abs_pos).normalized()
+
+                        motion_cross_vec: MVector3D = up.cross(cross).normalized()
+                        motion_qq = MQuaternion.from_direction(direction, motion_cross_vec)
+
+                        cancel_qq = MQuaternion()
+                        for cancel_name in cancel_names:
+                            cancel_qq *= trace_org_motion.bones[cancel_name][mov_bf.index].rotation
+
+                        bf = VmdBoneFrame(name=target_bone_name, index=mov_bf.index)
+                        bf.rotation = cancel_qq.inverse() * motion_qq * initial_qq.inverse()
+
+                        trace_org_motion.bones.append(bf)
+
+                        pchar.update(1)
+
+            with tqdm(
+                total=(len(VMD_CONNECTIONS) * (end_fno - start_fno)),
+                desc=f"No.{pname} ... ",
+            ) as pchar:
+
+                for target_bone_name, vmd_params in VMD_CONNECTIONS.items():
+                    if "invert" not in vmd_params or not vmd_params["invert"]:
+                        pchar.update((end_fno - start_fno))
+                        continue
+
+                    # 終わった後にキャンセルする
+                    invert_qq = MQuaternion.from_euler_degrees(vmd_params["invert"])
+                    for bf in trace_org_motion.bones[target_bone_name]:
+                        bf.rotation *= invert_qq
+                        pchar.update(1)
 
             logger.info(
                 "【No.{pname}】モーション(センター)計算開始",
@@ -499,66 +485,32 @@ def execute(args):
 
 
 PMX_CONNECTIONS = {
-    "Spine": {"jname": "上半身", "direction": "upper"},
-    "Spine2": {"jname": "上半身2", "direction": "upper"},
-    "Neck": {"jname": "首", "direction": "upper"},
-    "Nose": {"jname": "鼻", "direction": "upper"},
-    "Head": {"jname": "頭", "direction": "upper"},
-    "REye": {"jname": "右目", "direction": "upper"},
-    "LEye": {"jname": "左目", "direction": "upper"},
-    "REar": {"jname": "右耳", "direction": "upper"},
-    "LEar": {"jname": "左耳", "direction": "upper"},
-    "LCollar": {"jname": "左肩", "direction": "upper"},
-    "RCollar": {"jname": "右肩", "direction": "upper"},
-    "LShoulder": {"jname": "左腕", "direction": "upper"},
-    "RShoulder": {"jname": "右腕", "direction": "upper"},
-    "LElbow": {"jname": "左ひじ", "direction": "upper"},
-    "RElbow": {"jname": "右ひじ", "direction": "upper"},
-    "LWrist": {"jname": "左手首", "direction": "upper"},
-    "RWrist": {"jname": "右手首", "direction": "upper"},
-    "RPinky": {"jname": "右小指１", "direction": "upper"},
-    "LPinky": {"jname": "左小指１", "direction": "upper"},
-    "RIndex": {"jname": "右人指１", "direction": "upper"},
-    "LIndex": {"jname": "左人指１", "direction": "upper"},
-    "RThumb": {"jname": "右親指０", "direction": "upper"},
-    "LThumb": {"jname": "左親指０", "direction": "upper"},
-    "Pelvis": {"jname": "下半身", "direction": "lower"},
-    "Pelvis2": {"jname": "下半身2", "direction": "lower"},
-    "LHip": {"jname": "左足", "direction": "lower"},
-    "RHip": {"jname": "右足", "direction": "lower"},
-    "LKnee": {"jname": "左ひざ", "direction": "lower"},
-    "RKnee": {"jname": "右ひざ", "direction": "lower"},
-    "LAnkle": {"jname": "左足首", "direction": "lower"},
-    "RAnkle": {"jname": "右足首", "direction": "lower"},
-    "LFootIndex": {"jname": "左つま先", "direction": "lower"},
-    "RFootIndex": {"jname": "右つま先", "direction": "lower"},
-    "LHeel": {"jname": "左かかと", "direction": "lower"},
-    "RHeel": {"jname": "右かかと", "direction": "lower"},
-}
-
-
-PMX_HAND_CONNECTIONS = {
-    "wrist": "{direction}手首",
-    # "thumb1": "{direction}親指０",
-    "thumb2": "{direction}親指１",
-    "thumb3": "{direction}親指２",
-    "thumb": "{direction}親指先",
-    "index1": "{direction}人指１",
-    "index2": "{direction}人指２",
-    "index3": "{direction}人指３",
-    "index": "{direction}人指先",
-    "middle1": "{direction}中指１",
-    "middle2": "{direction}中指２",
-    "middle3": "{direction}中指３",
-    "middle": "{direction}中指先",
-    "ring1": "{direction}薬指１",
-    "ring2": "{direction}薬指２",
-    "ring3": "{direction}薬指３",
-    "ring": "{direction}薬指先",
-    "pinky1": "{direction}小指１",
-    "pinky2": "{direction}小指２",
-    "pinky3": "{direction}小指３",
-    "pinky": "{direction}小指先",
+    "Pelvis": "下半身",
+    "Pelvis2": "下半身2",
+    "LHip": "左足",
+    "RHip": "右足",
+    "Spine0": "上半身",
+    "Spine1": "上半身2",
+    "Spine4": "首",
+    "LKnee": "左ひざ",
+    "RKnee": "右ひざ",
+    "Spine2": "上半身3",
+    "LAnkle": "左足首",
+    "RAnkle": "右足首",
+    "LFoot": "左つま先",
+    "RFoot": "右つま先",
+    "Neck": "頭",
+    "LCollar": "左肩",
+    "RCollar": "右肩",
+    "Head": "鼻",
+    "LShoulder": "左腕",
+    "RShoulder": "右腕",
+    "LElbow": "左ひじ",
+    "RElbow": "右ひじ",
+    "LWrist": "左手首",
+    "RWrist": "右手首",
+    "LThumb": "左親指１",
+    "RThumb": "右親指１",
 }
 
 VMD_CONNECTIONS = {
@@ -570,6 +522,7 @@ VMD_CONNECTIONS = {
         "direction": ("下半身", "下半身2"),
         "up": ("左足", "右足"),
         "cancel": (),
+        "invert": MVector3D(),
         "window_lengt": 7,
         "polyorder": 2,
     },
@@ -577,41 +530,46 @@ VMD_CONNECTIONS = {
         "direction": ("上半身", "上半身2"),
         "up": ("左腕", "右腕"),
         "cancel": (),
+        "invert": MVector3D(),
         "window_lengt": 7,
         "polyorder": 2,
     },
     "上半身2": {
-        "direction": ("上半身2", "首"),
+        "direction": ("上半身2", "上半身3"),
         "up": ("左腕", "右腕"),
         "cancel": ("上半身",),
+        "invert": MVector3D(20, 0, 0),
         "window_lengt": 7,
         "polyorder": 2,
     },
     "首": {
-        "direction": ("首", "鼻"),
-        "up": ("左腕", "右腕"),
+        "direction": ("上半身3", "首"),
+        "up": ("頭", "鼻"),
         "cancel": (
             "上半身",
             "上半身2",
         ),
+        "invert": MVector3D(10, 0, 0),
         "window_lengt": 5,
         "polyorder": 2,
     },
     "頭": {
-        "direction": ("首", "鼻"),
-        "up": ("左耳", "右耳"),
+        "direction": ("頭", "鼻"),
+        "up": ("首", "頭"),
         "cancel": (
             "上半身",
             "上半身2",
             "首",
         ),
+        "invert": MVector3D(-50, 0, 0),
         "window_lengt": 5,
         "polyorder": 4,
     },
     "左肩": {
         "direction": ("左肩", "左腕"),
-        "up": ("上半身2", "首"),
+        "up": ("上半身3", "首"),
         "cancel": ("上半身", "上半身2"),
+        "invert": MVector3D(0, 0, -15),
         "window_lengt": 5,
         "polyorder": 2,
     },
@@ -623,6 +581,7 @@ VMD_CONNECTIONS = {
             "上半身2",
             "左肩",
         ),
+        "invert": MVector3D(),
         "window_lengt": 5,
         "polyorder": 4,
     },
@@ -635,11 +594,12 @@ VMD_CONNECTIONS = {
             "左肩",
             "左腕",
         ),
+        "invert": MVector3D(),
         "window_lengt": 5,
         "polyorder": 4,
     },
     "左手首": {
-        "direction": ("左手首", "左人指１"),
+        "direction": ("左手首", "左親指１"),
         "up": ("左腕", "右腕"),
         "cancel": (
             "上半身",
@@ -648,16 +608,18 @@ VMD_CONNECTIONS = {
             "左腕",
             "左ひじ",
         ),
+        "invert": MVector3D(),
         "window_lengt": 5,
         "polyorder": 4,
     },
     "右肩": {
         "direction": ("右肩", "右腕"),
-        "up": ("上半身2", "首"),
+        "up": ("上半身3", "首"),
         "cancel": (
             "上半身",
             "上半身2",
         ),
+        "invert": MVector3D(0, 0, 15),
         "window_lengt": 5,
         "polyorder": 2,
     },
@@ -669,6 +631,7 @@ VMD_CONNECTIONS = {
             "上半身2",
             "右肩",
         ),
+        "invert": MVector3D(),
         "window_lengt": 5,
         "polyorder": 4,
     },
@@ -681,11 +644,12 @@ VMD_CONNECTIONS = {
             "右肩",
             "右腕",
         ),
+        "invert": MVector3D(),
         "window_lengt": 5,
         "polyorder": 4,
     },
     "右手首": {
-        "direction": ("右手首", "右人指１"),
+        "direction": ("右手首", "右親指１"),
         "up": ("左腕", "右腕"),
         "cancel": (
             "上半身",
@@ -694,6 +658,7 @@ VMD_CONNECTIONS = {
             "右腕",
             "右ひじ",
         ),
+        "invert": MVector3D(),
         "window_lengt": 5,
         "polyorder": 4,
     },
@@ -701,27 +666,30 @@ VMD_CONNECTIONS = {
         "direction": ("左足", "左ひざ"),
         "up": ("左足", "右足"),
         "cancel": ("下半身",),
+        "invert": MVector3D(),
         "window_lengt": 5,
         "polyorder": 2,
     },
     "左ひざ": {
         "direction": ("左ひざ", "左足首"),
-        "up": ("左足", "右足"),
+        "up": ("左足", "左ひざ"),
         "cancel": (
             "下半身",
             "左足",
         ),
+        "invert": MVector3D(),
         "window_lengt": 5,
         "polyorder": 2,
     },
     "左足首": {
         "direction": ("左足首", "左つま先"),
-        "up": ("左足", "右足"),
+        "up": ("左ひざ", "左足首"),
         "cancel": (
             "下半身",
             "左足",
             "左ひざ",
         ),
+        "invert": MVector3D(),
         "window_lengt": 5,
         "polyorder": 2,
     },
@@ -729,446 +697,30 @@ VMD_CONNECTIONS = {
         "direction": ("右足", "右ひざ"),
         "up": ("左足", "右足"),
         "cancel": ("下半身",),
+        "invert": MVector3D(),
         "window_lengt": 5,
         "polyorder": 2,
     },
     "右ひざ": {
         "direction": ("右ひざ", "右足首"),
-        "up": ("左足", "右足"),
+        "up": ("右足", "右ひざ"),
         "cancel": (
             "下半身",
             "右足",
         ),
+        "invert": MVector3D(),
         "window_lengt": 5,
         "polyorder": 2,
     },
     "右足首": {
         "direction": ("右足首", "右つま先"),
-        "up": ("左足", "右足"),
+        "up": ("右ひざ", "右足首"),
         "cancel": (
             "下半身",
             "右足",
             "右ひざ",
         ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-}
-
-VMD_HAND_CONNECTIONS = {
-    "左親指０": {
-        "direction": ("左親指０", "左親指１"),
-        "up": ("左親指１", "左人指１"),
-        "cancel": (
-            "上半身",
-            "左肩",
-            "左腕",
-            "左ひじ",
-            "左手首",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "左親指１": {
-        "direction": ("左親指１", "左親指２"),
-        "up": ("左親指１", "左人指１"),
-        "cancel": (
-            "上半身",
-            "左肩",
-            "左腕",
-            "左ひじ",
-            "左手首",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "左親指２": {
-        "direction": ("左親指２", "左親指先"),
-        "up": ("左親指１", "左人指１"),
-        "cancel": (
-            "上半身",
-            "左肩",
-            "左腕",
-            "左ひじ",
-            "左手首",
-            "左親指１",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "左人指１": {
-        "direction": ("左人指１", "左人指２"),
-        "up": ("左人指１", "左小指１"),
-        "cancel": (
-            "上半身",
-            "左肩",
-            "左腕",
-            "左ひじ",
-            "左手首",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "左人指２": {
-        "direction": ("左人指２", "左人指３"),
-        "up": ("左人指１", "左小指１"),
-        "cancel": (
-            "上半身",
-            "左肩",
-            "左腕",
-            "左ひじ",
-            "左手首",
-            "左人指１",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "左人指３": {
-        "direction": ("左人指３", "左人指先"),
-        "up": ("左人指１", "左小指１"),
-        "cancel": (
-            "上半身",
-            "左肩",
-            "左腕",
-            "左ひじ",
-            "左手首",
-            "左人指１",
-            "左人指２",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "左中指１": {
-        "direction": ("左中指１", "左中指２"),
-        "up": ("左人指１", "左小指１"),
-        "cancel": (
-            "上半身",
-            "左肩",
-            "左腕",
-            "左ひじ",
-            "左手首",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "左中指２": {
-        "direction": ("左中指２", "左中指３"),
-        "up": ("左人指１", "左小指１"),
-        "cancel": (
-            "上半身",
-            "左肩",
-            "左腕",
-            "左ひじ",
-            "左手首",
-            "左中指１",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "左中指３": {
-        "direction": ("左中指３", "左中指先"),
-        "up": ("左人指１", "左小指１"),
-        "cancel": (
-            "上半身",
-            "左肩",
-            "左腕",
-            "左ひじ",
-            "左手首",
-            "左中指１",
-            "左中指２",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "左薬指１": {
-        "direction": ("左薬指１", "左薬指２"),
-        "up": ("左人指１", "左小指１"),
-        "cancel": (
-            "上半身",
-            "左肩",
-            "左腕",
-            "左ひじ",
-            "左手首",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "左薬指２": {
-        "direction": ("左薬指２", "左薬指３"),
-        "up": ("左人指１", "左小指１"),
-        "cancel": (
-            "上半身",
-            "左肩",
-            "左腕",
-            "左ひじ",
-            "左手首",
-            "左薬指１",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "左薬指３": {
-        "direction": ("左薬指３", "左薬指先"),
-        "up": ("左人指１", "左小指１"),
-        "cancel": (
-            "上半身",
-            "左肩",
-            "左腕",
-            "左ひじ",
-            "左手首",
-            "左薬指１",
-            "左薬指２",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "左小指１": {
-        "direction": ("左小指１", "左小指２"),
-        "up": ("左人指１", "左小指１"),
-        "cancel": (
-            "上半身",
-            "左肩",
-            "左腕",
-            "左ひじ",
-            "左手首",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "左小指２": {
-        "direction": ("左小指２", "左小指３"),
-        "up": ("左人指１", "左小指１"),
-        "cancel": (
-            "上半身",
-            "左肩",
-            "左腕",
-            "左ひじ",
-            "左手首",
-            "左小指１",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "左小指３": {
-        "direction": ("左小指３", "左小指先"),
-        "up": ("左人指１", "左小指１"),
-        "cancel": (
-            "上半身",
-            "左肩",
-            "左腕",
-            "左ひじ",
-            "左手首",
-            "左小指１",
-            "左小指２",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "右親指０": {
-        "direction": ("右親指０", "右親指１"),
-        "up": ("右親指１", "右人指１"),
-        "cancel": (
-            "上半身",
-            "右肩",
-            "右腕",
-            "右ひじ",
-            "右手首",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "右親指１": {
-        "direction": ("右親指１", "右親指２"),
-        "up": ("右親指１", "右人指１"),
-        "cancel": (
-            "上半身",
-            "右肩",
-            "右腕",
-            "右ひじ",
-            "右手首",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "右親指２": {
-        "direction": ("右親指２", "右親指先"),
-        "up": ("右親指１", "右人指１"),
-        "cancel": (
-            "上半身",
-            "右肩",
-            "右腕",
-            "右ひじ",
-            "右手首",
-            "右親指１",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "右人指１": {
-        "direction": ("右人指１", "右人指２"),
-        "up": ("右人指１", "右小指１"),
-        "cancel": (
-            "上半身",
-            "右肩",
-            "右腕",
-            "右ひじ",
-            "右手首",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "右人指２": {
-        "direction": ("右人指２", "右人指３"),
-        "up": ("右人指１", "右小指１"),
-        "cancel": (
-            "上半身",
-            "右肩",
-            "右腕",
-            "右ひじ",
-            "右手首",
-            "右人指１",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "右人指３": {
-        "direction": ("右人指３", "右人指先"),
-        "up": ("右人指１", "右小指１"),
-        "cancel": (
-            "上半身",
-            "右肩",
-            "右腕",
-            "右ひじ",
-            "右手首",
-            "右人指１",
-            "右人指２",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "右中指１": {
-        "direction": ("右中指１", "右中指２"),
-        "up": ("右人指１", "右小指１"),
-        "cancel": (
-            "上半身",
-            "右肩",
-            "右腕",
-            "右ひじ",
-            "右手首",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "右中指２": {
-        "direction": ("右中指２", "右中指３"),
-        "up": ("右人指１", "右小指１"),
-        "cancel": (
-            "上半身",
-            "右肩",
-            "右腕",
-            "右ひじ",
-            "右手首",
-            "右中指１",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "右中指３": {
-        "direction": ("右中指３", "右中指先"),
-        "up": ("右人指１", "右小指１"),
-        "cancel": (
-            "上半身",
-            "右肩",
-            "右腕",
-            "右ひじ",
-            "右手首",
-            "右中指１",
-            "右中指２",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "右薬指１": {
-        "direction": ("右薬指１", "右薬指２"),
-        "up": ("右人指１", "右小指１"),
-        "cancel": (
-            "上半身",
-            "右肩",
-            "右腕",
-            "右ひじ",
-            "右手首",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "右薬指２": {
-        "direction": ("右薬指２", "右薬指３"),
-        "up": ("右人指１", "右小指１"),
-        "cancel": (
-            "上半身",
-            "右肩",
-            "右腕",
-            "右ひじ",
-            "右手首",
-            "右薬指１",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "右薬指３": {
-        "direction": ("右薬指３", "右薬指先"),
-        "up": ("右人指１", "右小指１"),
-        "cancel": (
-            "上半身",
-            "右肩",
-            "右腕",
-            "右ひじ",
-            "右手首",
-            "右薬指１",
-            "右薬指２",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "右小指１": {
-        "direction": ("右小指１", "右小指２"),
-        "up": ("右人指１", "右小指１"),
-        "cancel": (
-            "上半身",
-            "右肩",
-            "右腕",
-            "右ひじ",
-            "右手首",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "右小指２": {
-        "direction": ("右小指２", "右小指３"),
-        "up": ("右人指１", "右小指１"),
-        "cancel": (
-            "上半身",
-            "右肩",
-            "右腕",
-            "右ひじ",
-            "右手首",
-            "右小指１",
-        ),
-        "window_lengt": 5,
-        "polyorder": 2,
-    },
-    "右小指３": {
-        "direction": ("右小指３", "右小指先"),
-        "up": ("右人指１", "右小指１"),
-        "cancel": (
-            "上半身",
-            "右肩",
-            "右腕",
-            "右ひじ",
-            "右手首",
-            "右小指１",
-            "右小指２",
-        ),
+        "invert": MVector3D(),
         "window_lengt": 5,
         "polyorder": 2,
     },

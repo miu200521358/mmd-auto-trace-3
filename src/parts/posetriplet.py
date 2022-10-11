@@ -20,7 +20,7 @@ from PoseTriplet.estimator_inference.common.utils import evaluate
 from scipy.signal import savgol_filter
 from tqdm import tqdm
 
-from parts.config import DirName
+from parts.config import SMPL_JOINT_29, DirName
 
 logger = MLogger(__name__)
 
@@ -53,56 +53,24 @@ COCO_KEYPOINTS = {
     "Head": 20,  # 計算して追加
 }
 
-# https://github.com/Fang-Haoshu/Halpe-FullBody#keypoints-format
-HALPE_KEYPOINTS = {
-    "Nose": 0,
-    "LEye": 1,
-    "REye": 2,
-    "LEar": 3,
-    "REar": 4,
-    "LShoulder": 5,
-    "RShoulder": 6,
-    "LElbow": 7,
-    "RElbow": 8,
-    "LWrist": 9,
-    "RWrist": 10,
-    "LHip": 11,
-    "RHip": 12,
-    "LKnee": 13,
-    "RKnee": 14,
-    "LAnkle": 15,
-    "RAnkle": 16,
-    "Head": 17,
-    "Neck": 18,
-    "Pelvis": 19,
-    "LBigToe": 20,
-    "RBigToe": 21,
-    "LSmallToe": 22,
-    "RSmallToe": 23,
-    "LHeel": 24,
-    "RHeel": 25,
-    "Spine": 26,  # 計算して追加
-}
-
-
 # Halpe26 -> COCO
-HALPE_2_COCO_ORDER = (
-    HALPE_KEYPOINTS["Pelvis"],
-    HALPE_KEYPOINTS["RHip"],
-    HALPE_KEYPOINTS["RKnee"],
-    HALPE_KEYPOINTS["RAnkle"],
-    HALPE_KEYPOINTS["LHip"],
-    HALPE_KEYPOINTS["LKnee"],
-    HALPE_KEYPOINTS["LAnkle"],
-    HALPE_KEYPOINTS["Spine"],
-    HALPE_KEYPOINTS["Neck"],
-    HALPE_KEYPOINTS["Head"],
-    HALPE_KEYPOINTS["LShoulder"],
-    HALPE_KEYPOINTS["LElbow"],
-    HALPE_KEYPOINTS["LWrist"],
-    HALPE_KEYPOINTS["RShoulder"],
-    HALPE_KEYPOINTS["RElbow"],
-    HALPE_KEYPOINTS["RWrist"],
+SMPL_2_COCO_ORDER = (
+    SMPL_JOINT_29["Pelvis"],
+    SMPL_JOINT_29["RHip"],
+    SMPL_JOINT_29["RKnee"],
+    SMPL_JOINT_29["RAnkle"],
+    SMPL_JOINT_29["LHip"],
+    SMPL_JOINT_29["LKnee"],
+    SMPL_JOINT_29["LAnkle"],
+    SMPL_JOINT_29["Spine1"],
+    SMPL_JOINT_29["Neck"],
+    SMPL_JOINT_29["Head"],
+    SMPL_JOINT_29["LShoulder"],
+    SMPL_JOINT_29["LElbow"],
+    SMPL_JOINT_29["LWrist"],
+    SMPL_JOINT_29["RShoulder"],
+    SMPL_JOINT_29["RElbow"],
+    SMPL_JOINT_29["RWrist"],
 )
 
 # 学習したボーン名順番
@@ -131,7 +99,7 @@ KEYPOINTS_SYMMETRY = ((4, 5, 6, 10, 11, 12), (1, 2, 3, 13, 14, 15))
 def execute(args):
     try:
         logger.info(
-            "3D姿勢推定(PoseTriplet) 開始: {img_dir}",
+            "PoseTriplet 開始: {img_dir}",
             img_dir=args.img_dir,
             decoration=MLogger.DECORATION_BOX,
         )
@@ -144,10 +112,10 @@ def execute(args):
             )
             return False
 
-        if not os.path.exists(os.path.join(args.img_dir, DirName.MEDIAPIPE.value)):
+        if not os.path.exists(os.path.join(args.img_dir, DirName.MULTIPOSE.value)):
             logger.error(
                 "指定された3D姿勢推定(Mediapipe)ディレクトリが存在しません。\n3D姿勢推定(Mediapipe)が完了していない可能性があります。: {img_dir}",
-                img_dir=os.path.join(args.img_dir, DirName.MEDIAPIPE.value),
+                img_dir=os.path.join(args.img_dir, DirName.MULTIPOSE.value),
                 decoration=MLogger.DECORATION_BOX,
             )
             return False
@@ -185,7 +153,7 @@ def execute(args):
         model = get_model(argv, ckpt_path)
         model_traj = get_model_traj(argv, ckpt_path)
 
-        for persion_json_path in glob(os.path.join(args.img_dir, DirName.MEDIAPIPE.value, "*.json")):
+        for persion_json_path in glob(os.path.join(args.img_dir, DirName.MULTIPOSE.value, "*.json")):
             json_datas = {}
             with open(persion_json_path, "r") as f:
                 json_datas = json.load(f)
@@ -194,19 +162,17 @@ def execute(args):
             pname, _ = os.path.splitext(os.path.basename(persion_json_path))
 
             logger.info(
-                "【No.{pname}】Mediapipe 結果取得",
+                "【No.{pname}】AlphaPose 結果取得",
                 pname=pname,
                 decoration=MLogger.DECORATION_LINE,
             )
 
-            color = json_datas["color"]
             width = int(json_datas["image"]["width"])
             height = int(json_datas["image"]["height"])
-            keypoints_2d = {}
+            keypoints_2ds = []
             for fno in tqdm(sorted([int(f) for f in json_datas["estimation"].keys()]), desc=f"No.{pname} ... "):
                 frame_json_data = json_datas["estimation"][str(fno)]
-                fno = int(fno)
-                keypoints_2d[fno] = np.array(frame_json_data["ap-2d-keypoints"]).reshape(-1, 3)
+                keypoints_2ds.append(np.array(frame_json_data["ap-2d-keypoints"]).reshape(-1, 3))
 
             logger.info(
                 "【No.{pname}】PoseTriplet 開始",
@@ -214,7 +180,7 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
 
-            norm_keypoints_2d = fetch_keypoint(np.array(list(keypoints_2d.values())), width, height)
+            norm_keypoints_2d = fetch_keypoint(np.array(keypoints_2ds), width, height)
             data_loader = get_dataloader(model, norm_keypoints_2d)
             data_loader_traj = get_dataloader(model_traj, norm_keypoints_2d)
 
@@ -261,42 +227,8 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
 
-            personal_data = {"color": color, "estimation": {}}
-            for (fno, keypoints), fjoints in tqdm(zip(keypoints_2d.items(), prediction_world.tolist()), desc=f"No.{pname} ... "):
-                fidx = str(fno)
-                personal_data["estimation"][fno] = {
-                    "ap_joints": {
-                        "LAnkle": {
-                            "x": float(keypoints[15][0]),
-                            "y": float(keypoints[15][1]),
-                        },
-                        "RAnkle": {
-                            "x": float(keypoints[16][0]),
-                            "y": float(keypoints[16][1]),
-                        },
-                        "LHeel": {
-                            "x": float(keypoints[24][0]),
-                            "y": float(keypoints[24][1]),
-                        },
-                        "RHeel": {
-                            "x": float(keypoints[25][0]),
-                            "y": float(keypoints[25][1]),
-                        }
-                    },
-                    "pt_joints": {
-                    },
-                }
-
-                for jname, fjoint in zip(BODY_LANDMARKS, fjoints):
-                    personal_data["estimation"][fno]["pt_joints"][jname] = {
-                        "x": -float(fjoint[0]) * 100,
-                        "y": float(fjoint[2]) * 100,
-                        "z": -float(fjoint[1]) * 100,
-                    }
-
-                for joint_type in ("mp_body_world_joints", "mp_left_hand_joints", "mp_right_hand_joints", "mp_face_joints"):
-                    if joint_type in json_datas["estimation"][fidx]:
-                        personal_data["estimation"][fno][joint_type] = json_datas["estimation"][fidx][joint_type]
+            for fidx, fno in tqdm(enumerate([sfno for sfno in json_datas["estimation"].keys()]), desc=f"No.{pname} ... "):
+                json_datas["estimation"][str(fno)]["pt-keypoints"] = prediction_world[fidx].tolist()
 
             logger.info(
                 "【No.{pname}】PoseTriplet 結果保存",
@@ -305,10 +237,10 @@ def execute(args):
             )
 
             with open(os.path.join(output_dir_path, os.path.basename(persion_json_path)), "w") as f:
-                json.dump(personal_data, f, indent=4)
+                json.dump(json_datas, f, indent=4)
 
         logger.info(
-            "3D姿勢推定(PoseTriplet) 結果保存完了: {output_dir_path}",
+            "PoseTriplet 結果保存完了: {output_dir_path}",
             output_dir_path=output_dir_path,
             decoration=MLogger.DECORATION_BOX,
         )
@@ -335,10 +267,10 @@ def fetch_keypoint(keypoints: np.ndarray, width: int, height: int):
         kps[low_score_rows[prev_hight_score_idxs], low_score_cols[prev_hight_score_idxs]] = kps[(low_score_rows + 1)[prev_hight_score_idxs], low_score_cols[prev_hight_score_idxs]].copy()
     
     # Keypointの並び順を調整する
-    spine = 0.5 * (kps[:, HALPE_KEYPOINTS["Neck"]] + kps[:, HALPE_KEYPOINTS["Pelvis"]])
+    spine = 0.5 * (kps[:, SMPL_JOINT_29["Neck"]] + kps[:, SMPL_JOINT_29["Pelvis"]])
     combine = np.transpose([spine], (1, 0, 2))
     combine_kp = np.concatenate([kps, combine], axis=1)
-    ordered_kps = combine_kp[:, HALPE_2_COCO_ORDER, :2].copy()
+    ordered_kps = combine_kp[:, SMPL_2_COCO_ORDER, :2].copy()
 
     # スムージング
     keypoints_imgunnorm = savgol_filter(
