@@ -104,7 +104,7 @@ def execute(args):
                     for axis, kp in zip(("x", "y", "z"), frame_json_data["pt-keypoints"][0]):
                         if ("pt", "Pelvis", axis) not in joint_datas:
                             joint_datas[("pt", "Pelvis", axis)] = {}
-                        joint_datas[("pt", "Pelvis", axis)][fno] = float(kp) * 100
+                        joint_datas[("pt", "Pelvis", axis)][fno] = float(kp) * 100 * (-1 if axis == "x" else 1)
                 if "depth" in frame_json_data:
                     if ("mp", "depth", "d") not in joint_datas:
                         joint_datas[("mp", "depth", "d")] = {}
@@ -130,11 +130,18 @@ def execute(args):
                 for fidx, fno in enumerate(joint_vals.keys()):
                     joint_datas[key][fno] = smoothed_joint_vals[fidx]
 
-            # logger.info(
-            #     "【No.{pname}】推定結果合成 センター補正",
-            #     pname=pname,
-            #     decoration=MLogger.DECORATION_LINE,
-            # )
+            logger.info(
+                "【No.{pname}】推定結果合成 グルーブ補正",
+                pname=pname,
+                decoration=MLogger.DECORATION_LINE,
+            )
+
+            for fno in tqdm(joint_datas["ap", "Pelvis", "y"].keys(), desc=f"No.{pname} ... "):
+                # 全身でもっとも低いところを探す(逆立ちとかも可能性としてはあるので、全部舐める)
+                min_y = np.min([joint_datas["ap", jname, "y"][fno] for jname in SMPL_JOINT_24.keys()])
+
+                for jname in SMPL_JOINT_24.keys():
+                    joint_datas["ap", jname, "y"][fno] -= min_y
 
             # mp_pelvis_ys = {}
             # mp_ankle_ys = {"L": {}, "R": {}}
@@ -209,7 +216,7 @@ def execute(args):
                         continue
 
                     mix_joints["joints"][fno]["body"][jname] = {
-                        "x": joint_datas[("ap", jname, "x")][fno],
+                        "x": joint_datas[("ap", jname, "x")][fno] + joint_datas[("pt", "Pelvis", "x")][fno],
                         "y": joint_datas[("ap", jname, "y")][fno],
                         "z": joint_datas[("ap", jname, "z")][fno] + joint_datas[("mp", "depth", "d")][fno] - root_depth,
                     }

@@ -213,9 +213,7 @@ def execute(args):
                 fno = lower_bf.index
 
                 center_abs_pos: MVector3D = lower_bf.position
-                center_relative_pos: MVector3D = (
-                    center_abs_pos - trace_model.bones["下半身"].position + (trace_model.bones["グルーブ"].position - trace_model.bones["センター"].position)
-                )
+                center_relative_pos: MVector3D = center_abs_pos - trace_model.bones["下半身"].position + MVector3D(0, -0.5, 0)
 
                 center_pos: MVector3D = center_relative_pos.copy()
                 center_pos.y = 0
@@ -530,7 +528,7 @@ VMD_CONNECTIONS = {
         "direction": ("上半身", "上半身2"),
         "up": ("左腕", "右腕"),
         "cancel": (),
-        "invert": MVector3D(),
+        "invert": MVector3D(-15, 0, 0),
         "window_lengt": 7,
         "polyorder": 2,
     },
@@ -538,7 +536,7 @@ VMD_CONNECTIONS = {
         "direction": ("上半身2", "上半身3"),
         "up": ("左腕", "右腕"),
         "cancel": ("上半身",),
-        "invert": MVector3D(20, 0, 0),
+        "invert": MVector3D(30, 0, 0),
         "window_lengt": 7,
         "polyorder": 2,
     },

@@ -350,3 +350,7 @@ msgstr ""
 msgid "【No.{pname}】AlphaPose 結果取得"
 msgstr ""
 
+
+msgid "【No.{pname}】推定結果合成 グルーブ補正"
+msgstr ""
+

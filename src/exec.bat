@@ -2,18 +2,16 @@
 
 cls
 
-set PROCESS=prepare,alphapose,multipose,posetriplet
-
 @REM set PROCESS=prepare,alphapose,multipose,posetriplet,mix,motion
 @REM set PROCESS=alphapose,multipose,posetriplet,mix,motion
 @REM set PROCESS=multipose,posetriplet,mix,motion
-set PROCESS=mix,motion
+@REM set PROCESS=mix,motion
 @REM set PROCESS=motion
 set LOGMODE=0
 set LANG=ja
 set HAND=
 
-python executor.py --img-dir "O:\MMD_Auto_Trace\01\burai_mp4_20221012_001858" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+@REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\burai_mp4_20221012_001858" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 
 set PROCESS=prepare,alphapose,multipose,posetriplet
 
