@@ -404,62 +404,69 @@ def execute(args):
             trace_thining_motion = VmdMotion()
 
             # 間引き
-            for bone_name in tqdm(trace_org_motion.bones.names()):
-                if bone_name == "全ての親":
-                    continue
+            with tqdm(
+                total=(len(trace_org_motion.bones) * (end_fno - start_fno) * 2),
+                desc=f"No.{pname} ... ",
+            ) as pchar:
 
-                mx_values = []
-                my_values = []
-                mz_values = []
-                rot_values = []
-                rot_y_values = []
-                for fno in range(start_fno, end_fno):
-                    pos = trace_org_motion.bones[bone_name][fno].position
-                    mx_values.append(pos.x)
-                    my_values.append(pos.y)
-                    mz_values.append(pos.z)
-                    rot = trace_org_motion.bones[bone_name][fno].rotation
-                    # オイラー角にした時の長さ
-                    rot_values.append(MQuaternion().dot(rot))
-                    degrees = rot.to_euler_degrees()
-                    rot_y_values.append(degrees.y)
+                for bone_name in trace_org_motion.bones.names():
+                    if bone_name == "全ての親":
+                        continue
 
-                mx_infections = get_infections(mx_values, (0.1 if "足ＩＫ" in bone_name else 0.05), 1)
-                my_infections = get_infections(my_values, (0.1 if "足ＩＫ" in bone_name else 0.05), 1)
-                mz_infections = get_infections(mz_values, (0.2 if "足ＩＫ" in bone_name else 0.1), 1)
-                rot_infections = get_infections(rot_values, (0.01 if "足ＩＫ" in bone_name else 0.001), (2 if "足ＩＫ" in bone_name else 3))
-                # 回転変動も検出する(180度だけだとどっち向きの回転か分からないので)
-                rot_y_infections = np.array([])
-                if bone_name in ["上半身", "下半身"]:
-                    rot_y_infections = get_y_infections(rot_y_values, 110)
+                    mx_values = []
+                    my_values = []
+                    mz_values = []
+                    rot_values = []
+                    rot_y_values = []
+                    for fno in range(start_fno, end_fno):
+                        pos = trace_org_motion.bones[bone_name][fno].position
+                        mx_values.append(pos.x)
+                        my_values.append(pos.y)
+                        mz_values.append(pos.z)
+                        rot = trace_org_motion.bones[bone_name][fno].rotation
+                        # オイラー角にした時の長さ
+                        rot_values.append(MQuaternion().dot(rot))
+                        degrees = rot.to_euler_degrees()
+                        rot_y_values.append(degrees.y)
+                        pchar.update(1)
 
-                infections = list(
-                    sorted(
-                        list(
-                            {0, len(mx_values) - 1}
-                            | set(mx_infections)
-                            | set(my_infections)
-                            | set(mz_infections)
-                            | set(rot_infections)
-                            | set(rot_y_infections)
+                    mx_infections = get_infections(mx_values, (0.1 if "足ＩＫ" in bone_name else 0.05), 1)
+                    my_infections = get_infections(my_values, (0.1 if "足ＩＫ" in bone_name else 0.05), 1)
+                    mz_infections = get_infections(mz_values, (0.2 if "足ＩＫ" in bone_name else 0.1), 1)
+                    rot_infections = get_infections(rot_values, (0.01 if "足ＩＫ" in bone_name else 0.001), (2 if "足ＩＫ" in bone_name else 3))
+                    # 回転変動も検出する(180度だけだとどっち向きの回転か分からないので)
+                    rot_y_infections = np.array([])
+                    if bone_name in ["上半身", "下半身"]:
+                        rot_y_infections = get_y_infections(rot_y_values, 110)
+
+                    infections = list(
+                        sorted(
+                            list(
+                                {0, len(mx_values) - 1}
+                                | set(mx_infections)
+                                | set(my_infections)
+                                | set(mz_infections)
+                                | set(rot_infections)
+                                | set(rot_y_infections)
+                            )
                         )
                     )
-                )
 
-                for sfidx, efidx in zip(infections[:-1], infections[1:]):
-                    sfno = int(sfidx + start_fno)
-                    efno = int(efidx + start_fno)
-                    if sfidx == infections[0]:
-                        start_bf = trace_org_motion.bones[bone_name][sfno]
-                    else:
-                        start_bf = trace_thining_motion.bones[bone_name][sfno]
-                    end_bf = trace_org_motion.bones[bone_name][efno]
-                    end_bf.interpolations.translation_x = create_interpolation(mx_values[sfidx:efidx])
-                    end_bf.interpolations.translation_y = create_interpolation(my_values[sfidx:efidx])
-                    end_bf.interpolations.translation_z = create_interpolation(mz_values[sfidx:efidx])
-                    end_bf.interpolations.rotation = create_interpolation(rot_values[sfidx:efidx])
-                    trace_thining_motion.bones.append(start_bf)
-                    trace_thining_motion.bones.append(end_bf)
+                    for sfidx, efidx in zip(infections[:-1], infections[1:]):
+                        sfno = int(sfidx + start_fno)
+                        efno = int(efidx + start_fno)
+                        if sfidx == infections[0]:
+                            start_bf = trace_org_motion.bones[bone_name][sfno]
+                        else:
+                            start_bf = trace_thining_motion.bones[bone_name][sfno]
+                        end_bf = trace_org_motion.bones[bone_name][efno]
+                        end_bf.interpolations.translation_x = create_interpolation(mx_values[sfidx:efidx])
+                        end_bf.interpolations.translation_y = create_interpolation(my_values[sfidx:efidx])
+                        end_bf.interpolations.translation_z = create_interpolation(mz_values[sfidx:efidx])
+                        end_bf.interpolations.rotation = create_interpolation(rot_values[sfidx:efidx])
+                        trace_thining_motion.bones.append(start_bf)
+                        trace_thining_motion.bones.append(end_bf)
+                        pchar.update(efno - sfno)
 
             trace_thining_motion_path = os.path.join(motion_dir_path, f"trace_no{pname}_thining.vmd")
             logger.info(
@@ -507,8 +514,8 @@ PMX_CONNECTIONS = {
     "RElbow": "右ひじ",
     "LWrist": "左手首",
     "RWrist": "右手首",
-    "LThumb": "左親指１",
-    "RThumb": "右親指１",
+    "LThumb": "左中指１",
+    "RThumb": "右中指１",
 }
 
 VMD_CONNECTIONS = {
@@ -536,7 +543,7 @@ VMD_CONNECTIONS = {
         "direction": ("上半身2", "上半身3"),
         "up": ("左腕", "右腕"),
         "cancel": ("上半身",),
-        "invert": MVector3D(30, 0, 0),
+        "invert": MVector3D(20, 0, 0),
         "window_lengt": 7,
         "polyorder": 2,
     },
@@ -573,7 +580,7 @@ VMD_CONNECTIONS = {
     },
     "左腕": {
         "direction": ("左腕", "左ひじ"),
-        "up": ("左腕", "右腕"),
+        "up": ("上半身3", "首"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -585,7 +592,7 @@ VMD_CONNECTIONS = {
     },
     "左ひじ": {
         "direction": ("左ひじ", "左手首"),
-        "up": ("左腕", "右腕"),
+        "up": ("左腕", "左ひじ"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -597,8 +604,8 @@ VMD_CONNECTIONS = {
         "polyorder": 4,
     },
     "左手首": {
-        "direction": ("左手首", "左親指１"),
-        "up": ("左腕", "右腕"),
+        "direction": ("左手首", "左中指１"),
+        "up": ("左ひじ", "左手首"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -623,7 +630,7 @@ VMD_CONNECTIONS = {
     },
     "右腕": {
         "direction": ("右腕", "右ひじ"),
-        "up": ("左腕", "右腕"),
+        "up": ("上半身3", "首"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -635,7 +642,7 @@ VMD_CONNECTIONS = {
     },
     "右ひじ": {
         "direction": ("右ひじ", "右手首"),
-        "up": ("左腕", "右腕"),
+        "up": ("右腕", "右ひじ"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -647,8 +654,8 @@ VMD_CONNECTIONS = {
         "polyorder": 4,
     },
     "右手首": {
-        "direction": ("右手首", "右親指１"),
-        "up": ("左腕", "右腕"),
+        "direction": ("右手首", "右中指１"),
+        "up": ("右ひじ", "右手首"),
         "cancel": (
             "上半身",
             "上半身2",

@@ -94,20 +94,27 @@ def execute(args):
             for fidx, fno in tqdm(enumerate(fnos), desc=f"No.{pname} ... "):
                 frame_json_data = frame_joints["estimation"][str(fno)]
                 if "ap-3d-keypoints" in frame_json_data:
-                    for (jname, jidx), kps in zip(SMPL_JOINT_24.items(), frame_json_data["ap-3d-keypoints"]):
+                    for jname, kps in zip(SMPL_JOINT_24.keys(), frame_json_data["ap-3d-keypoints"]):
                         for axis, kp in zip(("x", "y", "z"), kps):
                             if ("ap", jname, axis) not in joint_datas:
                                 joint_datas[("ap", jname, axis)] = {}
-                            # cmからMに変換。Yは上がマイナスなので、符号反転
+                            # meterからcmに変換。Yは上がマイナスなので、符号反転
                             joint_datas[("ap", jname, axis)][fno] = float(kp) * 100 * (-1 if axis == "y" else 1)
                 if "pt-keypoints" in frame_json_data:
-                    for axis, kp in zip(("x", "y", "z"), frame_json_data["pt-keypoints"][0]):
-                        if ("pt", "Pelvis", axis) not in joint_datas:
-                            joint_datas[("pt", "Pelvis", axis)] = {}
-                        joint_datas[("pt", "Pelvis", axis)][fno] = float(kp) * 100 * (-1 if axis == "x" else 1)
+                    for jname, jidx in zip(("Pelvis", "RAnkle", "LAnkle"), (0, 3, 6)):
+                        # PoseTripletはzがY軸相当
+                        for axis, kp in zip(
+                            ("x", "z", "y"),
+                            frame_json_data["pt-keypoints"][jidx],
+                        ):
+                            if ("pt", jname, axis) not in joint_datas:
+                                joint_datas[("pt", jname, axis)] = {}
+                            # meterからcmに変換。Xは右がマイナスなので、符号反転
+                            joint_datas[("pt", jname, axis)][fno] = float(kp) * 100 * (-1 if axis in ["x", "z"] else 1)
                 if "depth" in frame_json_data:
                     if ("mp", "depth", "d") not in joint_datas:
                         joint_datas[("mp", "depth", "d")] = {}
+                    # meterからcmに変換
                     joint_datas[("mp", "depth", "d")][fno] = float(frame_json_data["depth"]) * 100
 
             logger.info(
@@ -143,37 +150,14 @@ def execute(args):
                 for jname in SMPL_JOINT_24.keys():
                     joint_datas["ap", jname, "y"][fno] -= min_y
 
-            # mp_pelvis_ys = {}
-            # mp_ankle_ys = {"L": {}, "R": {}}
-            # pt_pelvis_ys = {}
-            # pt_ankle_ys = {"L": {}, "R": {}}
-            # for direction in ("L", "R"):
-            #     for fno in tqdm(joint_datas["pt-keypoints", f"{direction}Ankle", "y"].keys(), desc=f"No.{pname} ... "):
-            #         if fno in joint_datas["pt-keypoints", 0, "x"] and fno in joint_datas["pt-keypoints", f"{direction}Ankle", "x"]:
-            #             pt_pelvis_ys[fno] = joint_datas["pt-keypoints", 0, "y"][fno]
-            #             pt_ankle_ys[direction][fno] = joint_datas["pt-keypoints", f"{direction}Ankle", "y"][fno]
-
-            #     for fidx, fno in tqdm(enumerate(joint_datas["ap", f"{direction}Ankle", "y"].keys()), desc=f"No.{pname} ... "):
-            #         if (
-            #             fno in joint_datas["ap", "Pelvis", "x"]
-            #             # and fno in joint_datas["ap", f"{direction}Hip", "y"]
-            #             # and fno in joint_datas["ap", f"{direction}Knee", "y"]
-            #             and fno in joint_datas["ap", f"{direction}Ankle", "y"]
-            #         ):
-            #             if fidx > 0 and fno not in joint_datas["ap", "Pelvis", "y"]:
-            #                 prev_fno = (joint_datas["ap", "Pelvis", "y"].keys())[fidx - 1]
-            #                 mp_pelvis_ys[fno] = joint_datas["ap", "Pelvis", "y"][prev_fno]
-            #             else:
-            #                 mp_pelvis_ys[fno] = joint_datas["ap", "Pelvis", "y"][fno]
-            #             # mp_hip_ys[direction][fno] = joint_datas["ap", f"{direction}Hip", "y"][fno]
-            #             # mp_knee_ys[direction][fno] = joint_datas["ap", f"{direction}Knee", "y"][fno]
-            #             mp_ankle_ys[direction][fno] = joint_datas["ap", f"{direction}Ankle", "y"][fno]
-
             logger.info(
                 "【No.{pname}】推定結果合成 合成開始",
                 pname=pname,
                 decoration=MLogger.DECORATION_LINE,
             )
+
+            # PoseTriplet で測った場合のY座標（ジャンプしてるとその分上に行く）
+            pt_median_ankle_y = np.median(list(joint_datas["pt", "RAnkle", "y"].values()) + list(joint_datas["pt", "LAnkle", "y"].values()))
 
             mix_joints = {"color": frame_joints["color"], "joints": {}}
             for fidx, fno in tqdm(
@@ -187,22 +171,27 @@ def execute(args):
                 if not (("ap", "Pelvis", "x") in joint_datas and fno in joint_datas[("ap", "Pelvis", "x")]):
                     continue
 
-                # median_ankle_y = np.median([list(pt_ankle_ys["L"].values()), list(pt_ankle_ys["R"].values())])
-                # pt_leg_length = pt_pelvis_ys[fno] - median_ankle_y
-                # mp_leg_length = mp_pelvis_ys[fno] - np.min([mp_ankle_ys["L"].get(fno, 0), mp_ankle_ys["R"].get(fno, 0)])
+                pt_leg_length = abs(joint_datas["pt", "Pelvis", "y"][fno] - pt_median_ankle_y) + 7
+                ap_leg_length = abs(
+                    joint_datas["ap", "Pelvis", "y"][fno]
+                    - np.min(
+                        [
+                            joint_datas["ap", "RAnkle", "y"][fno],
+                            joint_datas["ap", "LAnkle", "y"][fno],
+                        ]
+                    )
+                )
 
-                # # 腰からの足首Yの距離
-                # foot_y = joint_datas[("ap", "Pelvis", "y")][fno] - min(
-                #     joint_datas[("ap", "RFootIndex", "y")].get(fno, 0),
-                #     joint_datas[("ap", "RHeel", "y")].get(fno, 0),
-                #     joint_datas[("ap", "LFootIndex", "y")].get(fno, 0),
-                #     joint_datas[("ap", "LHeel", "y")].get(fno, 0),
-                # )
-                # # ジャンプしてる場合はptの方が値が大きくなるので、＋のみ判定（接地までとする）
-                # foot_y += max(0, pt_leg_length - mp_leg_length)
-
-                # pelvis_x = joint_datas[("pt-keypoints", 0, "x")][fno] - all_root_pos.x
-                # pelvis_z = joint_datas[("pt-keypoints", 0, "z")][fno] - all_root_pos.z
+                # ジャンプしてる場合はptの方が値が大きくなるので、＋のみ判定（接地までとする）
+                # ややPoseTriplet を低めに見積もってるので、実値としてはかさ増しする
+                adjust_foot_y = max(0, pt_leg_length - ap_leg_length) * 1.3
+                logger.debug(
+                    "[{fno}] adjust_foot_y: {adjust_foot_y}, pt_leg_length: {pt_leg_length}, ap_leg_length: {ap_leg_length}",
+                    fno=fno,
+                    adjust_foot_y=adjust_foot_y,
+                    pt_leg_length=pt_leg_length,
+                    ap_leg_length=ap_leg_length,
+                )
 
                 for jname in SMPL_JOINT_24.keys():
                     if not (
@@ -216,9 +205,9 @@ def execute(args):
                         continue
 
                     mix_joints["joints"][fno]["body"][jname] = {
-                        "x": joint_datas[("ap", jname, "x")][fno] + joint_datas[("pt", "Pelvis", "x")][fno],
-                        "y": joint_datas[("ap", jname, "y")][fno],
-                        "z": joint_datas[("ap", jname, "z")][fno] + joint_datas[("mp", "depth", "d")][fno] - root_depth,
+                        "x": joint_datas[("ap", jname, "x")][fno] + (joint_datas[("pt", "Pelvis", "x")][fno] * 1.2),
+                        "y": joint_datas[("ap", jname, "y")][fno] + adjust_foot_y,
+                        "z": joint_datas[("ap", jname, "z")][fno] + (joint_datas[("mp", "depth", "d")][fno] - root_depth * 1.2),
                     }
 
                 mix_joints["joints"][fno]["body"]["Pelvis2"] = {}

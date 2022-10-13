@@ -34,7 +34,7 @@ from easydict import EasyDict as edict
 from PIL import Image
 from tqdm import tqdm
 
-from parts.config import DirName, FileName, SMPL_JOINT_29
+from parts.config import SMPL_JOINT_29, DirName, FileName
 
 logger = MLogger(__name__)
 
@@ -249,9 +249,9 @@ def execute(args):
                         pw = personal_datas[pidx][sfno]["bbox"]["width"]
                         ph = personal_datas[pidx][sfno]["bbox"]["height"]
                         pcenter = np.array([px, py]) + np.array([pw, ph]) / 2
-                        # Hipの位置
-                        phx = personal_datas[pidx][sfno]["ap-2d-keypoints"][19 * 3]
-                        phy = personal_datas[pidx][sfno]["ap-2d-keypoints"][19 * 3 + 1]
+                        # Pelvisの位置
+                        phx = personal_datas[pidx][sfno]["ap-2d-keypoints"][SMPL_JOINT_29["Pelvis"] * 3]
+                        phy = personal_datas[pidx][sfno]["ap-2d-keypoints"][SMPL_JOINT_29["Pelvis"] * 3 + 1]
                         phip = np.array([phx, phy])
 
                         ocenters = {}
@@ -269,9 +269,9 @@ def execute(args):
                                     oh = odata[oefno]["bbox"]["height"]
                                     ocenter = np.array([ox, oy]) + np.array([ow, oh]) / 2
 
-                                    # Hipの位置
-                                    ohx = odata[oefno]["ap-2d-keypoints"][19 * 3]
-                                    ohy = odata[oefno]["ap-2d-keypoints"][19 * 3 + 1]
+                                    # Pelvisの位置
+                                    ohx = odata[oefno]["ap-2d-keypoints"][SMPL_JOINT_29["Pelvis"] * 3]
+                                    ohy = odata[oefno]["ap-2d-keypoints"][SMPL_JOINT_29["Pelvis"] * 3 + 1]
                                     ohip = np.array([ohx, ohy])
 
                                     if (
