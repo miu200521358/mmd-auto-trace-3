@@ -1,17 +1,17 @@
 import json
 import os
 import re
+from copy import deepcopy
 from glob import glob
 
 import numpy as np
 from base.logger import MLogger
-from base.math import MVector3D
 from scipy.signal import savgol_filter
 from tqdm import tqdm
 
-from parts.config import SMPL_JOINT_24, DirName
+from parts.config import SMPL_JOINT_24, SMPL_JOINT_29, DirName
 
-logger = MLogger(__name__, level=MLogger.DEBUG)
+logger = MLogger(__name__)
 
 
 def execute(args):
@@ -123,16 +123,15 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
 
-            for key, joint_vals in tqdm(joint_datas.items()):
+            for key, joint_vals in tqdm(joint_datas.items(), desc=f"No.{pname} ... "):
                 # スムージング
-                if len(joint_vals) > 5:
+                smoothed_joint_vals = list(joint_vals.values())
+                if len(joint_vals) > 7:
                     smoothed_joint_vals = savgol_filter(
-                        list(joint_vals.values()),
-                        window_length=5,
+                        smoothed_joint_vals,
+                        window_length=7,
                         polyorder=2,
                     )
-                else:
-                    smoothed_joint_vals = joint_vals
 
                 for fidx, fno in enumerate(joint_vals.keys()):
                     joint_datas[key][fno] = smoothed_joint_vals[fidx]
@@ -156,12 +155,10 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
 
-            # PoseTriplet で測った場合のY座標（ジャンプしてるとその分上に行く）
-            pt_median_ankle_y = np.median(list(joint_datas["pt", "RAnkle", "y"].values()) + list(joint_datas["pt", "LAnkle", "y"].values()))
-
             mix_joints = {"color": frame_joints["color"], "joints": {}}
             for fidx, fno in tqdm(
                 enumerate(joint_datas[("ap", "Pelvis", "x")].keys()),
+                desc=f"No.{pname} ... ",
             ):
                 mix_joints["joints"][fno] = {"body": {}, "2d": {}}
 
@@ -171,16 +168,10 @@ def execute(args):
                 if not (("ap", "Pelvis", "x") in joint_datas and fno in joint_datas[("ap", "Pelvis", "x")]):
                     continue
 
-                pt_leg_length = abs(joint_datas["pt", "Pelvis", "y"][fno] - pt_median_ankle_y) + 7
-                ap_leg_length = abs(
-                    joint_datas["ap", "Pelvis", "y"][fno]
-                    - np.min(
-                        [
-                            joint_datas["ap", "RAnkle", "y"][fno],
-                            joint_datas["ap", "LAnkle", "y"][fno],
-                        ]
-                    )
-                )
+                # PoseTriplet で測った場合のY座標（ジャンプしてるとその分上に行く）
+                pt_leg_length = abs(joint_datas["pt", "Pelvis", "y"][fno])
+                # AlphaPose で測った場合のY座標（もっともYが低い関節からの距離）
+                ap_leg_length = abs(joint_datas["ap", "Pelvis", "y"][fno])
 
                 # ジャンプしてる場合はptの方が値が大きくなるので、＋のみ判定（接地までとする）
                 # ややPoseTriplet を低めに見積もってるので、実値としてはかさ増しする
@@ -207,15 +198,15 @@ def execute(args):
                     mix_joints["joints"][fno]["body"][jname] = {
                         "x": joint_datas[("ap", jname, "x")][fno] + (joint_datas[("pt", "Pelvis", "x")][fno] * 1.2),
                         "y": joint_datas[("ap", jname, "y")][fno] + adjust_foot_y,
-                        "z": joint_datas[("ap", jname, "z")][fno] + (joint_datas[("mp", "depth", "d")][fno] - root_depth * 1.2),
+                        "z": joint_datas[("ap", jname, "z")][fno] + ((joint_datas[("mp", "depth", "d")][fno] - root_depth) * 1.3),
                     }
 
                 mix_joints["joints"][fno]["body"]["Pelvis2"] = {}
                 mix_joints["joints"][fno]["body"]["Spine0"] = {}
-                mix_joints["joints"][fno]["body"]["Spine4"] = {}
+                mix_joints["joints"][fno]["body"]["Neck"] = {}
 
                 for axis in ("x", "y", "z"):
-                    # 上半身0
+                    # 上半身
                     mix_joints["joints"][fno]["body"]["Spine0"][axis] = mix_joints["joints"][fno]["body"]["Pelvis"][axis]
 
                     # 下半身先
@@ -226,13 +217,186 @@ def execute(args):
                         ]
                     )
 
-                    # 首根元
-                    mix_joints["joints"][fno]["body"]["Spine4"][axis] = np.mean(
+                    # 首
+                    mix_joints["joints"][fno]["body"]["Neck"][axis] = np.mean(
                         [
-                            mix_joints["joints"][fno]["body"]["Neck"][axis],
+                            mix_joints["joints"][fno]["body"]["Head"][axis],
                             mix_joints["joints"][fno]["body"]["Spine3"][axis],
                         ]
                     )
+
+            logger.info(
+                "【No.{pname}】推定結果合成 足チェック",
+                pname=pname,
+                decoration=MLogger.DECORATION_LINE,
+            )
+
+            for (fidx, prev_fno), fno, next_fno in tqdm(
+                zip(
+                    enumerate(list(frame_joints["estimation"].keys())[:-1]),
+                    list(frame_joints["estimation"].keys())[1:],
+                    list(frame_joints["estimation"].keys())[2:],
+                ),
+                desc=f"No.{pname} ... ",
+            ):
+
+                prev_left_hip = np.array(
+                    [
+                        frame_joints["estimation"][prev_fno]["ap-2d-keypoints"][SMPL_JOINT_29["LHip"] * 3],
+                        frame_joints["estimation"][prev_fno]["ap-2d-keypoints"][SMPL_JOINT_29["LHip"] * 3 + 1],
+                    ]
+                )
+                prev_left_knee = np.array(
+                    [
+                        frame_joints["estimation"][prev_fno]["ap-2d-keypoints"][SMPL_JOINT_29["LKnee"] * 3],
+                        frame_joints["estimation"][prev_fno]["ap-2d-keypoints"][SMPL_JOINT_29["LKnee"] * 3 + 1],
+                    ]
+                )
+                prev_left_ankle = np.array(
+                    [
+                        frame_joints["estimation"][prev_fno]["ap-2d-keypoints"][SMPL_JOINT_29["LAnkle"] * 3],
+                        frame_joints["estimation"][prev_fno]["ap-2d-keypoints"][SMPL_JOINT_29["LAnkle"] * 3 + 1],
+                    ]
+                )
+
+                prev_right_hip = np.array(
+                    [
+                        frame_joints["estimation"][prev_fno]["ap-2d-keypoints"][SMPL_JOINT_29["RHip"] * 3],
+                        frame_joints["estimation"][prev_fno]["ap-2d-keypoints"][SMPL_JOINT_29["RHip"] * 3 + 1],
+                    ]
+                )
+                prev_right_knee = np.array(
+                    [
+                        frame_joints["estimation"][prev_fno]["ap-2d-keypoints"][SMPL_JOINT_29["RKnee"] * 3],
+                        frame_joints["estimation"][prev_fno]["ap-2d-keypoints"][SMPL_JOINT_29["RKnee"] * 3 + 1],
+                    ]
+                )
+                prev_right_ankle = np.array(
+                    [
+                        frame_joints["estimation"][prev_fno]["ap-2d-keypoints"][SMPL_JOINT_29["RAnkle"] * 3],
+                        frame_joints["estimation"][prev_fno]["ap-2d-keypoints"][SMPL_JOINT_29["RAnkle"] * 3 + 1],
+                    ]
+                )
+
+                left_hip = np.array(
+                    [
+                        frame_joints["estimation"][fno]["ap-2d-keypoints"][SMPL_JOINT_29["LHip"] * 3],
+                        frame_joints["estimation"][fno]["ap-2d-keypoints"][SMPL_JOINT_29["LHip"] * 3 + 1],
+                    ]
+                )
+                left_knee = np.array(
+                    [
+                        frame_joints["estimation"][fno]["ap-2d-keypoints"][SMPL_JOINT_29["LKnee"] * 3],
+                        frame_joints["estimation"][fno]["ap-2d-keypoints"][SMPL_JOINT_29["LKnee"] * 3 + 1],
+                    ]
+                )
+                left_ankle = np.array(
+                    [
+                        frame_joints["estimation"][fno]["ap-2d-keypoints"][SMPL_JOINT_29["LAnkle"] * 3],
+                        frame_joints["estimation"][fno]["ap-2d-keypoints"][SMPL_JOINT_29["LAnkle"] * 3 + 1],
+                    ]
+                )
+
+                right_hip = np.array(
+                    [
+                        frame_joints["estimation"][fno]["ap-2d-keypoints"][SMPL_JOINT_29["RHip"] * 3],
+                        frame_joints["estimation"][fno]["ap-2d-keypoints"][SMPL_JOINT_29["RHip"] * 3 + 1],
+                    ]
+                )
+                right_knee = np.array(
+                    [
+                        frame_joints["estimation"][fno]["ap-2d-keypoints"][SMPL_JOINT_29["RKnee"] * 3],
+                        frame_joints["estimation"][fno]["ap-2d-keypoints"][SMPL_JOINT_29["RKnee"] * 3 + 1],
+                    ]
+                )
+                right_ankle = np.array(
+                    [
+                        frame_joints["estimation"][fno]["ap-2d-keypoints"][SMPL_JOINT_29["RAnkle"] * 3],
+                        frame_joints["estimation"][fno]["ap-2d-keypoints"][SMPL_JOINT_29["RAnkle"] * 3 + 1],
+                    ]
+                )
+
+                next_left_hip = np.array(
+                    [
+                        frame_joints["estimation"][next_fno]["ap-2d-keypoints"][SMPL_JOINT_29["LHip"] * 3],
+                        frame_joints["estimation"][next_fno]["ap-2d-keypoints"][SMPL_JOINT_29["LHip"] * 3 + 1],
+                    ]
+                )
+                next_left_knee = np.array(
+                    [
+                        frame_joints["estimation"][next_fno]["ap-2d-keypoints"][SMPL_JOINT_29["LKnee"] * 3],
+                        frame_joints["estimation"][next_fno]["ap-2d-keypoints"][SMPL_JOINT_29["LKnee"] * 3 + 1],
+                    ]
+                )
+                next_left_ankle = np.array(
+                    [
+                        frame_joints["estimation"][next_fno]["ap-2d-keypoints"][SMPL_JOINT_29["LAnkle"] * 3],
+                        frame_joints["estimation"][next_fno]["ap-2d-keypoints"][SMPL_JOINT_29["LAnkle"] * 3 + 1],
+                    ]
+                )
+
+                next_right_hip = np.array(
+                    [
+                        frame_joints["estimation"][next_fno]["ap-2d-keypoints"][SMPL_JOINT_29["RHip"] * 3],
+                        frame_joints["estimation"][next_fno]["ap-2d-keypoints"][SMPL_JOINT_29["RHip"] * 3 + 1],
+                    ]
+                )
+                next_right_knee = np.array(
+                    [
+                        frame_joints["estimation"][next_fno]["ap-2d-keypoints"][SMPL_JOINT_29["RKnee"] * 3],
+                        frame_joints["estimation"][next_fno]["ap-2d-keypoints"][SMPL_JOINT_29["RKnee"] * 3 + 1],
+                    ]
+                )
+                next_right_ankle = np.array(
+                    [
+                        frame_joints["estimation"][next_fno]["ap-2d-keypoints"][SMPL_JOINT_29["RAnkle"] * 3],
+                        frame_joints["estimation"][next_fno]["ap-2d-keypoints"][SMPL_JOINT_29["RAnkle"] * 3 + 1],
+                    ]
+                )
+
+                prev_cross_result = intersect(
+                    left_hip,
+                    left_knee,
+                    left_ankle,
+                    right_hip,
+                    right_knee,
+                    right_ankle,
+                    prev_left_hip,
+                    prev_left_knee,
+                    prev_left_ankle,
+                    prev_right_hip,
+                    prev_right_knee,
+                    prev_right_ankle,
+                )
+
+                next_cross_result = intersect(
+                    next_left_hip,
+                    next_left_knee,
+                    next_left_ankle,
+                    next_right_hip,
+                    next_right_knee,
+                    next_right_ankle,
+                    left_hip,
+                    left_knee,
+                    left_ankle,
+                    right_hip,
+                    right_knee,
+                    right_ankle,
+                )
+
+                if prev_cross_result[0] and not next_cross_result[0]:
+                    # 足-ひざ間が現fnoだけクロスしている場合、左右足反転
+                    left_knee = deepcopy(mix_joints["joints"][int(fno)]["body"]["LKnee"])
+                    left_ankle = deepcopy(mix_joints["joints"][int(fno)]["body"]["LAnkle"])
+                    left_foot = deepcopy(mix_joints["joints"][int(fno)]["body"]["LFoot"])
+
+                    mix_joints["joints"][int(fno)]["body"]["LKnee"] = deepcopy(mix_joints["joints"][int(fno)]["body"]["RKnee"])
+                    mix_joints["joints"][int(fno)]["body"]["LAnkle"] = deepcopy(mix_joints["joints"][int(fno)]["body"]["RAnkle"])
+                    mix_joints["joints"][int(fno)]["body"]["LFoot"] = deepcopy(mix_joints["joints"][int(fno)]["body"]["RFoot"])
+
+                    mix_joints["joints"][int(fno)]["body"]["RKnee"] = left_knee
+                    mix_joints["joints"][int(fno)]["body"]["RAnkle"] = left_ankle
+                    mix_joints["joints"][int(fno)]["body"]["RFoot"] = left_foot
 
             logger.info(
                 "【No.{pname}】推定結果合成 出力開始",
@@ -257,3 +421,34 @@ def execute(args):
     except Exception as e:
         logger.critical("推定結果合成で予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
         return False
+
+
+def intersect(
+    left_hip,
+    left_knee,
+    left_ankle,
+    right_hip,
+    right_knee,
+    right_ankle,
+    prev_left_hip,
+    prev_left_knee,
+    prev_left_ankle,
+    prev_right_hip,
+    prev_right_knee,
+    prev_right_ankle,
+):
+    a = np.array([left_hip, left_knee])
+    b = np.array([left_knee, left_ankle])
+    c = np.array([right_hip, right_knee])
+    d = np.array([right_knee, right_ankle])
+
+    # 足-ひざ、ひざ-足首の線分が左右で交差しているか
+    cross_result = (np.cross(a - b, a - c) * np.cross(a - b, a - d) < 0) & (np.cross(c - d, c - a) * np.cross(c - d, c - b) < 0)
+
+    # 前回のキーフレと左右反転の方が近しいか
+    now_kp = np.array([[left_knee, right_knee], [left_ankle, right_ankle]])
+    prev_kp = np.array([[prev_left_knee, prev_right_knee], [prev_left_ankle, prev_right_ankle]])
+    prev_reverse_kp = np.array([[prev_right_knee, prev_left_knee], [prev_right_ankle, prev_left_ankle]])
+    reverse_result = (np.abs(now_kp - prev_kp) > np.abs(now_kp - prev_reverse_kp)).all(axis=1).all(axis=0)
+
+    return cross_result & reverse_result

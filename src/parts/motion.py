@@ -1,7 +1,5 @@
 import json
 import os
-from cmath import isclose
-from datetime import datetime
 from glob import glob
 
 import numpy as np
@@ -14,6 +12,7 @@ from mmd.pmx.writer import PmxWriter
 from mmd.vmd.collection import VmdMotion
 from mmd.vmd.part import VmdBoneFrame
 from mmd.vmd.writer import VmdWriter
+from scipy.signal import savgol_filter
 from tqdm import tqdm
 
 from parts.config import DirName
@@ -126,7 +125,7 @@ def execute(args):
             )
 
             with tqdm(
-                total=(len(VMD_CONNECTIONS) * (end_fno - start_fno)),
+                total=(len(VMD_CONNECTIONS) * (end_fno - start_fno) * 2),
                 desc=f"No.{pname} ... ",
             ) as pchar:
 
@@ -141,6 +140,7 @@ def execute(args):
                     cross_from_name = vmd_params["cross"][0] if "cross" in vmd_params else vmd_params["direction"][0]
                     cross_to_name = vmd_params["cross"][1] if "cross" in vmd_params else vmd_params["direction"][1]
                     cancel_names = vmd_params["cancel"]
+                    invert_qq = MQuaternion.from_euler_degrees(vmd_params["invert"]["before"])
 
                     for mov_bf in trace_abs_mov_motion.bones[direction_from_name]:
                         if (
@@ -181,24 +181,19 @@ def execute(args):
                             cancel_qq *= trace_org_motion.bones[cancel_name][mov_bf.index].rotation
 
                         bf = VmdBoneFrame(name=target_bone_name, index=mov_bf.index)
-                        bf.rotation = cancel_qq.inverse() * motion_qq * initial_qq.inverse()
+                        bf.rotation = cancel_qq.inverse() * motion_qq * initial_qq.inverse() * invert_qq
 
                         trace_org_motion.bones.append(bf)
 
                         pchar.update(1)
 
-            with tqdm(
-                total=(len(VMD_CONNECTIONS) * (end_fno - start_fno)),
-                desc=f"No.{pname} ... ",
-            ) as pchar:
-
                 for target_bone_name, vmd_params in VMD_CONNECTIONS.items():
-                    if "invert" not in vmd_params or not vmd_params["invert"]:
+                    if not vmd_params["invert"]["after"]:
                         pchar.update((end_fno - start_fno))
                         continue
 
                     # 終わった後にキャンセルする
-                    invert_qq = MQuaternion.from_euler_degrees(vmd_params["invert"])
+                    invert_qq = MQuaternion.from_euler_degrees(vmd_params["invert"]["after"])
                     for bf in trace_org_motion.bones[target_bone_name]:
                         bf.rotation *= invert_qq
                         pchar.update(1)
@@ -348,7 +343,7 @@ def execute(args):
                         pchar.update(1)
 
             logger.info(
-                "【No.{pname}】モーション(IK)計算開始",
+                "【No.{pname}】モーション(IK固定)計算開始",
                 pname=pname,
                 decoration=MLogger.DECORATION_LINE,
             )
@@ -430,14 +425,22 @@ def execute(args):
                         rot_y_values.append(degrees.y)
                         pchar.update(1)
 
-                    mx_infections = get_infections(mx_values, (0.1 if "足ＩＫ" in bone_name else 0.05), 1)
-                    my_infections = get_infections(my_values, (0.1 if "足ＩＫ" in bone_name else 0.05), 1)
-                    mz_infections = get_infections(mz_values, (0.2 if "足ＩＫ" in bone_name else 0.1), 1)
-                    rot_infections = get_infections(rot_values, (0.01 if "足ＩＫ" in bone_name else 0.001), (2 if "足ＩＫ" in bone_name else 3))
-                    # 回転変動も検出する(180度だけだとどっち向きの回転か分からないので)
-                    rot_y_infections = np.array([])
-                    if bone_name in ["上半身", "下半身"]:
-                        rot_y_infections = get_y_infections(rot_y_values, 110)
+                    if "足ＩＫ" in bone_name:
+                        # 足IKは若干検出を鈍く
+                        mx_infections = get_infections(mx_values, 0.15, 1)
+                        my_infections = get_infections(my_values, 0.1, 1)
+                        mz_infections = get_infections(mz_values, 0.15, 1)
+                        rot_infections = get_infections(rot_values, 0.01, 2)
+                        rot_y_infections = np.array([])
+                    else:
+                        mx_infections = get_infections(mx_values, 0.1, 1)
+                        my_infections = get_infections(my_values, 0.05, 2)
+                        mz_infections = get_infections(mz_values, 0.1, 1)
+                        rot_infections = get_infections(rot_values, 0.002, 3)
+                        # 回転変動も検出する(180度だけだとどっち向きの回転か分からないので)
+                        rot_y_infections = np.array([])
+                        if bone_name in ["上半身", "下半身"]:
+                            rot_y_infections = get_y_infections(rot_y_values, 110)
 
                     infections = list(
                         sorted(
@@ -496,7 +499,7 @@ PMX_CONNECTIONS = {
     "RHip": "右足",
     "Spine0": "上半身",
     "Spine1": "上半身2",
-    "Spine4": "首",
+    "Neck": "首",
     "LKnee": "左ひざ",
     "RKnee": "右ひざ",
     "Spine2": "上半身3",
@@ -504,48 +507,47 @@ PMX_CONNECTIONS = {
     "RAnkle": "右足首",
     "LFoot": "左つま先",
     "RFoot": "右つま先",
-    "Neck": "頭",
+    "Head": "頭",
     "LCollar": "左肩",
     "RCollar": "右肩",
-    "Head": "鼻",
+    "Nose": "鼻",
     "LShoulder": "左腕",
     "RShoulder": "右腕",
     "LElbow": "左ひじ",
     "RElbow": "右ひじ",
     "LWrist": "左手首",
     "RWrist": "右手首",
-    "LThumb": "左中指１",
-    "RThumb": "右中指１",
+    "LMiddle": "左中指１",
+    "RMiddle": "右中指１",
 }
 
 VMD_CONNECTIONS = {
-    "センター": {"window_lengt": 7, "polyorder": 2},
-    "グルーブ": {"window_lengt": 5, "polyorder": 2},
-    "右足ＩＫ": {"window_lengt": 5, "polyorder": 2},
-    "左足ＩＫ": {"window_lengt": 5, "polyorder": 2},
     "下半身": {
         "direction": ("下半身", "下半身2"),
         "up": ("左足", "右足"),
         "cancel": (),
-        "invert": MVector3D(),
-        "window_lengt": 7,
-        "polyorder": 2,
+        "invert": {
+            "before": MVector3D(),
+            "after": MVector3D(),
+        },
     },
     "上半身": {
         "direction": ("上半身", "上半身2"),
         "up": ("左腕", "右腕"),
         "cancel": (),
-        "invert": MVector3D(-15, 0, 0),
-        "window_lengt": 7,
-        "polyorder": 2,
+        "invert": {
+            "before": MVector3D(),
+            "after": MVector3D(-15, 0, 0),
+        },
     },
     "上半身2": {
         "direction": ("上半身2", "上半身3"),
         "up": ("左腕", "右腕"),
         "cancel": ("上半身",),
-        "invert": MVector3D(20, 0, 0),
-        "window_lengt": 7,
-        "polyorder": 2,
+        "invert": {
+            "before": MVector3D(),
+            "after": MVector3D(20, 0, 0),
+        },
     },
     "首": {
         "direction": ("上半身3", "首"),
@@ -554,9 +556,10 @@ VMD_CONNECTIONS = {
             "上半身",
             "上半身2",
         ),
-        "invert": MVector3D(10, 0, 0),
-        "window_lengt": 5,
-        "polyorder": 2,
+        "invert": {
+            "before": MVector3D(10, 0, 0),
+            "after": MVector3D(),
+        },
     },
     "頭": {
         "direction": ("頭", "鼻"),
@@ -566,17 +569,19 @@ VMD_CONNECTIONS = {
             "上半身2",
             "首",
         ),
-        "invert": MVector3D(-50, 0, 0),
-        "window_lengt": 5,
-        "polyorder": 4,
+        "invert": {
+            "before": MVector3D(-40, 0, 0),
+            "after": MVector3D(),
+        },
     },
     "左肩": {
         "direction": ("左肩", "左腕"),
         "up": ("上半身3", "首"),
         "cancel": ("上半身", "上半身2"),
-        "invert": MVector3D(0, 0, -15),
-        "window_lengt": 5,
-        "polyorder": 2,
+        "invert": {
+            "before": MVector3D(0, 0, -15),
+            "after": MVector3D(),
+        },
     },
     "左腕": {
         "direction": ("左腕", "左ひじ"),
@@ -586,26 +591,28 @@ VMD_CONNECTIONS = {
             "上半身2",
             "左肩",
         ),
-        "invert": MVector3D(),
-        "window_lengt": 5,
-        "polyorder": 4,
+        "invert": {
+            "before": MVector3D(),
+            "after": MVector3D(),
+        },
     },
     "左ひじ": {
         "direction": ("左ひじ", "左手首"),
-        "up": ("左腕", "左ひじ"),
+        "up": ("左肩", "左腕"),
         "cancel": (
             "上半身",
             "上半身2",
             "左肩",
             "左腕",
         ),
-        "invert": MVector3D(),
-        "window_lengt": 5,
-        "polyorder": 4,
+        "invert": {
+            "before": MVector3D(),
+            "after": MVector3D(),
+        },
     },
     "左手首": {
         "direction": ("左手首", "左中指１"),
-        "up": ("左ひじ", "左手首"),
+        "up": ("左腕", "左ひじ"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -613,9 +620,10 @@ VMD_CONNECTIONS = {
             "左腕",
             "左ひじ",
         ),
-        "invert": MVector3D(),
-        "window_lengt": 5,
-        "polyorder": 4,
+        "invert": {
+            "before": MVector3D(),
+            "after": MVector3D(),
+        },
     },
     "右肩": {
         "direction": ("右肩", "右腕"),
@@ -624,9 +632,10 @@ VMD_CONNECTIONS = {
             "上半身",
             "上半身2",
         ),
-        "invert": MVector3D(0, 0, 15),
-        "window_lengt": 5,
-        "polyorder": 2,
+        "invert": {
+            "before": MVector3D(0, 0, 15),
+            "after": MVector3D(),
+        },
     },
     "右腕": {
         "direction": ("右腕", "右ひじ"),
@@ -636,26 +645,28 @@ VMD_CONNECTIONS = {
             "上半身2",
             "右肩",
         ),
-        "invert": MVector3D(),
-        "window_lengt": 5,
-        "polyorder": 4,
+        "invert": {
+            "before": MVector3D(),
+            "after": MVector3D(),
+        },
     },
     "右ひじ": {
         "direction": ("右ひじ", "右手首"),
-        "up": ("右腕", "右ひじ"),
+        "up": ("右肩", "右腕"),
         "cancel": (
             "上半身",
             "上半身2",
             "右肩",
             "右腕",
         ),
-        "invert": MVector3D(),
-        "window_lengt": 5,
-        "polyorder": 4,
+        "invert": {
+            "before": MVector3D(),
+            "after": MVector3D(),
+        },
     },
     "右手首": {
         "direction": ("右手首", "右中指１"),
-        "up": ("右ひじ", "右手首"),
+        "up": ("右腕", "右ひじ"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -663,17 +674,19 @@ VMD_CONNECTIONS = {
             "右腕",
             "右ひじ",
         ),
-        "invert": MVector3D(),
-        "window_lengt": 5,
-        "polyorder": 4,
+        "invert": {
+            "before": MVector3D(),
+            "after": MVector3D(),
+        },
     },
     "左足": {
         "direction": ("左足", "左ひざ"),
         "up": ("左足", "右足"),
         "cancel": ("下半身",),
-        "invert": MVector3D(),
-        "window_lengt": 5,
-        "polyorder": 2,
+        "invert": {
+            "before": MVector3D(),
+            "after": MVector3D(),
+        },
     },
     "左ひざ": {
         "direction": ("左ひざ", "左足首"),
@@ -682,9 +695,10 @@ VMD_CONNECTIONS = {
             "下半身",
             "左足",
         ),
-        "invert": MVector3D(),
-        "window_lengt": 5,
-        "polyorder": 2,
+        "invert": {
+            "before": MVector3D(),
+            "after": MVector3D(),
+        },
     },
     "左足首": {
         "direction": ("左足首", "左つま先"),
@@ -694,17 +708,19 @@ VMD_CONNECTIONS = {
             "左足",
             "左ひざ",
         ),
-        "invert": MVector3D(),
-        "window_lengt": 5,
-        "polyorder": 2,
+        "invert": {
+            "before": MVector3D(),
+            "after": MVector3D(),
+        },
     },
     "右足": {
         "direction": ("右足", "右ひざ"),
         "up": ("左足", "右足"),
         "cancel": ("下半身",),
-        "invert": MVector3D(),
-        "window_lengt": 5,
-        "polyorder": 2,
+        "invert": {
+            "before": MVector3D(),
+            "after": MVector3D(),
+        },
     },
     "右ひざ": {
         "direction": ("右ひざ", "右足首"),
@@ -713,9 +729,10 @@ VMD_CONNECTIONS = {
             "下半身",
             "右足",
         ),
-        "invert": MVector3D(),
-        "window_lengt": 5,
-        "polyorder": 2,
+        "invert": {
+            "before": MVector3D(),
+            "after": MVector3D(),
+        },
     },
     "右足首": {
         "direction": ("右足首", "右つま先"),
@@ -725,8 +742,9 @@ VMD_CONNECTIONS = {
             "右足",
             "右ひざ",
         ),
-        "invert": MVector3D(),
-        "window_lengt": 5,
-        "polyorder": 2,
+        "invert": {
+            "before": MVector3D(),
+            "after": MVector3D(),
+        },
     },
 }

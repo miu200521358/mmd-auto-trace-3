@@ -354,3 +354,27 @@ msgstr ""
 msgid "【No.{pname}】推定結果合成 グルーブ補正"
 msgstr ""
 
+
+msgid "【No.{pname}】モーション スムージング準備"
+msgstr ""
+
+
+msgid "【No.{pname}】モーション スムージング開始"
+msgstr ""
+
+
+msgid "【No.{pname}】モーション スムージング設定"
+msgstr ""
+
+
+msgid "【No.{pname}】モーション(IK固定)計算開始"
+msgstr ""
+
+
+msgid "【No.{pname}】モーション(スムージング)生成開始【{path}】"
+msgstr ""
+
+
+msgid "【No.{pname}】推定結果合成 足チェック"
+msgstr ""
+

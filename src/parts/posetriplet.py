@@ -204,8 +204,8 @@ def execute(args):
 
             # camera rotation
             rot = np.array(
-                # [0.14070565, -0.15007018, -0.7552408, 0.62232804], dtype=np.float32
                 # '[x=-2.955, y=-23.569, z=-100.406]'
+                # [0.14070565, -0.15007018, -0.7552408, 0.62232804], dtype=np.float32
                 # # MQuaternion.from_euler_degrees(-2.955, 0, -100.406).to_log()
                 # [0.0165, -0.01981, -0.76806, 0.63986], dtype=np.float32
                 # # MQuaternion.from_euler_degrees(0, 0, -100.406).to_log() 
@@ -216,6 +216,10 @@ def execute(args):
                 # [0.0, 0.0, -0.38268, 0.92388], dtype=np.float32
                 # # MQuaternion.from_euler_degrees(0, 0, -105).to_log()
                 # [0.0, 0.0, -0.79335, 0.60876], dtype=np.float32
+                # # MQuaternion.from_euler_degrees(0, -23.569, -100.406).to_log()
+                # [0.15691, -0.13072, -0.75212, 0.62658], dtype=np.float32
+                # # MQuaternion.from_euler_degrees(0, 0, -120).to_log() 
+                # [0.0, 0.0, -0.86603, 0.5], dtype=np.float32
             )
             prediction_world = camera_to_world(prediction, R=rot, t=0)
             # 高さのリベース
