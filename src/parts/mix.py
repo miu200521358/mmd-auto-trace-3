@@ -169,13 +169,13 @@ def execute(args):
                     continue
 
                 # PoseTriplet で測った場合のY座標（ジャンプしてるとその分上に行く）
-                pt_leg_length = abs(joint_datas["pt", "Pelvis", "y"][fno])
+                pt_leg_length = joint_datas["pt", "Pelvis", "y"][fno] * 0.8
                 # AlphaPose で測った場合のY座標（もっともYが低い関節からの距離）
-                ap_leg_length = abs(joint_datas["ap", "Pelvis", "y"][fno])
+                ap_leg_length = joint_datas["ap", "Pelvis", "y"][fno]
 
                 # ジャンプしてる場合はptの方が値が大きくなるので、＋のみ判定（接地までとする）
                 # ややPoseTriplet を低めに見積もってるので、実値としてはかさ増しする
-                adjust_foot_y = max(0, pt_leg_length - ap_leg_length) * 1.3
+                adjust_foot_y = max(0, pt_leg_length - ap_leg_length) * 1.2
                 logger.debug(
                     "[{fno}] adjust_foot_y: {adjust_foot_y}, pt_leg_length: {pt_leg_length}, ap_leg_length: {ap_leg_length}",
                     fno=fno,

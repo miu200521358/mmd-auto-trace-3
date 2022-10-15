@@ -336,7 +336,12 @@ def execute(args):
 
                         leg_ik_bf = VmdBoneFrame(name=leg_ik_bone_name, index=fno)
                         leg_ik_bf.position = ankle_abs_pos - trace_model.bones[ankle_bone_name].position
-                        leg_ik_bf.position.y = max(0, leg_ik_bf.position.y)
+
+                        # Yがマイナスの場合、その分上に浮かせる
+                        diff_y = abs(min(0, leg_ik_bf.position.y))
+                        leg_ik_bf.position.y += diff_y
+                        trace_org_motion.bones["グルーブ"][fno].position.y += diff_y
+
                         leg_ik_bf.rotation = leg_ik_qq
                         trace_org_motion.bones.append(leg_ik_bf)
 

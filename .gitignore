@@ -130,3 +130,4 @@ src/cython-bbox/
 trace_model_*.pmx
 *.pkl
 ckpts/
+src/exec2.bat
