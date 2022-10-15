@@ -125,7 +125,7 @@ def execute(args):
             )
 
             with tqdm(
-                total=(len(VMD_CONNECTIONS) * (end_fno - start_fno) * 2),
+                total=(len(VMD_CONNECTIONS) * (end_fno - start_fno + 1)),
                 desc=f"No.{pname} ... ",
             ) as pchar:
 
@@ -188,15 +188,13 @@ def execute(args):
                         pchar.update(1)
 
                 for target_bone_name, vmd_params in VMD_CONNECTIONS.items():
-                    if not vmd_params["invert"]["after"]:
-                        pchar.update((end_fno - start_fno))
-                        continue
+                    if vmd_params["invert"]["after"]:
+                        # 終わった後にキャンセルする
+                        invert_qq = MQuaternion.from_euler_degrees(vmd_params["invert"]["after"])
+                        for bf in trace_org_motion.bones[target_bone_name]:
+                            bf.rotation *= invert_qq
 
-                    # 終わった後にキャンセルする
-                    invert_qq = MQuaternion.from_euler_degrees(vmd_params["invert"]["after"])
-                    for bf in trace_org_motion.bones[target_bone_name]:
-                        bf.rotation *= invert_qq
-                        pchar.update(1)
+                    pchar.update(1)
 
             logger.info(
                 "【No.{pname}】モーション(センター)計算開始",
@@ -337,15 +335,20 @@ def execute(args):
                         leg_ik_bf = VmdBoneFrame(name=leg_ik_bone_name, index=fno)
                         leg_ik_bf.position = ankle_abs_pos - trace_model.bones[ankle_bone_name].position
 
-                        # Yがマイナスの場合、その分上に浮かせる
-                        diff_y = abs(min(0, leg_ik_bf.position.y))
-                        leg_ik_bf.position.y += diff_y
-                        trace_org_motion.bones["グルーブ"][fno].position.y += diff_y
-
                         leg_ik_bf.rotation = leg_ik_qq
                         trace_org_motion.bones.append(leg_ik_bf)
 
                         pchar.update(1)
+
+            for groove_bf in tqdm(trace_org_motion.bones["グルーブ"]):
+                left_leg_ik_bf = trace_org_motion.bones["左足ＩＫ"][groove_bf.index]
+                right_leg_ik_bf = trace_org_motion.bones["右足ＩＫ"][groove_bf.index]
+
+                # Yがマイナスの場合、その分上に浮かせる
+                diff_y = abs(min(0, left_leg_ik_bf.position.y, right_leg_ik_bf.position.y))
+                left_leg_ik_bf.position.y += diff_y
+                right_leg_ik_bf.position.y += diff_y
+                groove_bf.position.y += diff_y
 
             logger.info(
                 "【No.{pname}】モーション(IK固定)計算開始",
@@ -385,6 +388,7 @@ def execute(args):
                             # 開始と終了が大体同じ場合、固定する
                             for fno in range(sfno, efno + 1):
                                 trace_org_motion.bones[leg_ik_bone_name][fno].position = start_pos
+                        pchar.update(efno - sfno)
 
             trace_org_motion_path = os.path.join(motion_dir_path, f"trace_no{pname}_original.vmd")
             logger.info(
@@ -441,11 +445,11 @@ def execute(args):
                         mx_infections = get_infections(mx_values, 0.1, 1)
                         my_infections = get_infections(my_values, 0.05, 2)
                         mz_infections = get_infections(mz_values, 0.1, 1)
-                        rot_infections = get_infections(rot_values, 0.002, 3)
+                        rot_infections = get_infections(rot_values, 0.001, 3)
                         # 回転変動も検出する(180度だけだとどっち向きの回転か分からないので)
                         rot_y_infections = np.array([])
                         if bone_name in ["上半身", "下半身"]:
-                            rot_y_infections = get_y_infections(rot_y_values, 110)
+                            rot_y_infections = get_y_infections(rot_y_values, 80)
 
                     infections = list(
                         sorted(
@@ -502,12 +506,12 @@ PMX_CONNECTIONS = {
     "Pelvis2": "下半身2",
     "LHip": "左足",
     "RHip": "右足",
-    "Spine0": "上半身",
-    "Spine1": "上半身2",
+    "Spine1": "上半身",
+    "Spine2": "上半身2",
+    "Spine3": "上半身3",
     "Neck": "首",
     "LKnee": "左ひざ",
     "RKnee": "右ひざ",
-    "Spine2": "上半身3",
     "LAnkle": "左足首",
     "RAnkle": "右足首",
     "LFoot": "左つま先",
@@ -533,7 +537,7 @@ VMD_CONNECTIONS = {
         "cancel": (),
         "invert": {
             "before": MVector3D(),
-            "after": MVector3D(),
+            "after": MVector3D(10, 0, 0),
         },
     },
     "上半身": {
@@ -541,28 +545,28 @@ VMD_CONNECTIONS = {
         "up": ("左腕", "右腕"),
         "cancel": (),
         "invert": {
-            "before": MVector3D(),
-            "after": MVector3D(-15, 0, 0),
+            "before": MVector3D(10, 0, 0),
+            "after": MVector3D(),
         },
     },
     "上半身2": {
-        "direction": ("上半身2", "上半身3"),
+        "direction": ("上半身2", "首"),
         "up": ("左腕", "右腕"),
         "cancel": ("上半身",),
         "invert": {
-            "before": MVector3D(),
-            "after": MVector3D(20, 0, 0),
+            "before": MVector3D(20, 0, 0),
+            "after": MVector3D(),
         },
     },
     "首": {
-        "direction": ("上半身3", "首"),
+        "direction": ("上半身2", "首"),
         "up": ("頭", "鼻"),
         "cancel": (
             "上半身",
             "上半身2",
         ),
         "invert": {
-            "before": MVector3D(10, 0, 0),
+            "before": MVector3D(20, 10, 0),
             "after": MVector3D(),
         },
     },
@@ -575,7 +579,7 @@ VMD_CONNECTIONS = {
             "首",
         ),
         "invert": {
-            "before": MVector3D(-40, 0, 0),
+            "before": MVector3D(-30, 0, 0),
             "after": MVector3D(),
         },
     },
@@ -584,7 +588,7 @@ VMD_CONNECTIONS = {
         "up": ("上半身3", "首"),
         "cancel": ("上半身", "上半身2"),
         "invert": {
-            "before": MVector3D(0, 0, -15),
+            "before": MVector3D(0, 0, -20),
             "after": MVector3D(),
         },
     },
@@ -638,7 +642,7 @@ VMD_CONNECTIONS = {
             "上半身2",
         ),
         "invert": {
-            "before": MVector3D(0, 0, 15),
+            "before": MVector3D(0, 0, 20),
             "after": MVector3D(),
         },
     },
