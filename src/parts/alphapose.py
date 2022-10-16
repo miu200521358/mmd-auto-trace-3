@@ -257,13 +257,26 @@ def execute(args):
                         pw = personal_datas[pidx][sfno]["bbox"]["width"]
                         ph = personal_datas[pidx][sfno]["bbox"]["height"]
                         pcenter = np.array([px, py]) + np.array([pw, ph]) / 2
+
                         # Pelvisの位置
                         phx = personal_datas[pidx][sfno]["ap-2d-keypoints"][SMPL_JOINT_29["Pelvis"] * 3]
                         phy = personal_datas[pidx][sfno]["ap-2d-keypoints"][SMPL_JOINT_29["Pelvis"] * 3 + 1]
                         phip = np.array([phx, phy])
 
+                        # LAnkleの位置
+                        plax = personal_datas[pidx][sfno]["ap-2d-keypoints"][SMPL_JOINT_29["LAnkle"] * 3]
+                        play = personal_datas[pidx][sfno]["ap-2d-keypoints"][SMPL_JOINT_29["LAnkle"] * 3 + 1]
+                        plaip = np.array([plax, play])
+
+                        # RAnkleの位置
+                        prax = personal_datas[pidx][sfno]["ap-2d-keypoints"][SMPL_JOINT_29["RAnkle"] * 3]
+                        pray = personal_datas[pidx][sfno]["ap-2d-keypoints"][SMPL_JOINT_29["RAnkle"] * 3 + 1]
+                        praip = np.array([prax, pray])
+
                         ocenters = {}
                         ohips = {}
+                        olaips = {}
+                        oraips = {}
                         ofnos = {}
                         for ppidx, odata in output_datas.items():
                             oefno = list(odata.keys())[-1]
@@ -281,15 +294,30 @@ def execute(args):
                                     ohx = odata[oefno]["ap-2d-keypoints"][SMPL_JOINT_29["Pelvis"] * 3]
                                     ohy = odata[oefno]["ap-2d-keypoints"][SMPL_JOINT_29["Pelvis"] * 3 + 1]
                                     ohip = np.array([ohx, ohy])
+
+                                    # LAnkleの位置
+                                    olax = odata[oefno]["ap-2d-keypoints"][SMPL_JOINT_29["LAnkle"] * 3]
+                                    olay = odata[oefno]["ap-2d-keypoints"][SMPL_JOINT_29["LAnkle"] * 3 + 1]
+                                    olaip = np.array([olax, olay])
+
+                                    # RAnkleの位置
+                                    orax = odata[oefno]["ap-2d-keypoints"][SMPL_JOINT_29["RAnkle"] * 3]
+                                    oray = odata[oefno]["ap-2d-keypoints"][SMPL_JOINT_29["RAnkle"] * 3 + 1]
+                                    oraip = np.array([orax, oray])
+
                                     offset = 5 * n
 
                                     if (
                                         np.isclose(pcenter, ocenter, atol=np.array([64 + offset, 36 + offset])).all()
                                         or np.isclose(phip, ohip, atol=np.array([64 + offset, 36 + offset])).all()
+                                        or np.isclose(plaip, olaip, atol=np.array([64 + offset, 36 + offset])).all()
+                                        or np.isclose(praip, oraip, atol=np.array([64 + offset, 36 + offset])).all()
                                     ):
                                         # 大体同じ位置にあるBBOXがあったら検討対象
                                         ocenters[ppidx] = ocenter
                                         ohips[ppidx] = ohip
+                                        olaips[ppidx] = olaip
+                                        oraips[ppidx] = oraip
                                         ofnos[ppidx] = np.array([oefno, oefno])
                                         break
 
@@ -302,6 +330,8 @@ def execute(args):
                                             [
                                                 np.abs(np.array(list(ocenters.values())) - pcenter),
                                                 np.abs(np.array(list(ohips.values())) - phip),
+                                                np.abs(np.array(list(olaips.values())) - plaip),
+                                                np.abs(np.array(list(oraips.values())) - praip),
                                                 np.abs(np.array(list(ofnos.values())) - sfno) * 100,
                                             ]
                                         ),

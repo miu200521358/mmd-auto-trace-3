@@ -382,3 +382,7 @@ msgstr ""
 msgid "【No.{pname}】モーション(回転チェック)開始"
 msgstr ""
 
+
+msgid "AlphaPose で予期せぬエラーが発生しました。"
+msgstr ""
+
