@@ -231,6 +231,7 @@ class BaseIndexDictModel(Generic[TBaseIndexModel]):
 
     def __iter__(self):
         self.__iter_index = -1
+        self.__indices = sorted(list(self.data.keys()))
         return self
 
     def __next__(self) -> TBaseIndexModel:
@@ -330,6 +331,7 @@ class BaseIndexNameDictInnerModel(Generic[TBaseIndexNameModel]):
 
     def __iter__(self):
         self.__iter_index = -1
+        self.__indices = sorted(list(self.data.keys()))
         return self
 
     def __next__(self) -> TBaseIndexNameModel:
@@ -410,6 +412,7 @@ class BaseIndexNameDictModel(Generic[TBaseIndexNameModel, TBaseIndexNameDictInne
 
     def __iter__(self):
         self.__iter_index = -1
+        self.__names = sorted(list(self.data.keys()))
         return self
 
     def __next__(self) -> TBaseIndexNameDictInnerModel:

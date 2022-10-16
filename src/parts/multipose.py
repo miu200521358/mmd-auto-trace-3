@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import os
+from datetime import datetime
 from glob import glob
 
 import numpy as np
@@ -41,7 +42,11 @@ def execute(args):
             return False
 
         output_dir_path = os.path.join(args.img_dir, DirName.MULTIPOSE.value)
-        os.makedirs(output_dir_path, exist_ok=True)
+
+        if os.path.exists(output_dir_path):
+            os.rename(output_dir_path, f"{output_dir_path}_{datetime.fromtimestamp(os.stat(output_dir_path).st_ctime).strftime('%Y%m%d_%H%M%S')}")
+
+        os.makedirs(output_dir_path)
 
         seq_len = 243
         nettcn = networktcn.Refine2dNet(17, seq_len, input_dimension=2, output_dimension=1, output_pts=1)

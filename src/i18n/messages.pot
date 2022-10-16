@@ -378,3 +378,7 @@ msgstr ""
 msgid "【No.{pname}】推定結果合成 足チェック"
 msgstr ""
 
+
+msgid "【No.{pname}】モーション(回転チェック)開始"
+msgstr ""
+

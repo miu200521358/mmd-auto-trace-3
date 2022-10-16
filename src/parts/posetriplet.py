@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import sys
+from datetime import datetime
 from glob import glob
 
 sys.path.append(os.path.abspath(os.path.join(__file__, "../../PoseTriplet")))
@@ -141,7 +142,11 @@ def execute(args):
         argv.frame_rate = 30
 
         output_dir_path = os.path.join(args.img_dir, DirName.POSETRIPLET.value)
-        os.makedirs(output_dir_path, exist_ok=True)
+
+        if os.path.exists(output_dir_path):
+            os.rename(output_dir_path, f"{output_dir_path}_{datetime.fromtimestamp(os.stat(output_dir_path).st_ctime).strftime('%Y%m%d_%H%M%S')}")
+
+        os.makedirs(output_dir_path)
 
         ckpt_path = "../data/posetriplet/ckpt_ep_045.bin"
 

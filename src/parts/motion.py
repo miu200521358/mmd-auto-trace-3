@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 from glob import glob
 
 import numpy as np
@@ -12,7 +13,6 @@ from mmd.pmx.writer import PmxWriter
 from mmd.vmd.collection import VmdMotion
 from mmd.vmd.part import VmdBoneFrame
 from mmd.vmd.writer import VmdWriter
-from scipy.signal import savgol_filter
 from tqdm import tqdm
 
 from parts.config import DirName
@@ -47,8 +47,12 @@ def execute(args):
             )
             return False
 
-        motion_dir_path = os.path.join(args.img_dir, DirName.MOTION.value)
-        os.makedirs(motion_dir_path, exist_ok=True)
+        output_dir_path = os.path.join(args.img_dir, DirName.MOTION.value)
+
+        if os.path.exists(output_dir_path):
+            os.rename(output_dir_path, f"{output_dir_path}_{datetime.fromtimestamp(os.stat(output_dir_path).st_ctime).strftime('%Y%m%d_%H%M%S')}")
+
+        os.makedirs(output_dir_path, exist_ok=True)
 
         # トレース用モデルを読み込む
         trace_model = PmxReader().read_by_filepath(args.trace_rot_model_config)
@@ -74,7 +78,7 @@ def execute(args):
             color = mix_data["color"]
 
             # 番号付きでPMXを出力
-            copy_trace_check_model_path = os.path.join(motion_dir_path, f"trace_no{pname}.pmx")
+            copy_trace_check_model_path = os.path.join(output_dir_path, f"trace_no{pname}.pmx")
             copy_trace_check_model: PmxModel = trace_check_model.copy()
             copy_trace_check_model.name = f"[{pname}]{copy_trace_check_model.name}"
             copy_trace_check_model.materials["ボーン材質"].diffuse_color.x = color[0]
@@ -195,6 +199,24 @@ def execute(args):
                             bf.rotation *= invert_qq
 
                     pchar.update(1)
+
+            logger.info(
+                "【No.{pname}】モーション(回転チェック)開始",
+                pname=pname,
+                decoration=MLogger.DECORATION_LINE,
+            )
+
+            for target_bone_name, vmd_params in tqdm(VMD_CONNECTIONS.items()):
+                fnos = []
+                rot_values = []
+                threshold = vmd_params["threshold"]
+                for bf in trace_org_motion.bones[target_bone_name]:
+                    fnos.append(bf.index)
+                    rot_values.append(MQuaternion().dot(bf.rotation))
+                rot_diffs = np.abs(np.diff(rot_values))
+                remove_fnos = np.array(fnos)[np.where((rot_diffs > threshold) & (rot_diffs < 1))[0] + 1]
+                for fno in remove_fnos:
+                    del trace_org_motion.bones[target_bone_name][fno]
 
             logger.info(
                 "【No.{pname}】モーション(センター)計算開始",
@@ -390,7 +412,7 @@ def execute(args):
                                 trace_org_motion.bones[leg_ik_bone_name][fno].position = start_pos
                         pchar.update(efno - sfno)
 
-            trace_org_motion_path = os.path.join(motion_dir_path, f"trace_no{pname}_original.vmd")
+            trace_org_motion_path = os.path.join(output_dir_path, f"trace_no{pname}_original.vmd")
             logger.info(
                 "【No.{pname}】モーション(回転)生成開始【{path}】",
                 pname=pname,
@@ -480,7 +502,7 @@ def execute(args):
                         trace_thining_motion.bones.append(end_bf)
                         pchar.update(efno - sfno)
 
-            trace_thining_motion_path = os.path.join(motion_dir_path, f"trace_no{pname}_thining.vmd")
+            trace_thining_motion_path = os.path.join(output_dir_path, f"trace_no{pname}_thining.vmd")
             logger.info(
                 "【No.{pname}】モーション(間引き)生成開始【{path}】",
                 pname=pname,
@@ -491,7 +513,7 @@ def execute(args):
 
         logger.info(
             "モーション結果保存完了: {motion_dir_path}",
-            motion_dir_path=motion_dir_path,
+            motion_dir_path=output_dir_path,
             decoration=MLogger.DECORATION_BOX,
         )
 
@@ -539,6 +561,7 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(10, 0, 0),
         },
+        "threshold": 0.2,
     },
     "上半身": {
         "direction": ("上半身", "上半身2"),
@@ -548,6 +571,7 @@ VMD_CONNECTIONS = {
             "before": MVector3D(10, 0, 0),
             "after": MVector3D(),
         },
+        "threshold": 0.2,
     },
     "上半身2": {
         "direction": ("上半身2", "首"),
@@ -557,6 +581,7 @@ VMD_CONNECTIONS = {
             "before": MVector3D(20, 0, 0),
             "after": MVector3D(),
         },
+        "threshold": 0.2,
     },
     "首": {
         "direction": ("上半身2", "首"),
@@ -569,6 +594,7 @@ VMD_CONNECTIONS = {
             "before": MVector3D(20, 10, 0),
             "after": MVector3D(),
         },
+        "threshold": 0.2,
     },
     "頭": {
         "direction": ("頭", "鼻"),
@@ -582,6 +608,7 @@ VMD_CONNECTIONS = {
             "before": MVector3D(-30, 0, 0),
             "after": MVector3D(),
         },
+        "threshold": 0.2,
     },
     "左肩": {
         "direction": ("左肩", "左腕"),
@@ -591,6 +618,7 @@ VMD_CONNECTIONS = {
             "before": MVector3D(0, 0, -20),
             "after": MVector3D(),
         },
+        "threshold": 0.2,
     },
     "左腕": {
         "direction": ("左腕", "左ひじ"),
@@ -604,6 +632,7 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
+        "threshold": 0.3,
     },
     "左ひじ": {
         "direction": ("左ひじ", "左手首"),
@@ -618,6 +647,7 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
+        "threshold": 0.4,
     },
     "左手首": {
         "direction": ("左手首", "左中指１"),
@@ -633,6 +663,7 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
+        "threshold": 0.5,
     },
     "右肩": {
         "direction": ("右肩", "右腕"),
@@ -645,6 +676,7 @@ VMD_CONNECTIONS = {
             "before": MVector3D(0, 0, 20),
             "after": MVector3D(),
         },
+        "threshold": 0.2,
     },
     "右腕": {
         "direction": ("右腕", "右ひじ"),
@@ -658,6 +690,7 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
+        "threshold": 0.3,
     },
     "右ひじ": {
         "direction": ("右ひじ", "右手首"),
@@ -672,6 +705,7 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
+        "threshold": 0.4,
     },
     "右手首": {
         "direction": ("右手首", "右中指１"),
@@ -687,6 +721,7 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
+        "threshold": 0.5,
     },
     "左足": {
         "direction": ("左足", "左ひざ"),
@@ -696,10 +731,11 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
+        "threshold": 0.2,
     },
     "左ひざ": {
         "direction": ("左ひざ", "左足首"),
-        "up": ("左足", "左ひざ"),
+        "up": ("左足", "右足"),
         "cancel": (
             "下半身",
             "左足",
@@ -708,10 +744,11 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
+        "threshold": 0.3,
     },
     "左足首": {
         "direction": ("左足首", "左つま先"),
-        "up": ("左ひざ", "左足首"),
+        "up": ("左足", "右足"),
         "cancel": (
             "下半身",
             "左足",
@@ -721,6 +758,7 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
+        "threshold": 0.3,
     },
     "右足": {
         "direction": ("右足", "右ひざ"),
@@ -730,10 +768,11 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
+        "threshold": 0.2,
     },
     "右ひざ": {
         "direction": ("右ひざ", "右足首"),
-        "up": ("右足", "右ひざ"),
+        "up": ("左足", "右足"),
         "cancel": (
             "下半身",
             "右足",
@@ -742,10 +781,11 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
+        "threshold": 0.3,
     },
     "右足首": {
         "direction": ("右足首", "右つま先"),
-        "up": ("右ひざ", "右足首"),
+        "up": ("左足", "右足"),
         "cancel": (
             "下半身",
             "右足",
@@ -755,5 +795,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
+        "threshold": 0.3,
     },
 }

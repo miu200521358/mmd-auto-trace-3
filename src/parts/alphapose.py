@@ -2,14 +2,11 @@ import argparse
 import json
 import os
 import platform
-import random
 import shutil
 import sys
 import time
+from datetime import datetime
 from glob import glob
-from unittest import result
-
-from cv2 import split
 
 sys.path.append(os.path.abspath(os.path.join(__file__, "../../AlphaPose")))
 
@@ -21,9 +18,6 @@ import yaml  # type: ignore
 from AlphaPose.alphapose.models import builder
 from AlphaPose.alphapose.utils.detector import DetectionLoader
 from AlphaPose.alphapose.utils.writer_smpl import DataWriterSMPL
-
-# from AlphaPose.detector.yolo_api import YOLODetector
-# from AlphaPose.detector.yolo_cfg import cfg as ycfg
 from AlphaPose.detector.yolox_api import YOLOXDetector
 from AlphaPose.detector.yolox_cfg import cfg as ycfg
 from AlphaPose.trackers import track
@@ -35,6 +29,10 @@ from PIL import Image
 from tqdm import tqdm
 
 from parts.config import SMPL_JOINT_29, DirName, FileName
+
+# from AlphaPose.detector.yolo_api import YOLODetector
+# from AlphaPose.detector.yolo_cfg import cfg as ycfg
+
 
 logger = MLogger(__name__)
 
@@ -64,7 +62,17 @@ def execute(args):
 
         argv.inputpath = os.path.join(args.img_dir, DirName.FRAMES.value)
         argv.outputpath = os.path.join(args.img_dir, DirName.ALPHAPOSE.value)
-        os.makedirs(argv.outputpath, exist_ok=True)
+
+        if os.path.exists(argv.outputpath):
+            rename_dir_path = f"{argv.outputpath}_{datetime.fromtimestamp(os.stat(argv.outputpath).st_ctime).strftime('%Y%m%d_%H%M%S')}"
+            os.rename(argv.outputpath, rename_dir_path)
+            os.makedirs(argv.outputpath)
+            if os.path.exists(os.path.join(rename_dir_path, FileName.ALPHAPOSE_RESULT.value)):
+                shutil.copy(
+                    os.path.join(rename_dir_path, FileName.ALPHAPOSE_RESULT.value), os.path.join(argv.outputpath, FileName.ALPHAPOSE_RESULT.value)
+                )
+        else:
+            os.makedirs(argv.outputpath)
 
         argv.gpus = [int(i) for i in argv.gpus.split(",")] if torch.cuda.device_count() >= 1 else [-1]
         argv.device = torch.device("cuda:" + str(argv.gpus[0]) if argv.gpus[0] >= 0 else "cpu")
@@ -259,7 +267,7 @@ def execute(args):
                         ofnos = {}
                         for ppidx, odata in output_datas.items():
                             oefno = list(odata.keys())[-1]
-                            for n in range(1, 6):
+                            for n in range(1, 10):
                                 # 続きの場合、少し前のキーで終わってるブロックがあるか確認する
                                 if sfno - n <= oefno:
                                     # 最後のキーフレがひとつ前のキーで終わっている場合
@@ -273,10 +281,11 @@ def execute(args):
                                     ohx = odata[oefno]["ap-2d-keypoints"][SMPL_JOINT_29["Pelvis"] * 3]
                                     ohy = odata[oefno]["ap-2d-keypoints"][SMPL_JOINT_29["Pelvis"] * 3 + 1]
                                     ohip = np.array([ohx, ohy])
+                                    offset = 5 * n
 
                                     if (
-                                        np.isclose(pcenter, ocenter, atol=np.array([64, 36])).all()
-                                        or np.isclose(phip, ohip, atol=np.array([64, 36])).all()
+                                        np.isclose(pcenter, ocenter, atol=np.array([64 + offset, 36 + offset])).all()
+                                        or np.isclose(phip, ohip, atol=np.array([64 + offset, 36 + offset])).all()
                                     ):
                                         # 大体同じ位置にあるBBOXがあったら検討対象
                                         ocenters[ppidx] = ocenter
@@ -387,19 +396,11 @@ def execute(args):
             shutil.copy(file_path, target_image_path)
 
             if fno in output_frames:
-                person_frames = output_frames[fno]
-
-                for person_frame in person_frames:
-                    # 人物INDEX別に画像に書き込み
-
-                    save_2d_image(
-                        target_image_path,
-                        person_frame["person_idx"],
-                        fno,
-                        person_frame["ap-2d-keypoints"],
-                        person_frame["bbox"],
-                        person_frame["color"],
-                    )
+                save_2d_image(
+                    target_image_path,
+                    fno,
+                    output_frames[fno],
+                )
 
             # 書き込み出力
             out.write(cv2.imread(target_image_path))
@@ -419,9 +420,8 @@ def execute(args):
         return False
 
 
-def save_2d_image(image_path: str, person_idx: int, fno: int, keypoints: list, bbox: dict, pid_color: tuple):
+def save_2d_image(image_path: str, fno: int, person_frames: list):
     img = cv2.imread(image_path)
-    kps = np.array(keypoints).reshape(-1, 3)
 
     # alphapose\models\layers\smpl\SMPL.py
     SKELETONS = [
@@ -455,99 +455,107 @@ def save_2d_image(image_path: str, person_idx: int, fno: int, keypoints: list, b
         (SMPL_JOINT_29["RWrist"], SMPL_JOINT_29["RMiddle"]),
     ]
 
-    for j1, j2 in SKELETONS:
-        joint1_x = int(kps[j1, 0])
-        joint1_y = int(kps[j1, 1])
-        joint2_x = int(kps[j2, 0])
-        joint2_y = int(kps[j2, 1])
+    for person_data in person_frames:
+        person_idx = person_data["person_idx"]
+        keypoints = person_data["ap-2d-keypoints"]
+        bbox = person_data["bbox"]
+        pid_color = person_data["color"]
 
-        t = 2
-        r = 6
+        kps = np.array(keypoints).reshape(-1, 3)
+
+        for j1, j2 in SKELETONS:
+            joint1_x = int(kps[j1, 0])
+            joint1_y = int(kps[j1, 1])
+            joint2_x = int(kps[j2, 0])
+            joint2_y = int(kps[j2, 1])
+
+            t = 2
+            r = 6
+            cv2.line(
+                img,
+                (joint1_x, joint1_y),
+                (joint2_x, joint2_y),
+                color=tuple(pid_color),
+                thickness=t,
+            )
+            cv2.circle(
+                img,
+                thickness=-1,
+                center=(joint1_x, joint1_y),
+                radius=r,
+                color=tuple(pid_color),
+            )
+            cv2.circle(
+                img,
+                thickness=-1,
+                center=(joint2_x, joint2_y),
+                radius=r,
+                color=tuple(pid_color),
+            )
+
+        bbox_x = int(bbox["x"])
+        bbox_y = int(bbox["y"])
+        bbox_w = int(bbox["width"])
+        bbox_h = int(bbox["height"])
+        bbx_thick = 3
         cv2.line(
             img,
-            (joint1_x, joint1_y),
-            (joint2_x, joint2_y),
+            (bbox_x, bbox_y),
+            (bbox_x + bbox_w, bbox_y),
             color=tuple(pid_color),
-            thickness=t,
+            thickness=bbx_thick,
         )
-        cv2.circle(
+        cv2.line(
             img,
-            thickness=-1,
-            center=(joint1_x, joint1_y),
-            radius=r,
+            (bbox_x, bbox_y),
+            (bbox_x, bbox_y + bbox_h),
             color=tuple(pid_color),
+            thickness=bbx_thick,
         )
-        cv2.circle(
+        cv2.line(
             img,
-            thickness=-1,
-            center=(joint2_x, joint2_y),
-            radius=r,
+            (bbox_x + bbox_w, bbox_y),
+            (bbox_x + bbox_w, bbox_y + bbox_h),
             color=tuple(pid_color),
+            thickness=bbx_thick,
+        )
+        cv2.line(
+            img,
+            (bbox_x, bbox_y + bbox_h),
+            (bbox_x + bbox_w, bbox_y + bbox_h),
+            color=tuple(pid_color),
+            thickness=bbx_thick,
         )
 
-    bbox_x = int(bbox["x"])
-    bbox_y = int(bbox["y"])
-    bbox_w = int(bbox["width"])
-    bbox_h = int(bbox["height"])
-    bbx_thick = 3
-    cv2.line(
-        img,
-        (bbox_x, bbox_y),
-        (bbox_x + bbox_w, bbox_y),
-        color=tuple(pid_color),
-        thickness=bbx_thick,
-    )
-    cv2.line(
-        img,
-        (bbox_x, bbox_y),
-        (bbox_x, bbox_y + bbox_h),
-        color=tuple(pid_color),
-        thickness=bbx_thick,
-    )
-    cv2.line(
-        img,
-        (bbox_x + bbox_w, bbox_y),
-        (bbox_x + bbox_w, bbox_y + bbox_h),
-        color=tuple(pid_color),
-        thickness=bbx_thick,
-    )
-    cv2.line(
-        img,
-        (bbox_x, bbox_y + bbox_h),
-        (bbox_x + bbox_w, bbox_y + bbox_h),
-        color=tuple(pid_color),
-        thickness=bbx_thick,
-    )
+        cv2.putText(
+            img,
+            f"{(person_idx + 1):03d}",
+            (bbox_x + bbox_w // 3, bbox_y - 5),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            color=tuple(pid_color),
+            thickness=bbx_thick,
+        )
 
-    cv2.putText(
-        img,
-        f"{(person_idx + 1):03d}",
-        (bbox_x + bbox_w // 3, bbox_y - 5),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1,
-        color=tuple(pid_color),
-        thickness=bbx_thick,
-    )
+        cv2.putText(
+            img,
+            f"{(person_idx + 1):03d}",
+            ((bbox_x + bbox_w) + 5, (bbox_y + bbox_h) - 5),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            color=tuple(pid_color),
+            thickness=bbx_thick,
+        )
 
-    cv2.putText(
-        img,
-        f"{(person_idx + 1):03d}",
-        ((bbox_x + bbox_w) + 5, (bbox_y + bbox_h) - 5),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1,
-        color=tuple(pid_color),
-        thickness=bbx_thick,
-    )
-
-    cv2.putText(
-        img,
-        f"{fno:6d}F",
-        (10, 30),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1,
-        color=(182, 0, 182),
-        thickness=bbx_thick,
-    )
+        cv2.putText(
+            img,
+            f"{fno:6d}F",
+            (10, 30),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            color=(182, 0, 182),
+            thickness=bbx_thick,
+        )
 
     # 同じファイルに上書き
     cv2.imwrite(image_path, img)
