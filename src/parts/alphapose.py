@@ -381,8 +381,6 @@ def execute(args):
             decoration=MLogger.DECORATION_LINE,
         )
 
-        target_image_path = os.path.join(argv.outputpath, FileName.ALPHAPOSE_IMAGE.value)
-
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         out = cv2.VideoWriter(
             os.path.join(args.img_dir, DirName.ALPHAPOSE.value, FileName.ALPHAPOSE_VIDEO.value),
@@ -393,17 +391,20 @@ def execute(args):
 
         for file_path in tqdm(glob(os.path.join(argv.inputpath, "*.png"))):
             fno = int(os.path.basename(file_path).split(".")[0])
-            shutil.copy(file_path, target_image_path)
 
             if fno in output_frames:
-                save_2d_image(
-                    target_image_path,
+                # キーフレ内に人物が検出されている場合、描画
+                img = save_2d_image(
+                    cv2.imread(file_path),
                     fno,
                     output_frames[fno],
                 )
+            else:
+                # 人物がいない場合、そのまま読み込み
+                img = cv2.imread(file_path)
 
             # 書き込み出力
-            out.write(cv2.imread(target_image_path))
+            out.write(img)
 
         out.release()
         cv2.destroyAllWindows()
@@ -420,9 +421,7 @@ def execute(args):
         return False
 
 
-def save_2d_image(image_path: str, fno: int, person_frames: list):
-    img = cv2.imread(image_path)
-
+def save_2d_image(img, fno: int, person_frames: list):
     # alphapose\models\layers\smpl\SMPL.py
     SKELETONS = [
         (SMPL_JOINT_29["Pelvis"], SMPL_JOINT_29["Spine1"]),
@@ -557,8 +556,7 @@ def save_2d_image(image_path: str, fno: int, person_frames: list):
             thickness=bbx_thick,
         )
 
-    # 同じファイルに上書き
-    cv2.imwrite(image_path, img)
+    return img
 
 
 def get_args_parser():
