@@ -78,7 +78,8 @@ if __name__ == "__main__":
         from parts.prepare import execute
 
         result, args.img_dir = execute(args)
-    else:
+
+    if not result:
         sys.exit(1)
 
     if result and "alphapose" in args.process:
@@ -86,7 +87,8 @@ if __name__ == "__main__":
         from parts.alphapose import execute
 
         result = execute(args)
-    else:
+
+    if not result:
         sys.exit(1)
 
     if result and "multipose" in args.process:
@@ -94,7 +96,8 @@ if __name__ == "__main__":
         from parts.multipose import execute
 
         result = execute(args)
-    else:
+
+    if not result:
         sys.exit(1)
 
     if result and "posetriplet" in args.process:
@@ -102,7 +105,8 @@ if __name__ == "__main__":
         from parts.posetriplet import execute
 
         result = execute(args)
-    else:
+
+    if not result:
         sys.exit(1)
 
     if result and "mix" in args.process:
@@ -110,7 +114,8 @@ if __name__ == "__main__":
         from parts.mix import execute
 
         result = execute(args)
-    else:
+
+    if not result:
         sys.exit(1)
 
     if result and "motion" in args.process:
@@ -118,7 +123,8 @@ if __name__ == "__main__":
         from parts.motion import execute
 
         result = execute(args)
-    else:
+
+    if not result:
         sys.exit(1)
 
     elapsed_time = time.time() - start
