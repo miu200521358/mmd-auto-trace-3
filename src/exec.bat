@@ -10,7 +10,7 @@ cls
 set LOGMODE=0
 set LANG=ja
 
-set PROCESS=alphapose,multipose,posetriplet,mix,motion
+set PROCESS=mix,motion
 
 @REM python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\01\heart\heart_0-650_mp4_20221009_183826" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\03\ivory\ivory_8269-8569_mp4_20221001_222740" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
@@ -44,15 +44,16 @@ python executor.py --img-dir "O:\MMD_Auto_Trace\03\liar_mp4_20221015_195954" --p
 python executor.py --img-dir "O:\MMD_Auto_Trace\03\night_mp4_20221015_222424" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 python executor.py --img-dir "O:\MMD_Auto_Trace\03\reming_mp4_20221016_010908" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 python executor.py --img-dir "O:\MMD_Auto_Trace\03\wave_mp4_20221016_035627" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-
-set PROCESS=prepare,alphapose,multipose,posetriplet,mix,motion
-
-python executor.py --video-file "O:\MMD_Auto_Trace\04\addiction.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-python executor.py --video-file "O:\MMD_Auto_Trace\04\charles.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-python executor.py --video-file "O:\MMD_Auto_Trace\04\yoiyoi.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+@REM python executor.py --img-dir "O:\MMD_Auto_Trace\04\addiction_mp4_20221016_235951" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+@REM python executor.py --img-dir "O:\MMD_Auto_Trace\04\charles_mp4_20221017_012528" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+@REM python executor.py --img-dir "O:\MMD_Auto_Trace\04\yoiyoi_mp4_20221017_025041" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 
 
 
+
+@REM python executor.py --video-file "O:\MMD_Auto_Trace\04\addiction.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+@REM python executor.py --video-file "O:\MMD_Auto_Trace\04\charles.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+@REM python executor.py --video-file "O:\MMD_Auto_Trace\04\yoiyoi.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --video-file "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\02\buster\buster_1400-1900.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --video-file "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\02\buster\buster_0-1700.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --video-file "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\03\bbf\bbf_1740-2740.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%

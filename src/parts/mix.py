@@ -131,10 +131,10 @@ def execute(args):
             for key, joint_vals in tqdm(joint_datas.items(), desc=f"No.{pname} ... "):
                 # スムージング
                 smoothed_joint_vals = list(joint_vals.values())
-                if len(joint_vals) > 7:
+                if len(joint_vals) > 5:
                     smoothed_joint_vals = savgol_filter(
                         smoothed_joint_vals,
-                        window_length=7,
+                        window_length=5,
                         polyorder=2,
                     )
 

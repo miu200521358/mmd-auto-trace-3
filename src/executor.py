@@ -1,8 +1,8 @@
 import argparse
 import os
+import sys
 import time
 
-import parts
 from base.logger import MLogger
 
 logger = MLogger(__name__)
@@ -78,36 +78,48 @@ if __name__ == "__main__":
         from parts.prepare import execute
 
         result, args.img_dir = execute(args)
+    else:
+        sys.exit(1)
 
     if result and "alphapose" in args.process:
         # alphaposeによる2D人物推定
         from parts.alphapose import execute
 
         result = execute(args)
+    else:
+        sys.exit(1)
 
     if result and "multipose" in args.process:
         # MultiPoseによる人物推定
         from parts.multipose import execute
 
         result = execute(args)
+    else:
+        sys.exit(1)
 
     if result and "posetriplet" in args.process:
         # posetripletによる人物推定
         from parts.posetriplet import execute
 
         result = execute(args)
+    else:
+        sys.exit(1)
 
     if result and "mix" in args.process:
         # 推定結果合成
         from parts.mix import execute
 
         result = execute(args)
+    else:
+        sys.exit(1)
 
     if result and "motion" in args.process:
         # モーション生成
         from parts.motion import execute
 
         result = execute(args)
+    else:
+        sys.exit(1)
 
     elapsed_time = time.time() - start
 
