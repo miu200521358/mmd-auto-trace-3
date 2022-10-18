@@ -601,7 +601,7 @@ def get_args_parser():
     )
     parser.add_argument("--checkpoint", type=str, default="../data/alphapose/checkpoint/pretrained_w_cam.pth", help="checkpoint file name")
 
-    parser.add_argument("--sp", default=False, action="store_true", help="Use single process for pytorch")
+    parser.add_argument("--sp", default=True, action="store_true", help="Use single process for pytorch")
     parser.add_argument("--detector", dest="detector", help="detector name", default="yolox")
     parser.add_argument("--detfile", dest="detfile", help="detection result file", default="")
     parser.add_argument("--indir", dest="inputpath", help="image-directory", default="")
