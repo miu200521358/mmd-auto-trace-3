@@ -52,6 +52,8 @@ class MLogger:
 
     logger = None
     re_break = re.compile(r"\n")
+    stream_handler = None
+    file_handler = None
 
     def __init__(self, module_name, level=logging.INFO, out_path=None):
         self.module_name = module_name
@@ -66,10 +68,11 @@ class MLogger:
 
         if out_path:
             # ファイル出力ハンドラ
-            fh = logging.FileHandler(out_path)
-            fh.setLevel(self.default_level)
-            fh.setFormatter(logging.Formatter(self.DEFAULT_FORMAT))
-            self.logger.addHandler(fh)
+            self.file_handler = logging.FileHandler(out_path)
+            self.file_handler.setLevel(self.default_level)
+            self.file_handler.setFormatter(logging.Formatter(self.DEFAULT_FORMAT))
+
+        self.stream_handler = logging.StreamHandler()
 
     def time(self, msg, *args, **kwargs):
         if not kwargs:
@@ -159,6 +162,12 @@ class MLogger:
         target_level = kwargs.pop("level", logging.INFO)
         if self.total_level <= target_level and self.default_level <= target_level:
             # システム全体のロギングレベルもクラス単位のロギングレベルもクリアしてる場合のみ出力
+            # サブモジュールのハンドラをクリア
+            logger = logging.getLogger()
+            while logger.hasHandlers():
+                logger.removeHandler(logger.handlers[0])
+            self.logger.addHandler(self.stream_handler)
+            self.logger.addHandler(self.file_handler)
 
             # モジュール名を出力するよう追加
             extra_args = {}
