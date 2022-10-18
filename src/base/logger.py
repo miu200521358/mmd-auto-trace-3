@@ -148,6 +148,11 @@ class MLogger:
         kwargs["level"] = logging.CRITICAL
         self.print_logger(msg, *args, **kwargs)
 
+    def quit(self):
+        # 終了ログ
+        with open("../log/quit.log", "w") as f:
+            f.write("quit")
+
     # 実際に出力する実態
     def print_logger(self, msg, *args, **kwargs):
 
@@ -315,6 +320,10 @@ class MLogger:
             cls.default_out_path = "../log/autotrace3_{0}.log".format(outout_datetime)
         else:
             cls.default_out_path = out_path
+
+        if os.path.exists("../log/quit.log"):
+            # 終了ログは初期化時に削除
+            os.remove("../log/quit.log")
 
 
 def parse2str(obj: object) -> str:

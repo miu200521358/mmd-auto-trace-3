@@ -5,6 +5,7 @@ from datetime import datetime
 from glob import glob
 
 import numpy as np
+from base.exception import MApplicationException
 from base.logger import MLogger
 from scipy.signal import savgol_filter
 from tqdm import tqdm
@@ -15,29 +16,29 @@ logger = MLogger(__name__)
 
 
 def execute(args):
-    try:
-        logger.info(
-            "推定結果合成 処理開始: {img_dir}",
+    logger.info(
+        "推定結果合成 処理開始: {img_dir}",
+        img_dir=args.img_dir,
+        decoration=MLogger.DECORATION_BOX,
+    )
+
+    if not os.path.exists(args.img_dir):
+        logger.error(
+            "指定された処理用ディレクトリが存在しません。: {img_dir}",
             img_dir=args.img_dir,
             decoration=MLogger.DECORATION_BOX,
         )
+        raise MApplicationException()
 
-        if not os.path.exists(args.img_dir):
-            logger.error(
-                "指定された処理用ディレクトリが存在しません。: {img_dir}",
-                img_dir=args.img_dir,
-                decoration=MLogger.DECORATION_BOX,
-            )
-            return False
+    if not os.path.exists(os.path.join(args.img_dir, DirName.POSETRIPLET.value)):
+        logger.error(
+            "指定されたPoseTripletディレクトリが存在しません。\nPoseTripletが完了していない可能性があります。: {img_dir}",
+            img_dir=os.path.join(args.img_dir, DirName.POSETRIPLET.value),
+            decoration=MLogger.DECORATION_BOX,
+        )
+        raise MApplicationException()
 
-        if not os.path.exists(os.path.join(args.img_dir, DirName.POSETRIPLET.value)):
-            logger.error(
-                "指定されたPoseTripletディレクトリが存在しません。\nPoseTripletが完了していない可能性があります。: {img_dir}",
-                img_dir=os.path.join(args.img_dir, DirName.POSETRIPLET.value),
-                decoration=MLogger.DECORATION_BOX,
-            )
-            return False
-
+    try:
         output_dir_path = os.path.join(args.img_dir, DirName.MIX.value)
 
         if os.path.exists(output_dir_path):
@@ -294,4 +295,4 @@ def execute(args):
         return True
     except Exception as e:
         logger.critical("推定結果合成で予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
-        return False
+        raise e

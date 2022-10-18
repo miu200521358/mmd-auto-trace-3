@@ -23,6 +23,7 @@ from AlphaPose.detector.yolox_cfg import cfg as ycfg
 from AlphaPose.trackers import track
 from AlphaPose.trackers.tracker_api import Tracker
 from AlphaPose.trackers.tracker_cfg import cfg as tcfg
+from base.exception import MApplicationException
 from base.logger import MLogger
 from easydict import EasyDict as edict
 from PIL import Image
@@ -38,21 +39,21 @@ logger = MLogger(__name__)
 
 
 def execute(args):
-    try:
-        logger.info(
-            "AlphaPose 開始: {img_dir}",
+    logger.info(
+        "AlphaPose 開始: {img_dir}",
+        img_dir=args.img_dir,
+        decoration=MLogger.DECORATION_BOX,
+    )
+
+    if not os.path.exists(args.img_dir):
+        logger.error(
+            "指定された処理用ディレクトリが存在しません。: {img_dir}",
             img_dir=args.img_dir,
             decoration=MLogger.DECORATION_BOX,
         )
+        raise MApplicationException()
 
-        if not os.path.exists(args.img_dir):
-            logger.error(
-                "指定された処理用ディレクトリが存在しません。: {img_dir}",
-                img_dir=args.img_dir,
-                decoration=MLogger.DECORATION_BOX,
-            )
-            return False
-
+    try:
         parser = get_args_parser()
         argv = parser.parse_args(args=[])
         cfg = update_config(argv.cfg)
@@ -84,7 +85,7 @@ def execute(args):
             torch.multiprocessing.set_start_method("forkserver", force=True)
             torch.multiprocessing.set_sharing_strategy("file_system")
 
-        input_source = [os.path.basename(file_path) for file_path in glob(os.path.join(argv.inputpath, "*.png"))]
+        input_source = [os.path.basename(file_path) for file_path in sorted(glob(os.path.join(argv.inputpath, "*.png")))]
         result_path = os.path.join(argv.outputpath, FileName.ALPHAPOSE_RESULT.value)
 
         if not os.path.exists(result_path):
@@ -184,7 +185,7 @@ def execute(args):
             decoration=MLogger.DECORATION_LINE,
         )
 
-        img = Image.open(glob(os.path.join(argv.inputpath, "*.png"))[0])
+        img = Image.open(sorted(glob(os.path.join(argv.inputpath, "*.png")))[0])
 
         all_bbox_areas = {}
         for json_data in tqdm(json_datas):
@@ -421,7 +422,7 @@ def execute(args):
             (img.size[0], img.size[1]),
         )
 
-        for file_path in tqdm(glob(os.path.join(argv.inputpath, "*.png"))):
+        for file_path in tqdm(sorted(glob(os.path.join(argv.inputpath, "*.png")))):
             fno = int(os.path.basename(file_path).split(".")[0])
 
             if fno in output_frames:
@@ -450,7 +451,7 @@ def execute(args):
         return True
     except Exception as e:
         logger.critical("AlphaPose で予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
-        return False
+        raise e
 
 
 def save_2d_image(img, fno: int, person_frames: list):

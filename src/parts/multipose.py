@@ -7,6 +7,7 @@ from glob import glob
 import numpy as np
 import torch
 import torch.nn.functional as F
+from base.exception import MApplicationException
 from base.logger import MLogger
 from MultiPose.lib.models import networktcn
 from TorchSUL import Model as M
@@ -18,29 +19,29 @@ logger = MLogger(__name__)
 
 
 def execute(args):
-    try:
-        logger.info(
-            "MultiPose 推定処理開始: {img_dir}",
+    logger.info(
+        "MultiPose 推定処理開始: {img_dir}",
+        img_dir=args.img_dir,
+        decoration=MLogger.DECORATION_BOX,
+    )
+
+    if not os.path.exists(args.img_dir):
+        logger.error(
+            "指定された処理用ディレクトリが存在しません。: {img_dir}",
             img_dir=args.img_dir,
             decoration=MLogger.DECORATION_BOX,
         )
+        raise MApplicationException()
 
-        if not os.path.exists(args.img_dir):
-            logger.error(
-                "指定された処理用ディレクトリが存在しません。: {img_dir}",
-                img_dir=args.img_dir,
-                decoration=MLogger.DECORATION_BOX,
-            )
-            return False
+    if not os.path.exists(os.path.join(args.img_dir, DirName.ALPHAPOSE.value)):
+        logger.error(
+            "指定された2D姿勢推定ディレクトリが存在しません。\n2D姿勢推定が完了していない可能性があります。: {img_dir}",
+            img_dir=os.path.join(args.img_dir, DirName.ALPHAPOSE.value),
+            decoration=MLogger.DECORATION_BOX,
+        )
+        raise MApplicationException()
 
-        if not os.path.exists(os.path.join(args.img_dir, DirName.ALPHAPOSE.value)):
-            logger.error(
-                "指定された2D姿勢推定ディレクトリが存在しません。\n2D姿勢推定が完了していない可能性があります。: {img_dir}",
-                img_dir=os.path.join(args.img_dir, DirName.ALPHAPOSE.value),
-                decoration=MLogger.DECORATION_BOX,
-            )
-            return False
-
+    try:
         output_dir_path = os.path.join(args.img_dir, DirName.MULTIPOSE.value)
 
         if os.path.exists(output_dir_path):
@@ -146,4 +147,4 @@ def execute(args):
         return True
     except Exception as e:
         logger.critical("MultiPose で予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
-        return False
+        raise e

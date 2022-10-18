@@ -11,6 +11,7 @@ sys.path.append(os.path.abspath(os.path.join(__file__, "../../PoseTriplet/estima
 
 import numpy as np
 import torch
+from base.exception import MApplicationException
 from base.logger import MLogger
 from PoseTriplet.estimator_inference.common.camera import (
     camera_to_world, normalize_screen_coordinates)
@@ -98,29 +99,29 @@ BODY_LANDMARKS  = (
 KEYPOINTS_SYMMETRY = ((4, 5, 6, 10, 11, 12), (1, 2, 3, 13, 14, 15))
 
 def execute(args):
-    try:
-        logger.info(
-            "PoseTriplet 開始: {img_dir}",
+    logger.info(
+        "PoseTriplet 開始: {img_dir}",
+        img_dir=args.img_dir,
+        decoration=MLogger.DECORATION_BOX,
+    )
+
+    if not os.path.exists(args.img_dir):
+        logger.error(
+            "指定された処理用ディレクトリが存在しません。: {img_dir}",
             img_dir=args.img_dir,
             decoration=MLogger.DECORATION_BOX,
         )
+        raise MApplicationException()
 
-        if not os.path.exists(args.img_dir):
-            logger.error(
-                "指定された処理用ディレクトリが存在しません。: {img_dir}",
-                img_dir=args.img_dir,
-                decoration=MLogger.DECORATION_BOX,
-            )
-            return False
+    if not os.path.exists(os.path.join(args.img_dir, DirName.MULTIPOSE.value)):
+        logger.error(
+            "指定された3D姿勢推定(Mediapipe)ディレクトリが存在しません。\n3D姿勢推定(Mediapipe)が完了していない可能性があります。: {img_dir}",
+            img_dir=os.path.join(args.img_dir, DirName.MULTIPOSE.value),
+            decoration=MLogger.DECORATION_BOX,
+        )
+        raise MApplicationException()
 
-        if not os.path.exists(os.path.join(args.img_dir, DirName.MULTIPOSE.value)):
-            logger.error(
-                "指定された3D姿勢推定(Mediapipe)ディレクトリが存在しません。\n3D姿勢推定(Mediapipe)が完了していない可能性があります。: {img_dir}",
-                img_dir=os.path.join(args.img_dir, DirName.MULTIPOSE.value),
-                decoration=MLogger.DECORATION_BOX,
-            )
-            return False
-
+    try:
         parser = get_args_parser()
         argv = parser.parse_args(args=[])
 
@@ -257,7 +258,7 @@ def execute(args):
         return True
     except Exception as e:
         logger.critical("PoseTripletで予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
-        return False
+        raise e
 
 
 def fetch_keypoint(keypoints: np.ndarray, width: int, height: int):

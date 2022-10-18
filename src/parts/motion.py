@@ -5,6 +5,7 @@ from glob import glob
 
 import numpy as np
 from base.bezier import create_interpolation, get_infections, get_y_infections
+from base.exception import MApplicationException
 from base.logger import MLogger
 from base.math import MMatrix4x4, MQuaternion, MVector3D
 from mmd.pmx.collection import PmxModel
@@ -24,29 +25,29 @@ MIKU_CM = 0.1259496
 
 
 def execute(args):
-    try:
-        logger.info(
-            "モーション生成処理開始: {img_dir}",
+    logger.info(
+        "モーション生成処理開始: {img_dir}",
+        img_dir=args.img_dir,
+        decoration=MLogger.DECORATION_BOX,
+    )
+
+    if not os.path.exists(args.img_dir):
+        logger.error(
+            "指定された処理用ディレクトリが存在しません。: {img_dir}",
             img_dir=args.img_dir,
             decoration=MLogger.DECORATION_BOX,
         )
+        raise MApplicationException()
 
-        if not os.path.exists(args.img_dir):
-            logger.error(
-                "指定された処理用ディレクトリが存在しません。: {img_dir}",
-                img_dir=args.img_dir,
-                decoration=MLogger.DECORATION_BOX,
-            )
-            return False
+    if not os.path.exists(os.path.join(args.img_dir, DirName.MIX.value)):
+        logger.error(
+            "指定されたMixディレクトリが存在しません。\nMixが完了していない可能性があります。: {img_dir}",
+            img_dir=os.path.join(args.img_dir, DirName.MIX.value),
+            decoration=MLogger.DECORATION_BOX,
+        )
+        raise MApplicationException()
 
-        if not os.path.exists(os.path.join(args.img_dir, DirName.MIX.value)):
-            logger.error(
-                "指定されたMixディレクトリが存在しません。\nMixが完了していない可能性があります。: {img_dir}",
-                img_dir=os.path.join(args.img_dir, DirName.MIX.value),
-                decoration=MLogger.DECORATION_BOX,
-            )
-            return False
-
+    try:
         output_dir_path = os.path.join(args.img_dir, DirName.MOTION.value)
 
         if os.path.exists(output_dir_path):
@@ -520,7 +521,7 @@ def execute(args):
         return True
     except Exception as e:
         logger.critical("モーション生成で予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
-        return False
+        raise e
 
 
 PMX_CONNECTIONS = {
