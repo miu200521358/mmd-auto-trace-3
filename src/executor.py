@@ -110,10 +110,6 @@ if __name__ == "__main__":
 
             result = execute(args)
 
-    except Exception as e:
-        # 例外が発生したら終了ログ出力
-        logger.quit()
-    finally:
         elapsed_time = time.time() - start
 
         logger.info(
@@ -124,7 +120,19 @@ if __name__ == "__main__":
             elapsed_time=show_worked_time(elapsed_time),
             decoration=MLogger.DECORATION_BOX,
         )
+    except Exception as e:
+        elapsed_time = time.time() - start
 
+        logger.error(
+            "MMD自動トレース失敗\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}\n　処理時間: {elapsed_time}",
+            video_file=args.video_file,
+            process=args.process,
+            elapsed_time=show_worked_time(elapsed_time),
+            decoration=MLogger.DECORATION_BOX,
+        )
+        # 例外が発生したら終了ログ出力
+        logger.quit()
+    finally:
         # 終了音を鳴らす
         if os.name == "nt":
             # Windows

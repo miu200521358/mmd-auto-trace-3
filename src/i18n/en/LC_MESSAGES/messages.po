@@ -64,7 +64,7 @@ msgid "AlphaPose 開始"
 msgstr "Start AlphaPose"
 
 msgid "AlphaPose 結果保存"
-msgstr "Save AlphaPose Results"
+msgstr "Save AlphaPose result"
 
 msgid "AlphaPose 結果描画"
 msgstr "AlphaPose result drawing"
@@ -82,7 +82,7 @@ msgid "2D姿勢推定 開始: {img_dir}"
 msgstr "2D pose estimation start: {img_dir}"
 
 msgid "入力動画のサイズが調整後に40で割り切れません。調整前({W}x{H}) -> 調整後({width}x{org_height})\n適切なサイズ({height})になるまで上辺を塗りつぶします。\n{video_file}"
-msgstr "The input video size is not divisible by 40 after adjustment.Before adjustment({W}x{H}) -> After adjustment({width}x{org_height})\nIt will be the appropriate size({height}) Fill top edge up to \n{video_file}"
+msgstr "The size of the input video is not divisible by 40 after adjustment.Before adjustment({W}x{H}) -> After adjustment({width}x{org_height})\nIt will be the appropriate size({height}) Fill top edge up to \n{video_file}"
 
 msgid "AlphaPose 結果分類"
 msgstr "AlphaPose Outcome Classification"
@@ -126,7 +126,7 @@ msgid "PoseTriplet 結果保存完了: {output_dir_path}"
 msgstr "PoseTriplet result saved: {output_dir_path}"
 
 msgid "推定結果合成 処理開始: {img_dir}"
-msgstr "Estimated result synthesis process started: {img_dir}"
+msgstr "Inference result synthesis process started: {img_dir}"
 
 msgid "推定結果合成 中央判定"
 msgstr "Estimation Result Synthesis Central Judgment"
@@ -253,7 +253,7 @@ msgid "AlphaPose 結果保存完了: {outputpath}"
 msgstr "AlphaPose result saved: {outputpath}"
 
 msgid "MultiPose 推定処理開始: {img_dir}"
-msgstr "Start MultiPose estimation: {img_dir}"
+msgstr "MultiPose estimation process started: {img_dir}"
 
 msgid "【No.{pname}】MultiPose 推定開始"
 msgstr "[No.{pname}] MultiPose Estimation Start"
@@ -277,7 +277,7 @@ msgid "【No.{pname}】モーション スムージング開始"
 msgstr "[No.{pname}] motion smoothing start"
 
 msgid "【No.{pname}】モーション スムージング設定"
-msgstr "[No.{pname}] Motion Smoothing Settings"
+msgstr "[No.{pname}] Motion smoothing setting"
 
 msgid "【No.{pname}】モーション(IK固定)計算開始"
 msgstr "[No.{pname}] Motion (IK fixed) calculation start"
@@ -293,3 +293,9 @@ msgstr "[No.{pname}] motion (rotation check) start"
 
 msgid "AlphaPose で予期せぬエラーが発生しました。"
 msgstr "An unexpected error occurred in AlphaPose."
+
+msgid "MMD自動トレース失敗\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}\n　トレース結果: {img_dir}\n　処理時間: {elapsed_time}"
+msgstr "MMD auto trace failed\n　Processing target video file: {video_file}\nProcessing content: {process}\nTrace result: {img_dir}\nProcessing time: {elapsed_time}"
+
+msgid "MMD自動トレース失敗\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}\n　処理時間: {elapsed_time}"
+msgstr "MMD automatic trace failed\n　Processing target video file: {video_file}\nProcessing content: {process}\nProcessing time: {elapsed_time}"

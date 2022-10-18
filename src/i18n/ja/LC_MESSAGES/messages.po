@@ -293,3 +293,9 @@ msgstr "【No.{pname}】モーション(回転チェック)開始"
 
 msgid "AlphaPose で予期せぬエラーが発生しました。"
 msgstr "AlphaPose で予期せぬエラーが発生しました。"
+
+msgid "MMD自動トレース失敗\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}\n　トレース結果: {img_dir}\n　処理時間: {elapsed_time}"
+msgstr "MMD自動トレース失敗\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}\n　トレース結果: {img_dir}\n　処理時間: {elapsed_time}"
+
+msgid "MMD自動トレース失敗\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}\n　処理時間: {elapsed_time}"
+msgstr "MMD自動トレース失敗\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}\n　処理時間: {elapsed_time}"
