@@ -239,7 +239,8 @@ def execute(args):
                     all_extras_bboxs[(sfno, efno)] = {}
                 all_extras_bboxs[(sfno, efno)][person_idx] = []
                 for fno in range(sfno, efno + 1):
-                    all_extras_bboxs[(sfno, efno)][person_idx].append(personal_data[fno]["bbox"]["width"] * personal_data[fno]["bbox"]["height"])
+                    if fno in personal_data:
+                        all_extras_bboxs[(sfno, efno)][person_idx].append(personal_data[fno]["bbox"]["width"] * personal_data[fno]["bbox"]["height"])
 
         output_datas = {}
         for sfno, efno in tqdm(sorted(all_extras_bboxs.keys())):
@@ -346,7 +347,8 @@ def execute(args):
                         output_datas[person_idx] = {}
 
                     for fno in range(sfno, efno + 1):
-                        output_datas[person_idx][fno] = personal_datas[pidx][fno]
+                        if fno in personal_datas[pidx]:
+                            output_datas[person_idx][fno] = personal_datas[pidx][fno]
 
         logger.info(
             "AlphaPose 結果保存",

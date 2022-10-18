@@ -239,3 +239,57 @@ msgstr "-- ジョイントデータ出力終了({count})"
 
 msgid "AlphaPose 映像出力"
 msgstr "AlphaPose 映像出力"
+
+msgid "学習モデル準備開始: {checkpoint}"
+msgstr "学習モデル準備開始: {checkpoint}"
+
+msgid "【No.{pname}】推定結果合成 スムージング"
+msgstr "【No.{pname}】推定結果合成 スムージング"
+
+msgid "AlphaPose 開始: {img_dir}"
+msgstr "AlphaPose 開始: {img_dir}"
+
+msgid "AlphaPose 結果保存完了: {outputpath}"
+msgstr "AlphaPose 結果保存完了: {outputpath}"
+
+msgid "MultiPose 推定処理開始: {img_dir}"
+msgstr "MultiPose 推定処理開始: {img_dir}"
+
+msgid "【No.{pname}】MultiPose 推定開始"
+msgstr "【No.{pname}】MultiPose 推定開始"
+
+msgid "【No.{pname}】MultiPose 推定結果出力"
+msgstr "【No.{pname}】MultiPose 推定結果出力"
+
+msgid "MultiPose 推定処理終了: {output_dir}"
+msgstr "MultiPose 推定処理終了: {output_dir}"
+
+msgid "【No.{pname}】AlphaPose 結果取得"
+msgstr "【No.{pname}】AlphaPose 結果取得"
+
+msgid "【No.{pname}】推定結果合成 グルーブ補正"
+msgstr "【No.{pname}】推定結果合成 グルーブ補正"
+
+msgid "【No.{pname}】モーション スムージング準備"
+msgstr "【No.{pname}】モーション スムージング準備"
+
+msgid "【No.{pname}】モーション スムージング開始"
+msgstr "【No.{pname}】モーション スムージング開始"
+
+msgid "【No.{pname}】モーション スムージング設定"
+msgstr "【No.{pname}】モーション スムージング設定"
+
+msgid "【No.{pname}】モーション(IK固定)計算開始"
+msgstr "【No.{pname}】モーション(IK固定)計算開始"
+
+msgid "【No.{pname}】モーション(スムージング)生成開始【{path}】"
+msgstr "【No.{pname}】モーション(スムージング)生成開始【{path}】"
+
+msgid "【No.{pname}】推定結果合成 足チェック"
+msgstr "【No.{pname}】推定結果合成 足チェック"
+
+msgid "【No.{pname}】モーション(回転チェック)開始"
+msgstr "【No.{pname}】モーション(回転チェック)開始"
+
+msgid "AlphaPose で予期せぬエラーが発生しました。"
+msgstr "AlphaPose で予期せぬエラーが発生しました。"
