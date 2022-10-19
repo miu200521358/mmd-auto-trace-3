@@ -201,23 +201,23 @@ def execute(args):
 
                     pchar.update(1)
 
-            logger.info(
-                "【No.{pname}】モーション(回転チェック)開始",
-                pname=pname,
-                decoration=MLogger.DECORATION_LINE,
-            )
+            # logger.info(
+            #     "【No.{pname}】モーション(回転チェック)開始",
+            #     pname=pname,
+            #     decoration=MLogger.DECORATION_LINE,
+            # )
 
-            for target_bone_name, vmd_params in tqdm(VMD_CONNECTIONS.items()):
-                fnos = []
-                rot_values = []
-                threshold = vmd_params["threshold"]
-                for bf in trace_org_motion.bones[target_bone_name]:
-                    fnos.append(bf.index)
-                    rot_values.append(MQuaternion().dot(bf.rotation))
-                rot_diffs = np.abs(np.diff(rot_values))
-                remove_fnos = np.array(fnos)[np.where((rot_diffs > threshold) & (rot_diffs < 1))[0] + 1]
-                for fno in remove_fnos:
-                    del trace_org_motion.bones[target_bone_name][fno]
+            # for target_bone_name, vmd_params in tqdm(VMD_CONNECTIONS.items()):
+            #     fnos = []
+            #     rot_values = []
+            #     threshold = vmd_params["threshold"]
+            #     for bf in trace_org_motion.bones[target_bone_name]:
+            #         fnos.append(bf.index)
+            #         rot_values.append(MQuaternion().dot(bf.rotation))
+            #     rot_diffs = np.abs(np.diff(rot_values))
+            #     remove_fnos = np.array(fnos)[np.where((rot_diffs > threshold) & (rot_diffs < 1))[0] + 1]
+            #     for fno in remove_fnos:
+            #         del trace_org_motion.bones[target_bone_name][fno]
 
             logger.info(
                 "【No.{pname}】モーション(センター)計算開始",
@@ -454,20 +454,18 @@ def execute(args):
                         # オイラー角にした時の長さ
                         rot_values.append(MQuaternion().dot(rot))
                         degrees = rot.to_euler_degrees()
-                        rot_y_values.append(degrees.y)
+                        rot_y_values.append(degrees.y if degrees.y >= 0 else degrees.y + 360)
                         pchar.update(1)
+
+                    mx_infections = get_infections(mx_values, 0.1, 1)
+                    my_infections = get_infections(my_values, 0.1, 1)
+                    mz_infections = get_infections(mz_values, 0.1, 1)
 
                     if "足ＩＫ" in bone_name:
                         # 足IKは若干検出を鈍く
-                        mx_infections = get_infections(mx_values, 0.15, 1)
-                        my_infections = get_infections(my_values, 0.1, 1)
-                        mz_infections = get_infections(mz_values, 0.15, 1)
-                        rot_infections = get_infections(rot_values, 0.01, 2)
+                        rot_infections = get_infections(rot_values, 0.02, 2)
                         rot_y_infections = np.array([])
                     else:
-                        mx_infections = get_infections(mx_values, 0.1, 1)
-                        my_infections = get_infections(my_values, 0.05, 2)
-                        mz_infections = get_infections(mz_values, 0.1, 1)
                         rot_infections = get_infections(rot_values, 0.001, 3)
                         # 回転変動も検出する(180度だけだとどっち向きの回転か分からないので)
                         rot_y_infections = np.array([])
@@ -637,7 +635,7 @@ VMD_CONNECTIONS = {
     },
     "左ひじ": {
         "direction": ("左ひじ", "左手首"),
-        "up": ("左肩", "左腕"),
+        "up": ("上半身3", "首"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -652,7 +650,7 @@ VMD_CONNECTIONS = {
     },
     "左手首": {
         "direction": ("左手首", "左中指１"),
-        "up": ("左腕", "左ひじ"),
+        "up": ("上半身3", "首"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -695,7 +693,7 @@ VMD_CONNECTIONS = {
     },
     "右ひじ": {
         "direction": ("右ひじ", "右手首"),
-        "up": ("右肩", "右腕"),
+        "up": ("上半身3", "首"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -710,7 +708,7 @@ VMD_CONNECTIONS = {
     },
     "右手首": {
         "direction": ("右手首", "右中指１"),
-        "up": ("右腕", "右ひじ"),
+        "up": ("上半身3", "首"),
         "cancel": (
             "上半身",
             "上半身2",

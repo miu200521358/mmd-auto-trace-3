@@ -94,12 +94,13 @@ def get_y_infections(values: list[float], threshold) -> np.ndarray:
     # 一定の角度以上に回転してるキーを打つ
     while end_idx <= len(values) - 1:
         if np.sum(np.abs(np.diff(values[start_idx:end_idx]))) >= threshold:
+            extract_idxs.append(start_idx)
             extract_idxs.append(end_idx - 1)
             start_idx = end_idx - 1
             end_idx = start_idx + 1
         else:
             end_idx += 1
-    return np.array(extract_idxs)
+    return np.array(sorted(list(set(extract_idxs))))
 
 
 def create_interpolation(values: list[float]):
@@ -185,3 +186,16 @@ def evaluate(interpolation: Interpolation, start: int, now: int, end: int) -> tu
     y = (3 * (s * s) * t * y1) + (3 * s * (t * t) * y2) + (t * t * t)
 
     return x, y, t
+
+
+# https://qiita.com/aa_debdeb/items/e4e4bf42fb06e8af2766
+# バイラテラルフィルタ
+def bilateral_filter(data, size=(2, 5), space_sigma=3, pixel_sigma=0.01, boundary="edge"):
+    image = np.vstack([data, data])
+    pad_image = np.pad(image, ((int(size[0] / 2),), (int(size[1] / 2),)), boundary)
+    areas = np.lib.stride_tricks.as_strided(pad_image, image.shape + size, pad_image.strides * 2)
+    centers = np.tile(image.reshape(image.shape + (1, 1)), (1, 1) + size)
+    dists = np.fromfunction(lambda y, x: (x - int(size[1] / 2)) ** 2 + (y - int(size[0] / 2)) ** 2, size)
+    weights = np.exp(-dists / (2.0 * space_sigma * space_sigma)) * np.exp(-((centers - areas) ** 2) / (2.0 * pixel_sigma * pixel_sigma * 2.0))
+    weight_sum = np.sum(weights, axis=(2, 3))
+    return (np.einsum("ijkl,ijkl->ij", weights, areas) / weight_sum)[0]

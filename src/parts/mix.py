@@ -5,6 +5,7 @@ from datetime import datetime
 from glob import glob
 
 import numpy as np
+from base.bezier import bilateral_filter
 from base.exception import MApplicationException
 from base.logger import MLogger
 from scipy.signal import savgol_filter
@@ -131,13 +132,14 @@ def execute(args):
 
             for key, joint_vals in tqdm(joint_datas.items(), desc=f"No.{pname} ... "):
                 # スムージング
-                smoothed_joint_vals = list(joint_vals.values())
-                if len(joint_vals) > 5:
-                    smoothed_joint_vals = savgol_filter(
-                        smoothed_joint_vals,
-                        window_length=5,
-                        polyorder=2,
-                    )
+                smoothed_joint_vals = np.array(list(joint_vals.values()))
+                if len(joint_vals) > 7:
+                    # smoothed_joint_vals = savgol_filter(
+                    #     smoothed_joint_vals,
+                    #     window_length=5,
+                    #     polyorder=2,
+                    # )
+                    smoothed_joint_vals = bilateral_filter(smoothed_joint_vals)
 
                 for fidx, fno in enumerate(joint_vals.keys()):
                     joint_datas[key][fno] = smoothed_joint_vals[fidx]
