@@ -241,6 +241,8 @@
       ['Neck', 'RCollar', 'RShoulder', 'RElbow', 'RWrist', 'RMiddle'],
       ['Pelvis', 'RHip', 'RKnee', 'RAnkle', 'RFoot'],
       ['Pelvis', 'LHip', 'LKnee', 'LAnkle', 'LFoot'],
+      ['LEar', 'Nose'],
+      ['REar', 'Nose'],
       ];
       var x = [];
       var y = [];
@@ -379,6 +381,44 @@
             },
             marker: {
               color: 'rgb(46, 204, 113)',
+              size: 2
+            }
+          },
+          {
+            type: 'scatter3d',
+            mode: 'lines+markers',
+            x: x[5],
+            y: y[5],
+            z: z[5],
+            text: text[5],
+            name: 'left',
+            opacity: 2,
+            line: {
+              width: 6,
+              color: 'rgb(46, 204, 113)',
+              reversescale: false
+            },
+            marker: {
+              color: 'rgb(46, 204, 113)',
+              size: 2
+            }
+          },
+          {
+            type: 'scatter3d',
+            mode: 'lines+markers',
+            x: x[6],
+            y: y[6],
+            z: z[6],
+            text: text[6],
+            name: 'right',
+            opacity: 2,
+            line: {
+              width: 6,
+              color: 'rgb(155, 89, 182)',
+              reversescale: false
+            },
+            marker: {
+              color: 'rgb(155, 89, 182)',
               size: 2
             }
           },

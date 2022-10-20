@@ -549,6 +549,8 @@ PMX_CONNECTIONS = {
     "RWrist": "右手首",
     "LMiddle": "左中指１",
     "RMiddle": "右中指１",
+    "LEar": "左耳",
+    "REar": "右耳",
 }
 
 VMD_CONNECTIONS = {
@@ -597,14 +599,14 @@ VMD_CONNECTIONS = {
     },
     "頭": {
         "direction": ("頭", "鼻"),
-        "up": ("首", "頭"),
+        "up": ("左耳", "右耳"),
         "cancel": (
             "上半身",
             "上半身2",
             "首",
         ),
         "invert": {
-            "before": MVector3D(-30, 0, 0),
+            "before": MVector3D(-20, 0, 0),
             "after": MVector3D(),
         },
         "threshold": 0.2,

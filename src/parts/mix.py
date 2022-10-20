@@ -8,12 +8,16 @@ import numpy as np
 from base.bezier import bilateral_filter
 from base.exception import MApplicationException
 from base.logger import MLogger
+from base.math import MMatrix4x4, MQuaternion, MVector3D
 from scipy.signal import savgol_filter
 from tqdm import tqdm
 
 from parts.config import SMPL_JOINT_24, SMPL_JOINT_29, DirName
 
 logger = MLogger(__name__)
+
+# 身長158cmプラグインより
+MIKU_CM = 0.1259496
 
 
 def execute(args):
@@ -132,17 +136,26 @@ def execute(args):
 
             for key, joint_vals in tqdm(joint_datas.items(), desc=f"No.{pname} ... "):
                 # スムージング
-                smoothed_joint_vals = np.array(list(joint_vals.values()))
+                original_joint_vals = np.array(list(joint_vals.values()))
                 if len(joint_vals) > 7:
-                    # smoothed_joint_vals = savgol_filter(
-                    #     smoothed_joint_vals,
-                    #     window_length=5,
-                    #     polyorder=2,
-                    # )
-                    smoothed_joint_vals = bilateral_filter(smoothed_joint_vals)
+                    bilateral1_joint_vals = bilateral_filter(original_joint_vals)
+                    for _ in range(2):
+                        bilateral2_joint_vals = bilateral_filter(original_joint_vals)
+                    savgol5_joint_vals = savgol_filter(
+                        original_joint_vals,
+                        window_length=5,
+                        polyorder=2,
+                    )
+                    savgol7_joint_vals = savgol_filter(
+                        original_joint_vals,
+                        window_length=7,
+                        polyorder=2,
+                    )
 
                 for fidx, fno in enumerate(joint_vals.keys()):
-                    joint_datas[key][fno] = smoothed_joint_vals[fidx]
+                    joint_datas[key][fno] = np.mean(
+                        [bilateral1_joint_vals[fidx], bilateral2_joint_vals[fidx], savgol5_joint_vals[fidx], savgol7_joint_vals[fidx]]
+                    )
 
             logger.info(
                 "【No.{pname}】推定結果合成 グルーブ補正",
@@ -162,6 +175,17 @@ def execute(args):
                 pname=pname,
                 decoration=MLogger.DECORATION_LINE,
             )
+
+            initial_nose_pos = MVector3D(0, 17.59783, -1.127905)
+            initial_head_pos = MVector3D(0, 17.33944, 0.3088881)
+            initial_neck_pos = MVector3D(0, 16.42476, 0.4232453)
+            initial_direction: MVector3D = (initial_nose_pos - initial_head_pos).normalized()
+            initial_up: MVector3D = (initial_head_pos - initial_neck_pos).normalized()
+            initial_cross: MVector3D = initial_up.cross(initial_direction).normalized()
+            initial_head_qq = MQuaternion.from_direction(initial_direction, initial_cross)
+
+            initial_left_ear_pos = (MVector3D(1.147481, 17.91739, 0.4137991) - initial_nose_pos) / MIKU_CM
+            initial_right_ear_pos = (MVector3D(-1.147481, 17.91739, 0.4137991) - initial_nose_pos) / MIKU_CM
 
             mix_joints = {"color": frame_joints["color"], "joints": {}}
             for fidx, fno in tqdm(
@@ -274,6 +298,46 @@ def execute(args):
                             mix_joints["joints"][fno]["body"]["Spine3"][axis],
                         ]
                     )
+
+                # 耳位置を暫定で求める
+                head_pos = MVector3D(
+                    mix_joints["joints"][fno]["body"]["Head"]["x"],
+                    mix_joints["joints"][fno]["body"]["Head"]["y"],
+                    mix_joints["joints"][fno]["body"]["Head"]["z"],
+                )
+                neck_pos = MVector3D(
+                    mix_joints["joints"][fno]["body"]["Neck"]["x"],
+                    mix_joints["joints"][fno]["body"]["Neck"]["y"],
+                    mix_joints["joints"][fno]["body"]["Neck"]["z"],
+                )
+                nose_pos = MVector3D(
+                    mix_joints["joints"][fno]["body"]["Nose"]["x"],
+                    mix_joints["joints"][fno]["body"]["Nose"]["y"],
+                    mix_joints["joints"][fno]["body"]["Nose"]["z"],
+                )
+
+                direction: MVector3D = (nose_pos - head_pos).normalized()
+                up: MVector3D = (head_pos - neck_pos).normalized()
+                cross: MVector3D = up.cross(direction).normalized()
+                head_qq = MQuaternion.from_direction(direction, cross) * initial_head_qq.inverse()
+
+                ear_mat = MMatrix4x4(identity=True)
+                ear_mat.translate(nose_pos)
+                ear_mat.rotate(head_qq)
+
+                left_ear_pos = ear_mat * initial_left_ear_pos
+                right_ear_pos = ear_mat * initial_right_ear_pos
+
+                mix_joints["joints"][fno]["body"]["LEar"] = {
+                    "x": float(left_ear_pos.x),
+                    "y": float(left_ear_pos.y),
+                    "z": float(left_ear_pos.z),
+                }
+                mix_joints["joints"][fno]["body"]["REar"] = {
+                    "x": float(right_ear_pos.x),
+                    "y": float(right_ear_pos.y),
+                    "z": float(right_ear_pos.z),
+                }
 
             logger.info(
                 "【No.{pname}】推定結果合成 出力開始",
