@@ -635,7 +635,7 @@ def get_args_parser():
         help="choose which cuda device to use by index and input comma to use multi gpus, e.g. 0,1,2,3. (input -1 for cpu only)",
     )
     parser.add_argument(
-        "--qsize", type=int, dest="qsize", default=1024, help="the length of result buffer, where reducing it will lower requirement of cpu memory"
+        "--qsize", type=int, dest="qsize", default=128, help="the length of result buffer, where reducing it will lower requirement of cpu memory"
     )
     parser.add_argument("--flip", default=False, action="store_true", help="enable flip testing")
     parser.add_argument("--debug", default=False, action="store_true", help="print detail information")
