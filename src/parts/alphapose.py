@@ -621,8 +621,8 @@ def get_args_parser():
     parser.add_argument("--profile", default=False, action="store_true", help="add speed profiling at screen output")
     parser.add_argument("--format", type=str, help="save in the format of cmu or coco or openpose, option: coco/cmu/open")
     parser.add_argument("--min_box_area", type=int, default=0, help="min box area to filter out")
-    parser.add_argument("--detbatch", type=int, default=30, help="detection batch size PER GPU")
-    parser.add_argument("--posebatch", type=int, default=256, help="pose estimation maximum batch size PER GPU")
+    parser.add_argument("--detbatch", type=int, default=10, help="detection batch size PER GPU")
+    parser.add_argument("--posebatch", type=int, default=64, help="pose estimation maximum batch size PER GPU")
     parser.add_argument(
         "--eval",
         dest="eval",
@@ -638,7 +638,7 @@ def get_args_parser():
         help="choose which cuda device to use by index and input comma to use multi gpus, e.g. 0,1,2,3. (input -1 for cpu only)",
     )
     parser.add_argument(
-        "--qsize", type=int, dest="qsize", default=4, help="the length of result buffer, where reducing it will lower requirement of cpu memory"
+        "--qsize", type=int, dest="qsize", default=8, help="the length of result buffer, where reducing it will lower requirement of cpu memory"
     )
     parser.add_argument("--flip", default=False, action="store_true", help="enable flip testing")
     parser.add_argument("--debug", default=False, action="store_true", help="print detail information")
