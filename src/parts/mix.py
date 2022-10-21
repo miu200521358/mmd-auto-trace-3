@@ -136,26 +136,16 @@ def execute(args):
 
             for key, joint_vals in tqdm(joint_datas.items(), desc=f"No.{pname} ... "):
                 # スムージング
-                original_joint_vals = np.array(list(joint_vals.values()))
+                smoothing_joint_vals = np.array(list(joint_vals.values()))
                 if len(joint_vals) > 7:
-                    bilateral1_joint_vals = bilateral_filter(original_joint_vals)
-                    for _ in range(2):
-                        bilateral2_joint_vals = bilateral_filter(original_joint_vals)
-                    savgol5_joint_vals = savgol_filter(
-                        original_joint_vals,
-                        window_length=5,
-                        polyorder=2,
-                    )
-                    savgol7_joint_vals = savgol_filter(
-                        original_joint_vals,
+                    smoothing_joint_vals = savgol_filter(
+                        smoothing_joint_vals,
                         window_length=7,
-                        polyorder=2,
+                        polyorder=4,
                     )
 
                 for fidx, fno in enumerate(joint_vals.keys()):
-                    joint_datas[key][fno] = np.mean(
-                        [bilateral1_joint_vals[fidx], bilateral2_joint_vals[fidx], savgol5_joint_vals[fidx], savgol7_joint_vals[fidx]]
-                    )
+                    joint_datas[key][fno] = smoothing_joint_vals[fidx]
 
             logger.info(
                 "【No.{pname}】推定結果合成 グルーブ補正",

@@ -14,24 +14,25 @@ set LANG=ja
 @REM python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\03\ivory\ivory_8269-8569_mp4_20221001_222740" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\02\buster\buster_0-1700_mp4_20221012_105014" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 
-python executor.py --img-dir "O:\MMD_Auto_Trace\01\snobbism_mp4_20221014_070842" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --img-dir "O:\MMD_Auto_Trace\02\buster_mp4_20221014_124322" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+@REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\snobbism_mp4_20221014_070842" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "O:\MMD_Auto_Trace\02\buster_mp4_20221014_124322" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "O:\MMD_Auto_Trace\03\ivory_mp4_20221015_171208" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "O:\MMD_Auto_Trace\01\burai_mp4_20221012_001858" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "O:\MMD_Auto_Trace\01\cat_mp4_20221012_085225" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "O:\MMD_Auto_Trace\01\chika_mp4_20221012_110735" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "O:\MMD_Auto_Trace\01\hisui_mp4_20221012_155227" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "O:\MMD_Auto_Trace\01\kinyoubi_mp4_20221012_180026" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "O:\MMD_Auto_Trace\01\koisora_mp4_20221012_202756" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "O:\MMD_Auto_Trace\01\kokoro_mp4_20221012_232518" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "O:\MMD_Auto_Trace\01\mirai_mp4_20221013_000712" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "O:\MMD_Auto_Trace\01\paranoia_mp4_20221013_180150" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "O:\MMD_Auto_Trace\01\planetarium_mp4_20221013_203147" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "O:\MMD_Auto_Trace\01\revercible_mp4_20221014_001205" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "O:\MMD_Auto_Trace\01\sakura_mp4_20221014_031958" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --img-dir "O:\MMD_Auto_Trace\01\tugihagi_mp4_20221014_084640" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+
 @REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\heart_mp4_20221012_114827" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --img-dir "O:\MMD_Auto_Trace\03\bbf_mp4_20221015_053635" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --img-dir "O:\MMD_Auto_Trace\03\ivory_mp4_20221015_171208" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\burai_mp4_20221012_001858" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\cat_mp4_20221012_085225" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\chika_mp4_20221012_110735" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\hisui_mp4_20221012_155227" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\kinyoubi_mp4_20221012_180026" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\koisora_mp4_20221012_202756" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\kokoro_mp4_20221012_232518" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\mirai_mp4_20221013_000712" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\paranoia_mp4_20221013_180150" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\planetarium_mp4_20221013_203147" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\revercible_mp4_20221014_001205" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\sakura_mp4_20221014_031958" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\tugihagi_mp4_20221014_084640" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --img-dir "O:\MMD_Auto_Trace\02\rocket_mp4_20221014_174322" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --img-dir "O:\MMD_Auto_Trace\02\seven_mp4_20221014_201102" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --img-dir "O:\MMD_Auto_Trace\02\sugar_mp4_20221014_225512" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
