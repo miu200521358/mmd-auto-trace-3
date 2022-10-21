@@ -89,6 +89,7 @@ def execute(args):
             torch.multiprocessing.set_sharing_strategy("file_system")
 
         input_source = [os.path.basename(file_path) for file_path in sorted(glob(os.path.join(argv.inputpath, "*.png")))]
+        input_source += [input_source[-1] for _ in range(200)]
         result_path = os.path.join(argv.outputpath, FileName.ALPHAPOSE_RESULT.value)
 
         if not os.path.exists(result_path):
@@ -129,7 +130,7 @@ def execute(args):
             )
 
             with torch.no_grad():
-                for _ in tqdm(input_source, dynamic_ncols=True):
+                for _ in tqdm(input_source[:-200], dynamic_ncols=True):
                     (inps, orig_img, im_name, boxes, scores, ids, cropped_boxes) = det_loader.read()
                     if orig_img is None:
                         break
