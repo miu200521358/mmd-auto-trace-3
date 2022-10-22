@@ -64,6 +64,7 @@ def execute(args):
             argv.detbatch = 10
             argv.posebatch = 64
 
+        argv.sp = True
         argv.inputpath = os.path.join(args.img_dir, DirName.FRAMES.value)
         argv.outputpath = os.path.join(args.img_dir, DirName.ALPHAPOSE.value)
 
