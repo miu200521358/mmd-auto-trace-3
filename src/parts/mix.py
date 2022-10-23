@@ -56,7 +56,7 @@ def execute(args):
         )
 
         target_pnames = []
-        all_depths: dict[int, dict[str, float]] = {}
+        all_depths: dict[int, dict[int, float]] = {}
         for personal_json_path in tqdm(sorted(glob(os.path.join(args.img_dir, DirName.POSETRIPLET.value, "*.json")))):
             pname, _ = os.path.splitext(os.path.basename(personal_json_path))
 
@@ -64,8 +64,8 @@ def execute(args):
             with open(personal_json_path, "r") as f:
                 frame_joints = json.load(f)
 
-            for fno in frame_joints["estimation"].keys():
-                if "pt-keypoints" in frame_joints["estimation"][fno] and "depth" in frame_joints["estimation"][fno]:
+            for sfno in frame_joints["estimation"].keys():
+                if "pt-keypoints" in frame_joints["estimation"][sfno] and "depth" in frame_joints["estimation"][sfno]:
                     # Mediapipeの情報がある最初のキーフレを選択する
                     target_pnames.append(pname)
                     break
@@ -73,10 +73,11 @@ def execute(args):
             if pname not in target_pnames:
                 continue
 
+            fno = int(sfno)
             if fno not in all_depths:
                 all_depths[fno] = {}
             # メーターからcmに変換
-            all_depths[fno][pname] = frame_joints["estimation"][fno]["depth"] * 100
+            all_depths[fno][pname] = frame_joints["estimation"][sfno]["depth"] * 100
 
         start_fno = list(sorted(list(all_depths.keys())))[0]
         # Zは一番手前が0になるように
