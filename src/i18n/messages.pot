@@ -210,7 +210,7 @@ msgid "【No.{pname}】モーション(回転)生成開始【{path}】"
 msgstr ""
 
 
-msgid "【No.{pname}】モーション 間引き準備"
+msgid "【No.{pname}】モーション 間引き"
 msgstr ""
 
 

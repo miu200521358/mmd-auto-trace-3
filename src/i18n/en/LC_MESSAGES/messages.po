@@ -161,8 +161,8 @@ msgstr "[No.{pname}] motion (center) calculation start"
 msgid "【No.{pname}】モーション(回転)生成開始【{path}】"
 msgstr "[No.{pname}] motion (rotation) generation start [{path}]"
 
-msgid "【No.{pname}】モーション 間引き準備"
-msgstr "[No.{pname}] motion thinning preparation"
+msgid "【No.{pname}】モーション 間引き"
+msgstr "[No.{pname}] motion thinning"
 
 msgid "【No.{pname}】モーション(間引き)生成開始【{path}】"
 msgstr "[No.{pname}] Motion (thinning) generation start [{path}]"

@@ -161,8 +161,8 @@ msgstr "【No.{pname}】モーション(センター)計算開始"
 msgid "【No.{pname}】モーション(回転)生成開始【{path}】"
 msgstr "【No.{pname}】モーション(回転)生成開始【{path}】"
 
-msgid "【No.{pname}】モーション 間引き準備"
-msgstr "【No.{pname}】モーション 間引き準備"
+msgid "【No.{pname}】モーション 間引き"
+msgstr "【No.{pname}】モーション 間引き"
 
 msgid "【No.{pname}】モーション(間引き)生成開始【{path}】"
 msgstr "【No.{pname}】モーション(間引き)生成開始【{path}】"

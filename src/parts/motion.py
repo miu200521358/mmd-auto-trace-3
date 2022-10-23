@@ -394,9 +394,9 @@ def execute(args):
                         leg_ik_ys.append(leg_ik_bf.position.y)
                         leg_ik_zs.append(leg_ik_bf.position.z)
 
-                    x_infections = get_infections(leg_ik_xs, 0.2, 1)
-                    y_infections = get_infections(leg_ik_ys, 0.3, 1)
-                    z_infections = get_infections(leg_ik_zs, 0.5, 1)
+                    x_infections = get_infections(leg_ik_xs, threshold=0.3, decimals=1)
+                    y_infections = get_infections(leg_ik_ys, threshold=0.4, decimals=1)
+                    z_infections = get_infections(leg_ik_zs, threshold=0.5, decimals=1)
 
                     infections = list(sorted(list({0, len(leg_ik_xs) - 1} | set(x_infections) | set(y_infections) | set(z_infections))))
 
@@ -407,7 +407,7 @@ def execute(args):
                         start_pos = trace_org_motion.bones[leg_ik_bone_name][sfno].position
                         end_pos = trace_org_motion.bones[leg_ik_bone_name][efno].position
 
-                        if np.isclose(start_pos.vector, end_pos.vector, atol=[0.3, 0.4, 0.6]).all():
+                        if np.isclose(start_pos.vector, end_pos.vector, atol=[0.4, 0.5, 0.6]).all():
                             # 開始と終了が大体同じ場合、固定する
                             for fno in range(sfno, efno + 1):
                                 trace_org_motion.bones[leg_ik_bone_name][fno].position = start_pos
@@ -423,7 +423,7 @@ def execute(args):
             VmdWriter.write(trace_model.name, trace_org_motion, trace_org_motion_path)
 
             logger.info(
-                "【No.{pname}】モーション 間引き準備",
+                "【No.{pname}】モーション 間引き",
                 pname=pname,
                 decoration=MLogger.DECORATION_LINE,
             )
@@ -451,22 +451,22 @@ def execute(args):
                         my_values.append(pos.y)
                         mz_values.append(pos.z)
                         rot = trace_org_motion.bones[bone_name][fno].rotation
-                        # オイラー角にした時の長さ
                         rot_values.append(MQuaternion().dot(rot))
+                        # オイラー角にした時の長さ
                         degrees = rot.to_euler_degrees()
                         rot_y_values.append(degrees.y if degrees.y >= 0 else degrees.y + 360)
                         pchar.update(1)
 
-                    mx_infections = get_infections(mx_values, 0.1, 1)
-                    my_infections = get_infections(my_values, 0.1, 1)
-                    mz_infections = get_infections(mz_values, 0.1, 1)
+                    mx_infections = get_infections(mx_values, threshold=0.1, decimals=1, delimiter=1)
+                    my_infections = get_infections(my_values, threshold=0.1, decimals=1, delimiter=1)
+                    mz_infections = get_infections(mz_values, threshold=0.1, decimals=1, delimiter=1)
 
                     if "足ＩＫ" in bone_name:
                         # 足IKは若干検出を鈍く
-                        rot_infections = get_infections(rot_values, 0.02, 2)
+                        rot_infections = get_infections(rot_values, threshold=0.02, decimals=2)
                         rot_y_infections = np.array([])
                     else:
-                        rot_infections = get_infections(rot_values, 0.001, 3)
+                        rot_infections = get_infections(rot_values, threshold=0.001, decimals=3)
                         # 回転変動も検出する(180度だけだとどっち向きの回転か分からないので)
                         rot_y_infections = np.array([])
                         if bone_name in ["上半身", "下半身"]:
