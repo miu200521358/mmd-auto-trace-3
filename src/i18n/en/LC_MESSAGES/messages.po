@@ -52,7 +52,7 @@ msgid "2D姿勢推定で予期せぬエラーが発生しました。"
 msgstr "Unexpected error in 2D pose estimation."
 
 msgid "学習モデル準備開始"
-msgstr "Start preparation of learning model"
+msgstr "Learning model preparation start"
 
 msgid "AlphaPose開始"
 msgstr "Start AlphaPose"
@@ -64,7 +64,7 @@ msgid "AlphaPose 開始"
 msgstr "Start AlphaPose"
 
 msgid "AlphaPose 結果保存"
-msgstr "Save AlphaPose result"
+msgstr "Save AlphaPose Results"
 
 msgid "AlphaPose 結果描画"
 msgstr "AlphaPose result drawing"
@@ -82,7 +82,7 @@ msgid "2D姿勢推定 開始: {img_dir}"
 msgstr "2D pose estimation start: {img_dir}"
 
 msgid "入力動画のサイズが調整後に40で割り切れません。調整前({W}x{H}) -> 調整後({width}x{org_height})\n適切なサイズ({height})になるまで上辺を塗りつぶします。\n{video_file}"
-msgstr "The size of the input video is not divisible by 40 after adjustment.Before adjustment({W}x{H}) -> After adjustment({width}x{org_height})\nIt will be the appropriate size({height}) Fill top edge up to \n{video_file}"
+msgstr "The input video size is not divisible by 40 after adjustment.Before adjustment({W}x{H}) -> After adjustment({width}x{org_height})\nIt will be the appropriate size({height}) Fill top edge up to \n{video_file}"
 
 msgid "AlphaPose 結果分類"
 msgstr "AlphaPose Outcome Classification"
@@ -141,7 +141,7 @@ msgid "【No.{pname}】推定結果合成 出力開始"
 msgstr "[No.{pname}] Synthesis of estimated results Start output"
 
 msgid "推定結果合成 処理終了: {img_dir}"
-msgstr "Complete estimation result synthesis processing: {img_dir}"
+msgstr "Prediction result synthesis processing finished: {img_dir}"
 
 msgid "モーション生成処理開始: {img_dir}"
 msgstr "Motion generation process started: {img_dir}"
@@ -217,7 +217,7 @@ msgid "-- 面データ出力終了({count})"
 msgstr "-- End face data output ({count})"
 
 msgid "-- テクスチャデータ出力終了({count})"
-msgstr "-- End of texture data output ({count})"
+msgstr "-- end texture data output ({count})"
 
 msgid "-- 材質データ出力終了({count})"
 msgstr "-- end of material data output ({count})"
@@ -241,7 +241,7 @@ msgid "AlphaPose 映像出力"
 msgstr "AlphaPose video output"
 
 msgid "学習モデル準備開始: {checkpoint}"
-msgstr "Training model preparation started: {checkpoint}"
+msgstr "Learning model preparation started: {checkpoint}"
 
 msgid "【No.{pname}】推定結果合成 スムージング"
 msgstr "[No.{pname}] Estimation Result Synthesis Smoothing"
@@ -253,7 +253,7 @@ msgid "AlphaPose 結果保存完了: {outputpath}"
 msgstr "AlphaPose result saved: {outputpath}"
 
 msgid "MultiPose 推定処理開始: {img_dir}"
-msgstr "MultiPose estimation process started: {img_dir}"
+msgstr "Start MultiPose estimation: {img_dir}"
 
 msgid "【No.{pname}】MultiPose 推定開始"
 msgstr "[No.{pname}] MultiPose Estimation Start"
@@ -277,7 +277,7 @@ msgid "【No.{pname}】モーション スムージング開始"
 msgstr "[No.{pname}] motion smoothing start"
 
 msgid "【No.{pname}】モーション スムージング設定"
-msgstr "[No.{pname}] Motion smoothing setting"
+msgstr "[No.{pname}] Motion Smoothing Settings"
 
 msgid "【No.{pname}】モーション(IK固定)計算開始"
 msgstr "[No.{pname}] Motion (IK fixed) calculation start"

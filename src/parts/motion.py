@@ -107,17 +107,6 @@ def execute(args):
                     )
                     trace_abs_mov_motion.bones.append(bf)
 
-                # for jname, joint in frames["2d"].items():
-                #     if jname not in PMX_CONNECTIONS:
-                #         continue
-                #     bf = VmdBoneFrame(name=PMX_CONNECTIONS[jname], index=fno)
-                #     bf.position = MVector3D(
-                #         float(joint["x"]),
-                #         float(joint["y"]),
-                #         0,
-                #     )
-                #     trace_2d_motion.bones.append(bf)
-
                 if fno > end_fno:
                     end_fno = fno
 
@@ -200,24 +189,6 @@ def execute(args):
                             bf.rotation *= invert_qq
 
                     pchar.update(1)
-
-            # logger.info(
-            #     "【No.{pname}】モーション(回転チェック)開始",
-            #     pname=pname,
-            #     decoration=MLogger.DECORATION_LINE,
-            # )
-
-            # for target_bone_name, vmd_params in tqdm(VMD_CONNECTIONS.items()):
-            #     fnos = []
-            #     rot_values = []
-            #     threshold = vmd_params["threshold"]
-            #     for bf in trace_org_motion.bones[target_bone_name]:
-            #         fnos.append(bf.index)
-            #         rot_values.append(MQuaternion().dot(bf.rotation))
-            #     rot_diffs = np.abs(np.diff(rot_values))
-            #     remove_fnos = np.array(fnos)[np.where((rot_diffs > threshold) & (rot_diffs < 1))[0] + 1]
-            #     for fno in remove_fnos:
-            #         del trace_org_motion.bones[target_bone_name][fno]
 
             logger.info(
                 "【No.{pname}】モーション(センター)計算開始",
@@ -445,28 +416,32 @@ def execute(args):
                     mz_values = []
                     rot_values = []
                     rot_y_values = []
-                    for fno in range(start_fno, end_fno):
+                    for fidx, fno in enumerate(range(start_fno, end_fno)):
                         pos = trace_org_motion.bones[bone_name][fno].position
                         mx_values.append(pos.x)
                         my_values.append(pos.y)
                         mz_values.append(pos.z)
                         rot = trace_org_motion.bones[bone_name][fno].rotation
-                        rot_values.append(MQuaternion().dot(rot))
+                        if fidx == 0:
+                            rot_values.append(1)
+                        else:
+                            prev_rot = trace_org_motion.bones[bone_name][fno - 1].rotation
+                            rot_values.append(prev_rot.dot(rot))
                         # オイラー角にした時の長さ
                         degrees = rot.to_euler_degrees()
                         rot_y_values.append(degrees.y if degrees.y >= 0 else degrees.y + 360)
                         pchar.update(1)
 
-                    mx_infections = get_infections(mx_values, threshold=0.1, decimals=1, delimiter=1)
-                    my_infections = get_infections(my_values, threshold=0.1, decimals=1, delimiter=1)
-                    mz_infections = get_infections(mz_values, threshold=0.1, decimals=1, delimiter=1)
+                    mx_infections = get_infections(mx_values, threshold=0.05, decimals=1)
+                    my_infections = get_infections(my_values, threshold=0.05, decimals=1)
+                    mz_infections = get_infections(mz_values, threshold=0.05, decimals=1)
 
                     if "足ＩＫ" in bone_name:
                         # 足IKは若干検出を鈍く
-                        rot_infections = get_infections(rot_values, threshold=0.02, decimals=2)
+                        rot_infections = get_infections(rot_values, threshold=0.1, decimals=2)
                         rot_y_infections = np.array([])
                     else:
-                        rot_infections = get_infections(rot_values, threshold=0.001, decimals=3)
+                        rot_infections = get_infections(rot_values, threshold=0.0007, decimals=4)
                         # 回転変動も検出する(180度だけだとどっち向きの回転か分からないので)
                         rot_y_infections = np.array([])
                         if bone_name in ["上半身", "下半身"]:
@@ -562,7 +537,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(10, 0, 0),
         },
-        "threshold": 0.2,
     },
     "上半身": {
         "direction": ("上半身", "上半身2"),
@@ -572,7 +546,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(10, 0, 0),
             "after": MVector3D(),
         },
-        "threshold": 0.2,
     },
     "上半身2": {
         "direction": ("上半身2", "首"),
@@ -582,7 +555,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(20, 0, 0),
             "after": MVector3D(),
         },
-        "threshold": 0.2,
     },
     "首": {
         "direction": ("上半身2", "首"),
@@ -595,7 +567,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(20, 10, 0),
             "after": MVector3D(),
         },
-        "threshold": 0.2,
     },
     "頭": {
         "direction": ("頭", "鼻"),
@@ -609,7 +580,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(-20, 0, 0),
             "after": MVector3D(),
         },
-        "threshold": 0.2,
     },
     "左肩": {
         "direction": ("左肩", "左腕"),
@@ -619,7 +589,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(0, 0, -20),
             "after": MVector3D(),
         },
-        "threshold": 0.2,
     },
     "左腕": {
         "direction": ("左腕", "左ひじ"),
@@ -633,7 +602,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.3,
     },
     "左ひじ": {
         "direction": ("左ひじ", "左手首"),
@@ -648,7 +616,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.4,
     },
     "左手首": {
         "direction": ("左手首", "左中指１"),
@@ -664,7 +631,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.5,
     },
     "右肩": {
         "direction": ("右肩", "右腕"),
@@ -677,7 +643,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(0, 0, 20),
             "after": MVector3D(),
         },
-        "threshold": 0.2,
     },
     "右腕": {
         "direction": ("右腕", "右ひじ"),
@@ -691,7 +656,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.3,
     },
     "右ひじ": {
         "direction": ("右ひじ", "右手首"),
@@ -706,7 +670,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.4,
     },
     "右手首": {
         "direction": ("右手首", "右中指１"),
@@ -722,7 +685,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.5,
     },
     "左足": {
         "direction": ("左足", "左ひざ"),
@@ -732,7 +694,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.2,
     },
     "左ひざ": {
         "direction": ("左ひざ", "左足首"),
@@ -745,7 +706,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.3,
     },
     "左足首": {
         "direction": ("左足首", "左つま先"),
@@ -759,7 +719,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.3,
     },
     "右足": {
         "direction": ("右足", "右ひざ"),
@@ -769,7 +728,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.2,
     },
     "右ひざ": {
         "direction": ("右ひざ", "右足首"),
@@ -782,7 +740,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.3,
     },
     "右足首": {
         "direction": ("右足首", "右つま先"),
@@ -796,6 +753,5 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.3,
     },
 }

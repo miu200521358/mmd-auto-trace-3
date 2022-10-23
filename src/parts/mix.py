@@ -8,7 +8,7 @@ import numpy as np
 from base.exception import MApplicationException
 from base.logger import MLogger
 from base.math import MMatrix4x4, MQuaternion, MVector3D
-from scipy.signal import savgol_filter
+from pykalman import KalmanFilter
 from tqdm import tqdm
 
 from parts.config import SMPL_JOINT_24, SMPL_JOINT_29, DirName
@@ -133,18 +133,41 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
 
-            for key, joint_vals in tqdm(joint_datas.items(), desc=f"No.{pname} ... "):
-                # スムージング
-                smoothing_joint_vals = np.array(list(joint_vals.values()))
-                if len(joint_vals) > 7:
-                    smoothing_joint_vals = savgol_filter(
-                        smoothing_joint_vals,
-                        window_length=7,
-                        polyorder=4,
-                    )
+            smoothed_values = {}
+            with tqdm(
+                total=(len(SMPL_JOINT_24.keys()) + 3 + 1),
+                desc=f"No.{pname} ... ",
+            ) as pchar:
+                kf = KalmanFilter(n_dim_state=3, n_dim_obs=3)
+                for jname in SMPL_JOINT_24.keys():
+                    values = np.vstack(
+                        [
+                            np.array(list(joint_datas[("ap", jname, "x")].values())),
+                            np.array(list(joint_datas[("ap", jname, "y")].values())),
+                            np.array(list(joint_datas[("ap", jname, "z")].values())),
+                        ]
+                    ).T
+                    smoothed_values[("ap", jname)] = kf.em(values).smooth(values)[0]
+                    smoothed_values[("ap", jname)][:10] = values[:10]
+                    pchar.update(1)
 
-                for fidx, fno in enumerate(joint_vals.keys()):
-                    joint_datas[key][fno] = smoothing_joint_vals[fidx]
+                for jname in ("Pelvis", "RAnkle", "LAnkle"):
+                    values = np.vstack(
+                        [
+                            np.array(list(joint_datas[("pt", jname, "x")].values())),
+                            np.array(list(joint_datas[("pt", jname, "y")].values())),
+                            np.array(list(joint_datas[("pt", jname, "z")].values())),
+                        ]
+                    ).T
+                    smoothed_values[("pt", jname)] = kf.em(values).smooth(values)[0]
+                    smoothed_values[("pt", jname)][:10] = values[:10]
+                    pchar.update(1)
+
+                kf = KalmanFilter(n_dim_state=1, n_dim_obs=1)
+                values = np.array(list(joint_datas[("mp", "depth", "d")].values()))
+                smoothed_values[("mp", "depth")] = kf.em(values).smooth(values)[0]
+                smoothed_values[("mp", "depth")][:10] = np.array([values[:10]]).T
+                pchar.update(1)
 
             logger.info(
                 "【No.{pname}】推定結果合成 グルーブ補正",
@@ -152,12 +175,14 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
 
-            for fno in tqdm(joint_datas["ap", "Pelvis", "y"].keys(), desc=f"No.{pname} ... "):
-                # 全身でもっとも低いところを探す(逆立ちとかも可能性としてはあるので、全部舐める)
-                min_y = np.min([joint_datas["ap", jname, "y"][fno] for jname in SMPL_JOINT_24.keys()])
+            ys = []
+            for jname in SMPL_JOINT_24.keys():
+                ys.append(smoothed_values[("ap", jname)][:, 1])
+            ys = np.array(ys)
+            min_ys = np.min(ys, axis=0)
 
-                for jname in SMPL_JOINT_24.keys():
-                    joint_datas["ap", jname, "y"][fno] -= min_y
+            for jname in SMPL_JOINT_24.keys():
+                smoothed_values[("ap", jname)][:, 1] -= min_ys
 
             logger.info(
                 "【No.{pname}】推定結果合成 合成開始",
@@ -176,9 +201,18 @@ def execute(args):
             initial_left_ear_pos = (MVector3D(1.147481, 17.91739, 0.4137991) - initial_nose_pos) / MIKU_CM
             initial_right_ear_pos = (MVector3D(-1.147481, 17.91739, 0.4137991) - initial_nose_pos) / MIKU_CM
 
+            # PoseTriplet で測った場合のY座標（ジャンプしてるとその分上に行く）
+            pt_leg_lengths = smoothed_values["pt", "Pelvis"][:, 1] * 0.8
+            # AlphaPose で測った場合のY座標（もっともYが低い関節からの距離）
+            ap_leg_lengths = smoothed_values["ap", "Pelvis"][:, 1]
+
+            # ジャンプしてる場合はptの方が値が大きくなるので、＋のみ判定（接地までとする）
+            # ややPoseTriplet を低めに見積もってるので、実値としてはかさ増しする
+            adjust_foot_ys = np.where(pt_leg_lengths - ap_leg_lengths > 0, pt_leg_lengths - ap_leg_lengths, 0) * 1.5
+
             mix_joints = {"color": frame_joints["color"], "joints": {}}
             for fidx, fno in tqdm(
-                enumerate(joint_datas[("ap", "Pelvis", "x")].keys()),
+                enumerate(fnos),
                 desc=f"No.{pname} ... ",
             ):
                 mix_joints["joints"][fno] = {"body": {}, "2d": {}}
@@ -228,40 +262,11 @@ def execute(args):
                     },
                 }
 
-                if not (("ap", "Pelvis", "x") in joint_datas and fno in joint_datas[("ap", "Pelvis", "x")]):
-                    continue
-
-                # PoseTriplet で測った場合のY座標（ジャンプしてるとその分上に行く）
-                pt_leg_length = joint_datas["pt", "Pelvis", "y"][fno] * 0.8
-                # AlphaPose で測った場合のY座標（もっともYが低い関節からの距離）
-                ap_leg_length = joint_datas["ap", "Pelvis", "y"][fno]
-
-                # ジャンプしてる場合はptの方が値が大きくなるので、＋のみ判定（接地までとする）
-                # ややPoseTriplet を低めに見積もってるので、実値としてはかさ増しする
-                adjust_foot_y = max(0, pt_leg_length - ap_leg_length) * 1.5
-                logger.debug(
-                    "[{fno}] adjust_foot_y: {adjust_foot_y}, pt_leg_length: {pt_leg_length}, ap_leg_length: {ap_leg_length}",
-                    fno=fno,
-                    adjust_foot_y=adjust_foot_y,
-                    pt_leg_length=pt_leg_length,
-                    ap_leg_length=ap_leg_length,
-                )
-
                 for jname in SMPL_JOINT_24.keys():
-                    if not (
-                        ("ap", jname, "x") in joint_datas
-                        and fno in joint_datas[("ap", jname, "x")]
-                        and ("pt", "Pelvis", "x") in joint_datas
-                        and fno in joint_datas[("pt", "Pelvis", "x")]
-                        and ("mp", "depth", "d") in joint_datas
-                        and fno in joint_datas[("mp", "depth", "d")]
-                    ):
-                        continue
-
                     mix_joints["joints"][fno]["body"][jname] = {
-                        "x": joint_datas[("ap", jname, "x")][fno] + (joint_datas[("pt", "Pelvis", "x")][fno] * 1.2),
-                        "y": joint_datas[("ap", jname, "y")][fno] + adjust_foot_y,
-                        "z": joint_datas[("ap", jname, "z")][fno] + ((joint_datas[("mp", "depth", "d")][fno] - root_depth) * 1.3),
+                        "x": float(smoothed_values[("ap", jname)][fidx, 0] + (smoothed_values[("pt", "Pelvis")][fidx, 0] * 1.2)),
+                        "y": float(smoothed_values[("ap", jname)][fidx, 1] + adjust_foot_ys[fidx]),
+                        "z": float(smoothed_values[("ap", jname)][fidx, 2] + ((smoothed_values[("mp", "depth")][fidx] - root_depth) * 1.3)),
                     }
 
                 mix_joints["joints"][fno]["body"]["Pelvis2"] = {}
