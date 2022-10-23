@@ -52,13 +52,13 @@ msgid "2D姿勢推定で予期せぬエラーが発生しました。"
 msgstr "Unexpected error in 2D pose estimation."
 
 msgid "学習モデル準備開始"
-msgstr "Learning model preparation start"
+msgstr "Start preparation of learning model"
 
 msgid "AlphaPose開始"
 msgstr "Start AlphaPose"
 
 msgid "2D姿勢推定結果保存完了: {outputpath}"
-msgstr "2D pose estimation result saved: {outputpath}"
+msgstr "Completed saving 2D pose estimation result: {outputpath}"
 
 msgid "AlphaPose 開始"
 msgstr "Start AlphaPose"
@@ -126,7 +126,7 @@ msgid "PoseTriplet 結果保存完了: {output_dir_path}"
 msgstr "PoseTriplet result saved: {output_dir_path}"
 
 msgid "推定結果合成 処理開始: {img_dir}"
-msgstr "Inference result synthesis process started: {img_dir}"
+msgstr "Estimated result synthesis process started: {img_dir}"
 
 msgid "推定結果合成 中央判定"
 msgstr "Estimation Result Synthesis Central Judgment"
@@ -141,7 +141,7 @@ msgid "【No.{pname}】推定結果合成 出力開始"
 msgstr "[No.{pname}] Synthesis of estimated results Start output"
 
 msgid "推定結果合成 処理終了: {img_dir}"
-msgstr "Prediction result synthesis processing finished: {img_dir}"
+msgstr "Complete estimation result synthesis processing: {img_dir}"
 
 msgid "モーション生成処理開始: {img_dir}"
 msgstr "Motion generation process started: {img_dir}"
@@ -217,7 +217,7 @@ msgid "-- 面データ出力終了({count})"
 msgstr "-- End face data output ({count})"
 
 msgid "-- テクスチャデータ出力終了({count})"
-msgstr "-- end texture data output ({count})"
+msgstr "-- End of texture data output ({count})"
 
 msgid "-- 材質データ出力終了({count})"
 msgstr "-- end of material data output ({count})"
@@ -241,7 +241,7 @@ msgid "AlphaPose 映像出力"
 msgstr "AlphaPose video output"
 
 msgid "学習モデル準備開始: {checkpoint}"
-msgstr "Learning model preparation started: {checkpoint}"
+msgstr "Training model preparation started: {checkpoint}"
 
 msgid "【No.{pname}】推定結果合成 スムージング"
 msgstr "[No.{pname}] Estimation Result Synthesis Smoothing"
@@ -253,7 +253,7 @@ msgid "AlphaPose 結果保存完了: {outputpath}"
 msgstr "AlphaPose result saved: {outputpath}"
 
 msgid "MultiPose 推定処理開始: {img_dir}"
-msgstr "Start MultiPose estimation: {img_dir}"
+msgstr "MultiPose estimation process started: {img_dir}"
 
 msgid "【No.{pname}】MultiPose 推定開始"
 msgstr "[No.{pname}] MultiPose Estimation Start"
