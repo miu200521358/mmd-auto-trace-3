@@ -7,7 +7,7 @@ cls
 @REM set PROCESS=multipose,posetriplet,mix,motion
 set PROCESS=mix,motion
 @REM set PROCESS=motion
-set LOGMODE=1
+set LOGMODE=0
 set LANG=ja
 
 @REM python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\01\heart\heart_0-650_mp4_20221009_183826" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
