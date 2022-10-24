@@ -1,7 +1,7 @@
 import argparse
 import os
-import sys
 import time
+import traceback
 
 from base.logger import MLogger
 
@@ -123,6 +123,7 @@ if __name__ == "__main__":
     except Exception as e:
         elapsed_time = time.time() - start
 
+        print(traceback.format_exc())
         logger.error(
             "MMD自動トレース失敗\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}\n　処理時間: {elapsed_time}",
             video_file=args.video_file,
