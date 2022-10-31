@@ -2,26 +2,27 @@
 
 cls
 
-@REM set PROCESS=prepare,alphapose,multipose,posetriplet,mix,motion
+set PROCESS=prepare,alphapose,multipose,posetriplet,mix,motion
 @REM set PROCESS=alphapose,multipose,posetriplet,mix,motion
 @REM set PROCESS=multipose,posetriplet,mix,motion
-set PROCESS=mix,motion
+@REM set PROCESS=mix,motion
 @REM set PROCESS=motion
 set LOGMODE=0
 set LANG=ja
 
 
-@REM python executor.py --video-file "O:\MMD_Auto_Trace\02\baka.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --video-file "O:\MMD_Auto_Trace\02\close.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --video-file "O:\MMD_Auto_Trace\02\orange.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-@REM python executor.py --video-file "O:\MMD_Auto_Trace\02\natsu.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+python executor.py --video-file "O:\MMD_Auto_Trace\01\paranoia2.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+
+@REM python executor.py --img-dir "O:\MMD_Auto_Trace\02\baka_mp4_20221029_224259" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+@REM python executor.py --img-dir "O:\MMD_Auto_Trace\02\orange_mp4_20221029_222306" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+@REM python executor.py --img-dir "O:\MMD_Auto_Trace\02\close_mp4_20221029_223408" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 
 @REM python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\01\heart\heart_0-650_mp4_20221009_183826" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\03\ivory\ivory_8269-8569_mp4_20221001_222740" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --img-dir "E:\MMD\MikuMikuDance_v926x64\Work\201805_auto\02\buster\buster_0-1700_mp4_20221012_105014" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 
 @REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\snobbism_mp4_20221014_070842" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
-python executor.py --img-dir "O:\MMD_Auto_Trace\02\buster_mp4_20221014_124322" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+@REM python executor.py --img-dir "O:\MMD_Auto_Trace\02\buster_mp4_20221014_124322" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --img-dir "O:\MMD_Auto_Trace\01\heart_mp4_20221012_114827" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --img-dir "O:\MMD_Auto_Trace\03\bbf_mp4_20221015_053635" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --img-dir "O:\MMD_Auto_Trace\03\ivory_mp4_20221015_171208" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
@@ -58,6 +59,11 @@ python executor.py --img-dir "O:\MMD_Auto_Trace\02\buster_mp4_20221014_124322" -
 @REM python executor.py --img-dir "O:\MMD_Auto_Trace\04\yoiyoi_mp4_20221017_025041" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 
 
+
+@REM python executor.py --video-file "O:\MMD_Auto_Trace\02\baka.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+@REM python executor.py --video-file "O:\MMD_Auto_Trace\02\close.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+@REM python executor.py --video-file "O:\MMD_Auto_Trace\02\orange.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
+@REM python executor.py --video-file "O:\MMD_Auto_Trace\02\natsu.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 
 @REM python executor.py --video-file "O:\MMD_Auto_Trace\02\cynic.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%
 @REM python executor.py --video-file "O:\MMD_Auto_Trace\02\dance.mp4" --process %PROCESS% --verbose 20 --log-mode %LOGMODE% --lang %LANG%

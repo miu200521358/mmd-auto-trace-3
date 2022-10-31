@@ -143,7 +143,7 @@ def execute(args):
 
                     old_ids = torch.arange(boxes.shape[0]).long()
                     _, _, ids, new_ids, _ = track(tracker, argv, orig_img, inps, boxes, old_ids, cropped_boxes, im_name, scores)
-                    new_ids = new_ids.long()
+                    new_ids = new_ids.long().cpu()
 
                     boxes = boxes[new_ids]
                     cropped_boxes = cropped_boxes[new_ids]
