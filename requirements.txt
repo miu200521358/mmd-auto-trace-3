@@ -2,13 +2,14 @@ tqdm==4.64.1
 opencv_python==4.6.0.66
 matplotlib==3.5.3
 imageio==2.21.3
+numpy
 
 # alphapose
 cython==0.29.32
 easydict==1.9
 PyYAML==6.0
 pycocotools==2.0.5
-git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox
+cython-bbox
 munkres==1.1.4
 chumpy
 
@@ -20,6 +21,7 @@ numpy-quaternion==2022.4.2
 bezier==2021.2.12
 Pillow==9.2.0
 scikit-image==0.19.3
+pykalman==0.9.5
 
 # traslate
 Babel==2.10.3

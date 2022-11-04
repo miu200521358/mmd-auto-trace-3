@@ -10,6 +10,9 @@ pip install -r requirements.txt
 `xxxxx/Anaconda3/envs/mat3/Lib/site-packages/bezier/extra-dll/bezier-2a44d276.dll` を ひとつ上の `bezier` フォルダに配置する
 `xxxxx/Anaconda3/envs/mat3/Lib/site-packages/bezier/bezier-2a44d276.dll`
 
+Windows cython-bbox
+git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox
+
 git submodule add https://github.com/miu200521358/AlphaPose src/AlphaPose 
 
 (mat3) C:\MMD\mmd-auto-trace-3\src\AlphaPose>python setup.py build install

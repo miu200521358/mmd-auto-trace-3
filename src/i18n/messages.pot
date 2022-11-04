@@ -210,7 +210,7 @@ msgid "【No.{pname}】モーション(回転)生成開始【{path}】"
 msgstr ""
 
 
-msgid "【No.{pname}】モーション 間引き準備"
+msgid "【No.{pname}】モーション 間引き"
 msgstr ""
 
 
@@ -380,5 +380,17 @@ msgstr ""
 
 
 msgid "【No.{pname}】モーション(回転チェック)開始"
+msgstr ""
+
+
+msgid "AlphaPose で予期せぬエラーが発生しました。"
+msgstr ""
+
+
+msgid "MMD自動トレース失敗\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}\n　トレース結果: {img_dir}\n　処理時間: {elapsed_time}"
+msgstr ""
+
+
+msgid "MMD自動トレース失敗\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}\n　処理時間: {elapsed_time}"
 msgstr ""
 

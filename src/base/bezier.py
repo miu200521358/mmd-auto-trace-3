@@ -66,40 +66,34 @@ class Interpolation(BaseModel):
         return int(round(round(t2, -6) / 1000000))
 
 
-def get_infections(values: list[float], threshold, decimals) -> np.ndarray:
-    extract_idxs = np.where(np.abs(np.round(np.diff(values), decimals)) > threshold)[0]
-    if len(extract_idxs) <= 1:
+def get_infections(values: list[float], threshold) -> np.ndarray:
+    extract_idxs = get_threshold_infections(values, threshold)
+    if len(extract_idxs) < 2:
         return np.array([])
-
     extracts = np.array(values)[extract_idxs]
     f_prime = np.gradient(extracts)
     infections = extract_idxs[np.where(np.diff(np.sign(f_prime)))[0]]
-    if not infections.any():
-        infections = np.array([extract_idxs[0], extract_idxs[-1]])
-
-    # IKの固定検出用(動かない箇所を検出)
-    fix_extract_idxs = np.where(np.isclose(np.abs(np.diff(values)), 0.0))[0]
-    if fix_extract_idxs.any():
-        fix_idxs = np.concatenate([[fix_extract_idxs[0]], np.where(np.diff(fix_extract_idxs) > 1)[0], [fix_extract_idxs[-1]]])
-    else:
-        fix_idxs = np.array([])
-
-    return np.sort(list(set(fix_idxs) | set(infections)))
+    return infections
 
 
-def get_y_infections(values: list[float], threshold) -> np.ndarray:
+def get_fix_infections(values: list[float]) -> np.ndarray:
+    return np.where(np.diff(np.where(np.isclose(np.abs(np.diff(values)), 0.0))[0]) > 2)[0]
+
+
+def get_threshold_infections(values: list[float], threshold) -> np.ndarray:
     extract_idxs = []
     start_idx = 0
     end_idx = 1
-    # 一定の角度以上に回転してるキーを打つ
+    # 一定の値以上に増加してるキーを打つ
     while end_idx <= len(values) - 1:
-        if np.sum(np.abs(np.diff(values[start_idx:end_idx]))) >= threshold:
+        if np.sum(np.abs(np.diff(np.abs(values[start_idx:end_idx])))) >= threshold:
+            extract_idxs.append(start_idx)
             extract_idxs.append(end_idx - 1)
             start_idx = end_idx - 1
             end_idx = start_idx + 1
         else:
             end_idx += 1
-    return np.array(extract_idxs)
+    return np.array(sorted(list(set(extract_idxs))))
 
 
 def create_interpolation(values: list[float]):

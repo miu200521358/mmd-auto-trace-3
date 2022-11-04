@@ -23,6 +23,7 @@ from AlphaPose.detector.yolox_cfg import cfg as ycfg
 from AlphaPose.trackers import track
 from AlphaPose.trackers.tracker_api import Tracker
 from AlphaPose.trackers.tracker_cfg import cfg as tcfg
+from base.exception import MApplicationException
 from base.logger import MLogger
 from easydict import EasyDict as edict
 from PIL import Image
@@ -38,28 +39,32 @@ logger = MLogger(__name__)
 
 
 def execute(args):
-    try:
-        logger.info(
-            "AlphaPose 開始: {img_dir}",
+    logger.info(
+        "AlphaPose 開始: {img_dir}",
+        img_dir=args.img_dir,
+        decoration=MLogger.DECORATION_BOX,
+    )
+
+    if not os.path.exists(args.img_dir):
+        logger.error(
+            "指定された処理用ディレクトリが存在しません。: {img_dir}",
             img_dir=args.img_dir,
             decoration=MLogger.DECORATION_BOX,
         )
+        raise MApplicationException()
 
-        if not os.path.exists(args.img_dir):
-            logger.error(
-                "指定された処理用ディレクトリが存在しません。: {img_dir}",
-                img_dir=args.img_dir,
-                decoration=MLogger.DECORATION_BOX,
-            )
-            return False
-
+    try:
         parser = get_args_parser()
         argv = parser.parse_args(args=[])
         cfg = update_config(argv.cfg)
 
         if platform.system() == "Windows":
+            argv.qsize = 1024
             argv.sp = True
+            argv.detbatch = 10
+            argv.posebatch = 64
 
+        argv.sp = True
         argv.inputpath = os.path.join(args.img_dir, DirName.FRAMES.value)
         argv.outputpath = os.path.join(args.img_dir, DirName.ALPHAPOSE.value)
 
@@ -84,7 +89,7 @@ def execute(args):
             torch.multiprocessing.set_start_method("forkserver", force=True)
             torch.multiprocessing.set_sharing_strategy("file_system")
 
-        input_source = [os.path.basename(file_path) for file_path in glob(os.path.join(argv.inputpath, "*.png"))]
+        input_source = [os.path.basename(file_path) for file_path in sorted(glob(os.path.join(argv.inputpath, "*.png")))]
         result_path = os.path.join(argv.outputpath, FileName.ALPHAPOSE_RESULT.value)
 
         if not os.path.exists(result_path):
@@ -138,7 +143,7 @@ def execute(args):
 
                     old_ids = torch.arange(boxes.shape[0]).long()
                     _, _, ids, new_ids, _ = track(tracker, argv, orig_img, inps, boxes, old_ids, cropped_boxes, im_name, scores)
-                    new_ids = new_ids.long()
+                    new_ids = new_ids.long().cpu()
 
                     boxes = boxes[new_ids]
                     cropped_boxes = cropped_boxes[new_ids]
@@ -184,7 +189,7 @@ def execute(args):
             decoration=MLogger.DECORATION_LINE,
         )
 
-        img = Image.open(glob(os.path.join(argv.inputpath, "*.png"))[0])
+        img = Image.open(sorted(glob(os.path.join(argv.inputpath, "*.png")))[0])
 
         all_bbox_areas = {}
         for json_data in tqdm(json_datas):
@@ -239,7 +244,8 @@ def execute(args):
                     all_extras_bboxs[(sfno, efno)] = {}
                 all_extras_bboxs[(sfno, efno)][person_idx] = []
                 for fno in range(sfno, efno + 1):
-                    all_extras_bboxs[(sfno, efno)][person_idx].append(personal_data[fno]["bbox"]["width"] * personal_data[fno]["bbox"]["height"])
+                    if fno in personal_data:
+                        all_extras_bboxs[(sfno, efno)][person_idx].append(personal_data[fno]["bbox"]["width"] * personal_data[fno]["bbox"]["height"])
 
         output_datas = {}
         for sfno, efno in tqdm(sorted(all_extras_bboxs.keys())):
@@ -257,13 +263,26 @@ def execute(args):
                         pw = personal_datas[pidx][sfno]["bbox"]["width"]
                         ph = personal_datas[pidx][sfno]["bbox"]["height"]
                         pcenter = np.array([px, py]) + np.array([pw, ph]) / 2
+
                         # Pelvisの位置
                         phx = personal_datas[pidx][sfno]["ap-2d-keypoints"][SMPL_JOINT_29["Pelvis"] * 3]
                         phy = personal_datas[pidx][sfno]["ap-2d-keypoints"][SMPL_JOINT_29["Pelvis"] * 3 + 1]
                         phip = np.array([phx, phy])
 
+                        # LAnkleの位置
+                        plax = personal_datas[pidx][sfno]["ap-2d-keypoints"][SMPL_JOINT_29["LAnkle"] * 3]
+                        play = personal_datas[pidx][sfno]["ap-2d-keypoints"][SMPL_JOINT_29["LAnkle"] * 3 + 1]
+                        plaip = np.array([plax, play])
+
+                        # RAnkleの位置
+                        prax = personal_datas[pidx][sfno]["ap-2d-keypoints"][SMPL_JOINT_29["RAnkle"] * 3]
+                        pray = personal_datas[pidx][sfno]["ap-2d-keypoints"][SMPL_JOINT_29["RAnkle"] * 3 + 1]
+                        praip = np.array([prax, pray])
+
                         ocenters = {}
                         ohips = {}
+                        olaips = {}
+                        oraips = {}
                         ofnos = {}
                         for ppidx, odata in output_datas.items():
                             oefno = list(odata.keys())[-1]
@@ -281,15 +300,30 @@ def execute(args):
                                     ohx = odata[oefno]["ap-2d-keypoints"][SMPL_JOINT_29["Pelvis"] * 3]
                                     ohy = odata[oefno]["ap-2d-keypoints"][SMPL_JOINT_29["Pelvis"] * 3 + 1]
                                     ohip = np.array([ohx, ohy])
+
+                                    # LAnkleの位置
+                                    olax = odata[oefno]["ap-2d-keypoints"][SMPL_JOINT_29["LAnkle"] * 3]
+                                    olay = odata[oefno]["ap-2d-keypoints"][SMPL_JOINT_29["LAnkle"] * 3 + 1]
+                                    olaip = np.array([olax, olay])
+
+                                    # RAnkleの位置
+                                    orax = odata[oefno]["ap-2d-keypoints"][SMPL_JOINT_29["RAnkle"] * 3]
+                                    oray = odata[oefno]["ap-2d-keypoints"][SMPL_JOINT_29["RAnkle"] * 3 + 1]
+                                    oraip = np.array([orax, oray])
+
                                     offset = 5 * n
 
                                     if (
                                         np.isclose(pcenter, ocenter, atol=np.array([64 + offset, 36 + offset])).all()
                                         or np.isclose(phip, ohip, atol=np.array([64 + offset, 36 + offset])).all()
+                                        or np.isclose(plaip, olaip, atol=np.array([64 + offset, 36 + offset])).all()
+                                        or np.isclose(praip, oraip, atol=np.array([64 + offset, 36 + offset])).all()
                                     ):
                                         # 大体同じ位置にあるBBOXがあったら検討対象
                                         ocenters[ppidx] = ocenter
                                         ohips[ppidx] = ohip
+                                        olaips[ppidx] = olaip
+                                        oraips[ppidx] = oraip
                                         ofnos[ppidx] = np.array([oefno, oefno])
                                         break
 
@@ -302,6 +336,8 @@ def execute(args):
                                             [
                                                 np.abs(np.array(list(ocenters.values())) - pcenter),
                                                 np.abs(np.array(list(ohips.values())) - phip),
+                                                np.abs(np.array(list(olaips.values())) - plaip),
+                                                np.abs(np.array(list(oraips.values())) - praip),
                                                 np.abs(np.array(list(ofnos.values())) - sfno) * 100,
                                             ]
                                         ),
@@ -316,7 +352,8 @@ def execute(args):
                         output_datas[person_idx] = {}
 
                     for fno in range(sfno, efno + 1):
-                        output_datas[person_idx][fno] = personal_datas[pidx][fno]
+                        if fno in personal_datas[pidx]:
+                            output_datas[person_idx][fno] = personal_datas[pidx][fno]
 
         logger.info(
             "AlphaPose 結果保存",
@@ -381,8 +418,6 @@ def execute(args):
             decoration=MLogger.DECORATION_LINE,
         )
 
-        target_image_path = os.path.join(argv.outputpath, FileName.ALPHAPOSE_IMAGE.value)
-
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         out = cv2.VideoWriter(
             os.path.join(args.img_dir, DirName.ALPHAPOSE.value, FileName.ALPHAPOSE_VIDEO.value),
@@ -391,19 +426,22 @@ def execute(args):
             (img.size[0], img.size[1]),
         )
 
-        for file_path in tqdm(glob(os.path.join(argv.inputpath, "*.png"))):
+        for file_path in tqdm(sorted(glob(os.path.join(argv.inputpath, "*.png")))):
             fno = int(os.path.basename(file_path).split(".")[0])
-            shutil.copy(file_path, target_image_path)
 
             if fno in output_frames:
-                save_2d_image(
-                    target_image_path,
+                # キーフレ内に人物が検出されている場合、描画
+                img = save_2d_image(
+                    cv2.imread(file_path),
                     fno,
                     output_frames[fno],
                 )
+            else:
+                # 人物がいない場合、そのまま読み込み
+                img = cv2.imread(file_path)
 
             # 書き込み出力
-            out.write(cv2.imread(target_image_path))
+            out.write(img)
 
         out.release()
         cv2.destroyAllWindows()
@@ -417,12 +455,10 @@ def execute(args):
         return True
     except Exception as e:
         logger.critical("AlphaPose で予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
-        return False
+        raise e
 
 
-def save_2d_image(image_path: str, fno: int, person_frames: list):
-    img = cv2.imread(image_path)
-
+def save_2d_image(img, fno: int, person_frames: list):
     # alphapose\models\layers\smpl\SMPL.py
     SKELETONS = [
         (SMPL_JOINT_29["Pelvis"], SMPL_JOINT_29["Spine1"]),
@@ -557,8 +593,7 @@ def save_2d_image(image_path: str, fno: int, person_frames: list):
             thickness=bbx_thick,
         )
 
-    # 同じファイルに上書き
-    cv2.imwrite(image_path, img)
+    return img
 
 
 def get_args_parser():
@@ -587,7 +622,7 @@ def get_args_parser():
     parser.add_argument("--profile", default=False, action="store_true", help="add speed profiling at screen output")
     parser.add_argument("--format", type=str, help="save in the format of cmu or coco or openpose, option: coco/cmu/open")
     parser.add_argument("--min_box_area", type=int, default=0, help="min box area to filter out")
-    parser.add_argument("--detbatch", type=int, default=5, help="detection batch size PER GPU")
+    parser.add_argument("--detbatch", type=int, default=10, help="detection batch size PER GPU")
     parser.add_argument("--posebatch", type=int, default=64, help="pose estimation maximum batch size PER GPU")
     parser.add_argument(
         "--eval",
@@ -604,7 +639,7 @@ def get_args_parser():
         help="choose which cuda device to use by index and input comma to use multi gpus, e.g. 0,1,2,3. (input -1 for cpu only)",
     )
     parser.add_argument(
-        "--qsize", type=int, dest="qsize", default=1024, help="the length of result buffer, where reducing it will lower requirement of cpu memory"
+        "--qsize", type=int, dest="qsize", default=8, help="the length of result buffer, where reducing it will lower requirement of cpu memory"
     )
     parser.add_argument("--flip", default=False, action="store_true", help="enable flip testing")
     parser.add_argument("--debug", default=False, action="store_true", help="print detail information")

@@ -1,8 +1,8 @@
 import argparse
 import os
 import time
+import traceback
 
-import parts
 from base.logger import MLogger
 
 logger = MLogger(__name__)
@@ -73,59 +73,73 @@ if __name__ == "__main__":
         decoration=MLogger.DECORATION_BOX,
     )
 
-    if "prepare" in args.process:
-        # 準備
-        from parts.prepare import execute
+    try:
+        if "prepare" in args.process:
+            # 準備
+            from parts.prepare import execute
 
-        result, args.img_dir = execute(args)
+            result, args.img_dir = execute(args)
 
-    if result and "alphapose" in args.process:
-        # alphaposeによる2D人物推定
-        from parts.alphapose import execute
+        if result and "alphapose" in args.process:
+            # alphaposeによる2D人物推定
+            from parts.alphapose import execute
 
-        result = execute(args)
+            result = execute(args)
 
-    if result and "multipose" in args.process:
-        # MultiPoseによる人物推定
-        from parts.multipose import execute
+        if result and "multipose" in args.process:
+            # MultiPoseによる人物推定
+            from parts.multipose import execute
 
-        result = execute(args)
+            result = execute(args)
 
-    if result and "posetriplet" in args.process:
-        # posetripletによる人物推定
-        from parts.posetriplet import execute
+        if result and "posetriplet" in args.process:
+            # posetripletによる人物推定
+            from parts.posetriplet import execute
 
-        result = execute(args)
+            result = execute(args)
 
-    if result and "mix" in args.process:
-        # 推定結果合成
-        from parts.mix import execute
+        if result and "mix" in args.process:
+            # 推定結果合成
+            from parts.mix import execute
 
-        result = execute(args)
+            result = execute(args)
 
-    if result and "motion" in args.process:
-        # モーション生成
-        from parts.motion import execute
+        if result and "motion" in args.process:
+            # モーション生成
+            from parts.motion import execute
 
-        result = execute(args)
+            result = execute(args)
 
-    elapsed_time = time.time() - start
+        elapsed_time = time.time() - start
 
-    logger.info(
-        "MMD自動トレース終了\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}\n　トレース結果: {img_dir}\n　処理時間: {elapsed_time}",
-        video_file=args.video_file,
-        process=args.process,
-        img_dir=args.img_dir,
-        elapsed_time=show_worked_time(elapsed_time),
-        decoration=MLogger.DECORATION_BOX,
-    )
+        logger.info(
+            "MMD自動トレース終了\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}\n　トレース結果: {img_dir}\n　処理時間: {elapsed_time}",
+            video_file=args.video_file,
+            process=args.process,
+            img_dir=args.img_dir,
+            elapsed_time=show_worked_time(elapsed_time),
+            decoration=MLogger.DECORATION_BOX,
+        )
+    except Exception as e:
+        elapsed_time = time.time() - start
 
-    # 終了音を鳴らす
-    if os.name == "nt":
-        # Windows
-        try:
-            import winsound
+        print(traceback.format_exc())
+        logger.error(
+            "MMD自動トレース失敗\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}\n　処理時間: {elapsed_time}",
+            video_file=args.video_file,
+            process=args.process,
+            elapsed_time=show_worked_time(elapsed_time),
+            decoration=MLogger.DECORATION_BOX,
+        )
+        # 例外が発生したら終了ログ出力
+        logger.quit()
+    finally:
+        # 終了音を鳴らす
+        if os.name == "nt":
+            # Windows
+            try:
+                import winsound
 
-            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
-        except Exception:
-            pass
+                winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
+            except Exception:
+                pass

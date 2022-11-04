@@ -4,7 +4,8 @@ from datetime import datetime
 from glob import glob
 
 import numpy as np
-from base.bezier import create_interpolation, get_infections, get_y_infections
+from base.bezier import create_interpolation, get_fix_infections, get_infections, get_threshold_infections
+from base.exception import MApplicationException
 from base.logger import MLogger
 from base.math import MMatrix4x4, MQuaternion, MVector3D
 from mmd.pmx.collection import PmxModel
@@ -24,29 +25,29 @@ MIKU_CM = 0.1259496
 
 
 def execute(args):
-    try:
-        logger.info(
-            "モーション生成処理開始: {img_dir}",
+    logger.info(
+        "モーション生成処理開始: {img_dir}",
+        img_dir=args.img_dir,
+        decoration=MLogger.DECORATION_BOX,
+    )
+
+    if not os.path.exists(args.img_dir):
+        logger.error(
+            "指定された処理用ディレクトリが存在しません。: {img_dir}",
             img_dir=args.img_dir,
             decoration=MLogger.DECORATION_BOX,
         )
+        raise MApplicationException()
 
-        if not os.path.exists(args.img_dir):
-            logger.error(
-                "指定された処理用ディレクトリが存在しません。: {img_dir}",
-                img_dir=args.img_dir,
-                decoration=MLogger.DECORATION_BOX,
-            )
-            return False
+    if not os.path.exists(os.path.join(args.img_dir, DirName.MIX.value)):
+        logger.error(
+            "指定されたMixディレクトリが存在しません。\nMixが完了していない可能性があります。: {img_dir}",
+            img_dir=os.path.join(args.img_dir, DirName.MIX.value),
+            decoration=MLogger.DECORATION_BOX,
+        )
+        raise MApplicationException()
 
-        if not os.path.exists(os.path.join(args.img_dir, DirName.MIX.value)):
-            logger.error(
-                "指定されたMixディレクトリが存在しません。\nMixが完了していない可能性があります。: {img_dir}",
-                img_dir=os.path.join(args.img_dir, DirName.MIX.value),
-                decoration=MLogger.DECORATION_BOX,
-            )
-            return False
-
+    try:
         output_dir_path = os.path.join(args.img_dir, DirName.MOTION.value)
 
         if os.path.exists(output_dir_path):
@@ -105,17 +106,6 @@ def execute(args):
                         float(joint["z"]) * MIKU_CM,
                     )
                     trace_abs_mov_motion.bones.append(bf)
-
-                # for jname, joint in frames["2d"].items():
-                #     if jname not in PMX_CONNECTIONS:
-                #         continue
-                #     bf = VmdBoneFrame(name=PMX_CONNECTIONS[jname], index=fno)
-                #     bf.position = MVector3D(
-                #         float(joint["x"]),
-                #         float(joint["y"]),
-                #         0,
-                #     )
-                #     trace_2d_motion.bones.append(bf)
 
                 if fno > end_fno:
                     end_fno = fno
@@ -199,24 +189,6 @@ def execute(args):
                             bf.rotation *= invert_qq
 
                     pchar.update(1)
-
-            logger.info(
-                "【No.{pname}】モーション(回転チェック)開始",
-                pname=pname,
-                decoration=MLogger.DECORATION_LINE,
-            )
-
-            for target_bone_name, vmd_params in tqdm(VMD_CONNECTIONS.items()):
-                fnos = []
-                rot_values = []
-                threshold = vmd_params["threshold"]
-                for bf in trace_org_motion.bones[target_bone_name]:
-                    fnos.append(bf.index)
-                    rot_values.append(MQuaternion().dot(bf.rotation))
-                rot_diffs = np.abs(np.diff(rot_values))
-                remove_fnos = np.array(fnos)[np.where((rot_diffs > threshold) & (rot_diffs < 1))[0] + 1]
-                for fno in remove_fnos:
-                    del trace_org_motion.bones[target_bone_name][fno]
 
             logger.info(
                 "【No.{pname}】モーション(センター)計算開始",
@@ -393,11 +365,11 @@ def execute(args):
                         leg_ik_ys.append(leg_ik_bf.position.y)
                         leg_ik_zs.append(leg_ik_bf.position.z)
 
-                    x_infections = get_infections(leg_ik_xs, 0.2, 1)
-                    y_infections = get_infections(leg_ik_ys, 0.3, 1)
-                    z_infections = get_infections(leg_ik_zs, 0.5, 1)
+                    ikx_infections = get_infections(leg_ik_xs, threshold=0.5)
+                    iky_infections = get_infections(leg_ik_ys, threshold=0.5)
+                    ikz_infections = get_infections(leg_ik_zs, threshold=0.6)
 
-                    infections = list(sorted(list({0, len(leg_ik_xs) - 1} | set(x_infections) | set(y_infections) | set(z_infections))))
+                    infections = list(sorted(list({0, len(leg_ik_xs) - 1} | set(ikx_infections) | set(iky_infections) | set(ikz_infections))))
 
                     for sfidx, efidx in zip(infections[:-1], infections[1:]):
                         sfno = int(sfidx + start_fno)
@@ -406,7 +378,7 @@ def execute(args):
                         start_pos = trace_org_motion.bones[leg_ik_bone_name][sfno].position
                         end_pos = trace_org_motion.bones[leg_ik_bone_name][efno].position
 
-                        if np.isclose(start_pos.vector, end_pos.vector, atol=[0.3, 0.4, 0.6]).all():
+                        if np.isclose(start_pos.vector, end_pos.vector, atol=[0.5, 0.5, 0.6]).all():
                             # 開始と終了が大体同じ場合、固定する
                             for fno in range(sfno, efno + 1):
                                 trace_org_motion.bones[leg_ik_bone_name][fno].position = start_pos
@@ -422,7 +394,7 @@ def execute(args):
             VmdWriter.write(trace_model.name, trace_org_motion, trace_org_motion_path)
 
             logger.info(
-                "【No.{pname}】モーション 間引き準備",
+                "【No.{pname}】モーション 間引き",
                 pname=pname,
                 decoration=MLogger.DECORATION_LINE,
             )
@@ -444,34 +416,39 @@ def execute(args):
                     mz_values = []
                     rot_values = []
                     rot_y_values = []
-                    for fno in range(start_fno, end_fno):
+                    for fidx, fno in enumerate(range(start_fno, end_fno)):
                         pos = trace_org_motion.bones[bone_name][fno].position
                         mx_values.append(pos.x)
                         my_values.append(pos.y)
                         mz_values.append(pos.z)
                         rot = trace_org_motion.bones[bone_name][fno].rotation
+                        if fidx == 0:
+                            rot_values.append(1)
+                        else:
+                            prev_rot = trace_org_motion.bones[bone_name][fno - 1].rotation
+                            rot_values.append(prev_rot.dot(rot))
                         # オイラー角にした時の長さ
-                        rot_values.append(MQuaternion().dot(rot))
                         degrees = rot.to_euler_degrees()
-                        rot_y_values.append(degrees.y)
+                        rot_y_values.append(degrees.y if degrees.y >= 0 else degrees.y + 360)
                         pchar.update(1)
 
+                    mx_infections = get_infections(mx_values, threshold=0.05)
+                    my_infections = get_infections(my_values, threshold=0.05)
+                    mz_infections = get_infections(mz_values, threshold=0.05)
+                    mx_fix_infections = get_fix_infections(mx_values)
+                    my_fix_infections = get_fix_infections(my_values)
+                    mz_fix_infections = get_fix_infections(mz_values)
+
                     if "足ＩＫ" in bone_name:
-                        # 足IKは若干検出を鈍く
-                        mx_infections = get_infections(mx_values, 0.15, 1)
-                        my_infections = get_infections(my_values, 0.1, 1)
-                        mz_infections = get_infections(mz_values, 0.15, 1)
-                        rot_infections = get_infections(rot_values, 0.01, 2)
+                        # 足IKの回転は代わりにIK固定用のキーを取得する
+                        rot_infections = np.array([])
                         rot_y_infections = np.array([])
                     else:
-                        mx_infections = get_infections(mx_values, 0.1, 1)
-                        my_infections = get_infections(my_values, 0.05, 2)
-                        mz_infections = get_infections(mz_values, 0.1, 1)
-                        rot_infections = get_infections(rot_values, 0.001, 3)
+                        rot_infections = get_infections(rot_values, threshold=0.0005)
                         # 回転変動も検出する(180度だけだとどっち向きの回転か分からないので)
                         rot_y_infections = np.array([])
                         if bone_name in ["上半身", "下半身"]:
-                            rot_y_infections = get_y_infections(rot_y_values, 80)
+                            rot_y_infections = get_threshold_infections(rot_y_values, threshold=120)
 
                     infections = list(
                         sorted(
@@ -480,6 +457,9 @@ def execute(args):
                                 | set(mx_infections)
                                 | set(my_infections)
                                 | set(mz_infections)
+                                | set(mx_fix_infections)
+                                | set(my_fix_infections)
+                                | set(mz_fix_infections)
                                 | set(rot_infections)
                                 | set(rot_y_infections)
                             )
@@ -520,7 +500,7 @@ def execute(args):
         return True
     except Exception as e:
         logger.critical("モーション生成で予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
-        return False
+        raise e
 
 
 PMX_CONNECTIONS = {
@@ -550,6 +530,8 @@ PMX_CONNECTIONS = {
     "RWrist": "右手首",
     "LMiddle": "左中指１",
     "RMiddle": "右中指１",
+    "LEar": "左耳",
+    "REar": "右耳",
 }
 
 VMD_CONNECTIONS = {
@@ -561,7 +543,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(10, 0, 0),
         },
-        "threshold": 0.2,
     },
     "上半身": {
         "direction": ("上半身", "上半身2"),
@@ -571,7 +552,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(10, 0, 0),
             "after": MVector3D(),
         },
-        "threshold": 0.2,
     },
     "上半身2": {
         "direction": ("上半身2", "首"),
@@ -581,7 +561,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(20, 0, 0),
             "after": MVector3D(),
         },
-        "threshold": 0.2,
     },
     "首": {
         "direction": ("上半身2", "首"),
@@ -594,21 +573,19 @@ VMD_CONNECTIONS = {
             "before": MVector3D(20, 10, 0),
             "after": MVector3D(),
         },
-        "threshold": 0.2,
     },
     "頭": {
         "direction": ("頭", "鼻"),
-        "up": ("首", "頭"),
+        "up": ("左耳", "右耳"),
         "cancel": (
             "上半身",
             "上半身2",
             "首",
         ),
         "invert": {
-            "before": MVector3D(-30, 0, 0),
+            "before": MVector3D(-20, 0, 0),
             "after": MVector3D(),
         },
-        "threshold": 0.2,
     },
     "左肩": {
         "direction": ("左肩", "左腕"),
@@ -618,7 +595,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(0, 0, -20),
             "after": MVector3D(),
         },
-        "threshold": 0.2,
     },
     "左腕": {
         "direction": ("左腕", "左ひじ"),
@@ -632,11 +608,10 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.3,
     },
     "左ひじ": {
         "direction": ("左ひじ", "左手首"),
-        "up": ("左肩", "左腕"),
+        "up": ("上半身3", "首"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -647,11 +622,10 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.4,
     },
     "左手首": {
         "direction": ("左手首", "左中指１"),
-        "up": ("左腕", "左ひじ"),
+        "up": ("上半身3", "首"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -663,7 +637,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.5,
     },
     "右肩": {
         "direction": ("右肩", "右腕"),
@@ -676,7 +649,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(0, 0, 20),
             "after": MVector3D(),
         },
-        "threshold": 0.2,
     },
     "右腕": {
         "direction": ("右腕", "右ひじ"),
@@ -690,11 +662,10 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.3,
     },
     "右ひじ": {
         "direction": ("右ひじ", "右手首"),
-        "up": ("右肩", "右腕"),
+        "up": ("上半身3", "首"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -705,11 +676,10 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.4,
     },
     "右手首": {
         "direction": ("右手首", "右中指１"),
-        "up": ("右腕", "右ひじ"),
+        "up": ("上半身3", "首"),
         "cancel": (
             "上半身",
             "上半身2",
@@ -721,7 +691,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.5,
     },
     "左足": {
         "direction": ("左足", "左ひざ"),
@@ -731,7 +700,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.2,
     },
     "左ひざ": {
         "direction": ("左ひざ", "左足首"),
@@ -744,7 +712,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.3,
     },
     "左足首": {
         "direction": ("左足首", "左つま先"),
@@ -758,7 +725,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.3,
     },
     "右足": {
         "direction": ("右足", "右ひざ"),
@@ -768,7 +734,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.2,
     },
     "右ひざ": {
         "direction": ("右ひざ", "右足首"),
@@ -781,7 +746,6 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.3,
     },
     "右足首": {
         "direction": ("右足首", "右つま先"),
@@ -795,6 +759,5 @@ VMD_CONNECTIONS = {
             "before": MVector3D(),
             "after": MVector3D(),
         },
-        "threshold": 0.3,
     },
 }

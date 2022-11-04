@@ -6,6 +6,7 @@ import warnings
 
 import cv2
 import numpy as np
+from base.exception import MApplicationException
 from base.logger import MLogger
 from PIL import Image
 from skimage import img_as_ubyte
@@ -17,17 +18,17 @@ logger = MLogger(__name__)
 
 
 def execute(args):
+    logger.info("動画準備開始", decoration=MLogger.DECORATION_BOX)
+
+    if not os.path.exists(args.video_file):
+        logger.error(
+            "指定されたファイルパスが存在しません。\n{video_file}",
+            video_file=args.video_file,
+            decoration=MLogger.DECORATION_BOX,
+        )
+        raise MApplicationException()
+
     try:
-        logger.info("動画準備開始", decoration=MLogger.DECORATION_BOX)
-
-        if not os.path.exists(args.video_file):
-            logger.error(
-                "指定されたファイルパスが存在しません。\n{video_file}",
-                video_file=args.video_file,
-                decoration=MLogger.DECORATION_BOX,
-            )
-            return False, None
-
         # 親パス(指定がなければ動画のある場所。Colabはローカルで作成するので指定あり想定)
         base_path = str(pathlib.Path(args.video_file).parent) if not args.parent_dir else args.parent_dir
         video = cv2.VideoCapture(args.video_file)
@@ -156,4 +157,4 @@ def execute(args):
         return True, process_img_dir
     except Exception as e:
         logger.critical("動画準備で予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
-        return False, None
+        raise e

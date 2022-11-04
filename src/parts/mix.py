@@ -5,39 +5,44 @@ from datetime import datetime
 from glob import glob
 
 import numpy as np
+from base.exception import MApplicationException
 from base.logger import MLogger
-from scipy.signal import savgol_filter
+from base.math import MMatrix4x4, MQuaternion, MVector3D
+from pykalman import KalmanFilter
 from tqdm import tqdm
 
 from parts.config import SMPL_JOINT_24, SMPL_JOINT_29, DirName
 
 logger = MLogger(__name__)
 
+# 身長158cmプラグインより
+MIKU_CM = 0.1259496
+
 
 def execute(args):
-    try:
-        logger.info(
-            "推定結果合成 処理開始: {img_dir}",
+    logger.info(
+        "推定結果合成 処理開始: {img_dir}",
+        img_dir=args.img_dir,
+        decoration=MLogger.DECORATION_BOX,
+    )
+
+    if not os.path.exists(args.img_dir):
+        logger.error(
+            "指定された処理用ディレクトリが存在しません。: {img_dir}",
             img_dir=args.img_dir,
             decoration=MLogger.DECORATION_BOX,
         )
+        raise MApplicationException()
 
-        if not os.path.exists(args.img_dir):
-            logger.error(
-                "指定された処理用ディレクトリが存在しません。: {img_dir}",
-                img_dir=args.img_dir,
-                decoration=MLogger.DECORATION_BOX,
-            )
-            return False
+    if not os.path.exists(os.path.join(args.img_dir, DirName.POSETRIPLET.value)):
+        logger.error(
+            "指定されたPoseTripletディレクトリが存在しません。\nPoseTripletが完了していない可能性があります。: {img_dir}",
+            img_dir=os.path.join(args.img_dir, DirName.POSETRIPLET.value),
+            decoration=MLogger.DECORATION_BOX,
+        )
+        raise MApplicationException()
 
-        if not os.path.exists(os.path.join(args.img_dir, DirName.POSETRIPLET.value)):
-            logger.error(
-                "指定されたPoseTripletディレクトリが存在しません。\nPoseTripletが完了していない可能性があります。: {img_dir}",
-                img_dir=os.path.join(args.img_dir, DirName.POSETRIPLET.value),
-                decoration=MLogger.DECORATION_BOX,
-            )
-            return False
-
+    try:
         output_dir_path = os.path.join(args.img_dir, DirName.MIX.value)
 
         if os.path.exists(output_dir_path):
@@ -51,7 +56,7 @@ def execute(args):
         )
 
         target_pnames = []
-        all_depths: dict[int, dict[str, float]] = {}
+        all_depths: dict[int, dict[int, float]] = {}
         for personal_json_path in tqdm(sorted(glob(os.path.join(args.img_dir, DirName.POSETRIPLET.value, "*.json")))):
             pname, _ = os.path.splitext(os.path.basename(personal_json_path))
 
@@ -59,8 +64,8 @@ def execute(args):
             with open(personal_json_path, "r") as f:
                 frame_joints = json.load(f)
 
-            for fno in frame_joints["estimation"].keys():
-                if "pt-keypoints" in frame_joints["estimation"][fno] and "depth" in frame_joints["estimation"][fno]:
+            for sfno in frame_joints["estimation"].keys():
+                if "pt-keypoints" in frame_joints["estimation"][sfno] and "depth" in frame_joints["estimation"][sfno]:
                     # Mediapipeの情報がある最初のキーフレを選択する
                     target_pnames.append(pname)
                     break
@@ -68,10 +73,11 @@ def execute(args):
             if pname not in target_pnames:
                 continue
 
+            fno = int(sfno)
             if fno not in all_depths:
                 all_depths[fno] = {}
             # メーターからcmに変換
-            all_depths[fno][pname] = frame_joints["estimation"][fno]["depth"] * 100
+            all_depths[fno][pname] = frame_joints["estimation"][sfno]["depth"] * 100
 
         start_fno = list(sorted(list(all_depths.keys())))[0]
         # Zは一番手前が0になるように
@@ -128,18 +134,41 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
 
-            for key, joint_vals in tqdm(joint_datas.items(), desc=f"No.{pname} ... "):
-                # スムージング
-                smoothed_joint_vals = list(joint_vals.values())
-                if len(joint_vals) > 7:
-                    smoothed_joint_vals = savgol_filter(
-                        smoothed_joint_vals,
-                        window_length=7,
-                        polyorder=2,
-                    )
+            smoothed_values = {}
+            with tqdm(
+                total=(len(SMPL_JOINT_24.keys()) + 3 + 1),
+                desc=f"No.{pname} ... ",
+            ) as pchar:
+                kf = KalmanFilter(n_dim_state=3, n_dim_obs=3)
+                for jname in SMPL_JOINT_24.keys():
+                    values = np.vstack(
+                        [
+                            np.array(list(joint_datas[("ap", jname, "x")].values())),
+                            np.array(list(joint_datas[("ap", jname, "y")].values())),
+                            np.array(list(joint_datas[("ap", jname, "z")].values())),
+                        ]
+                    ).T
+                    smoothed_values[("ap", jname)] = kf.em(values).smooth(values)[0]
+                    smoothed_values[("ap", jname)][:10] = values[:10]
+                    pchar.update(1)
 
-                for fidx, fno in enumerate(joint_vals.keys()):
-                    joint_datas[key][fno] = smoothed_joint_vals[fidx]
+                for jname in ("Pelvis", "RAnkle", "LAnkle"):
+                    values = np.vstack(
+                        [
+                            np.array(list(joint_datas[("pt", jname, "x")].values())),
+                            np.array(list(joint_datas[("pt", jname, "y")].values())),
+                            np.array(list(joint_datas[("pt", jname, "z")].values())),
+                        ]
+                    ).T
+                    smoothed_values[("pt", jname)] = kf.em(values).smooth(values)[0]
+                    smoothed_values[("pt", jname)][:10] = values[:10]
+                    pchar.update(1)
+
+                kf = KalmanFilter(n_dim_state=1, n_dim_obs=1)
+                values = np.array(list(joint_datas[("mp", "depth", "d")].values()))
+                smoothed_values[("mp", "depth")] = kf.em(values).smooth(values)[0]
+                smoothed_values[("mp", "depth")][:10] = np.array([values[:10]]).T
+                pchar.update(1)
 
             logger.info(
                 "【No.{pname}】推定結果合成 グルーブ補正",
@@ -147,12 +176,14 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
 
-            for fno in tqdm(joint_datas["ap", "Pelvis", "y"].keys(), desc=f"No.{pname} ... "):
-                # 全身でもっとも低いところを探す(逆立ちとかも可能性としてはあるので、全部舐める)
-                min_y = np.min([joint_datas["ap", jname, "y"][fno] for jname in SMPL_JOINT_24.keys()])
+            ys = []
+            for jname in SMPL_JOINT_24.keys():
+                ys.append(smoothed_values[("ap", jname)][:, 1])
+            ys = np.array(ys)
+            min_ys = np.min(ys, axis=0)
 
-                for jname in SMPL_JOINT_24.keys():
-                    joint_datas["ap", jname, "y"][fno] -= min_y
+            for jname in SMPL_JOINT_24.keys():
+                smoothed_values[("ap", jname)][:, 1] -= min_ys
 
             logger.info(
                 "【No.{pname}】推定結果合成 合成開始",
@@ -160,9 +191,29 @@ def execute(args):
                 decoration=MLogger.DECORATION_LINE,
             )
 
+            initial_nose_pos = MVector3D(0, 17.59783, -1.127905)
+            initial_head_pos = MVector3D(0, 17.33944, 0.3088881)
+            initial_neck_pos = MVector3D(0, 16.42476, 0.4232453)
+            initial_direction: MVector3D = (initial_nose_pos - initial_head_pos).normalized()
+            initial_up: MVector3D = (initial_head_pos - initial_neck_pos).normalized()
+            initial_cross: MVector3D = initial_up.cross(initial_direction).normalized()
+            initial_head_qq = MQuaternion.from_direction(initial_direction, initial_cross)
+
+            initial_left_ear_pos = (MVector3D(1.147481, 17.91739, 0.4137991) - initial_nose_pos) / MIKU_CM
+            initial_right_ear_pos = (MVector3D(-1.147481, 17.91739, 0.4137991) - initial_nose_pos) / MIKU_CM
+
+            # PoseTriplet で測った場合のY座標（ジャンプしてるとその分上に行く）
+            pt_leg_lengths = smoothed_values["pt", "Pelvis"][:, 1] * 0.8
+            # AlphaPose で測った場合のY座標（もっともYが低い関節からの距離）
+            ap_leg_lengths = smoothed_values["ap", "Pelvis"][:, 1]
+
+            # ジャンプしてる場合はptの方が値が大きくなるので、＋のみ判定（接地までとする）
+            # ややPoseTriplet を低めに見積もってるので、実値としてはかさ増しする
+            adjust_foot_ys = np.where(pt_leg_lengths - ap_leg_lengths > 0, pt_leg_lengths - ap_leg_lengths, 0) * 1.5
+
             mix_joints = {"color": frame_joints["color"], "joints": {}}
             for fidx, fno in tqdm(
-                enumerate(joint_datas[("ap", "Pelvis", "x")].keys()),
+                enumerate(fnos),
                 desc=f"No.{pname} ... ",
             ):
                 mix_joints["joints"][fno] = {"body": {}, "2d": {}}
@@ -212,40 +263,11 @@ def execute(args):
                     },
                 }
 
-                if not (("ap", "Pelvis", "x") in joint_datas and fno in joint_datas[("ap", "Pelvis", "x")]):
-                    continue
-
-                # PoseTriplet で測った場合のY座標（ジャンプしてるとその分上に行く）
-                pt_leg_length = joint_datas["pt", "Pelvis", "y"][fno] * 0.8
-                # AlphaPose で測った場合のY座標（もっともYが低い関節からの距離）
-                ap_leg_length = joint_datas["ap", "Pelvis", "y"][fno]
-
-                # ジャンプしてる場合はptの方が値が大きくなるので、＋のみ判定（接地までとする）
-                # ややPoseTriplet を低めに見積もってるので、実値としてはかさ増しする
-                adjust_foot_y = max(0, pt_leg_length - ap_leg_length) * 1.5
-                logger.debug(
-                    "[{fno}] adjust_foot_y: {adjust_foot_y}, pt_leg_length: {pt_leg_length}, ap_leg_length: {ap_leg_length}",
-                    fno=fno,
-                    adjust_foot_y=adjust_foot_y,
-                    pt_leg_length=pt_leg_length,
-                    ap_leg_length=ap_leg_length,
-                )
-
                 for jname in SMPL_JOINT_24.keys():
-                    if not (
-                        ("ap", jname, "x") in joint_datas
-                        and fno in joint_datas[("ap", jname, "x")]
-                        and ("pt", "Pelvis", "x") in joint_datas
-                        and fno in joint_datas[("pt", "Pelvis", "x")]
-                        and ("mp", "depth", "d") in joint_datas
-                        and fno in joint_datas[("mp", "depth", "d")]
-                    ):
-                        continue
-
                     mix_joints["joints"][fno]["body"][jname] = {
-                        "x": joint_datas[("ap", jname, "x")][fno] + (joint_datas[("pt", "Pelvis", "x")][fno] * 1.2),
-                        "y": joint_datas[("ap", jname, "y")][fno] + adjust_foot_y,
-                        "z": joint_datas[("ap", jname, "z")][fno] + ((joint_datas[("mp", "depth", "d")][fno] - root_depth) * 1.3),
+                        "x": float(smoothed_values[("ap", jname)][fidx, 0] + (smoothed_values[("pt", "Pelvis")][fidx, 0] * 1.2)),
+                        "y": float(smoothed_values[("ap", jname)][fidx, 1] + adjust_foot_ys[fidx]),
+                        "z": float(smoothed_values[("ap", jname)][fidx, 2] + ((smoothed_values[("mp", "depth")][fidx] - root_depth) * 1.3)),
                     }
 
                 mix_joints["joints"][fno]["body"]["Pelvis2"] = {}
@@ -272,6 +294,46 @@ def execute(args):
                         ]
                     )
 
+                # 耳位置を暫定で求める
+                head_pos = MVector3D(
+                    mix_joints["joints"][fno]["body"]["Head"]["x"],
+                    mix_joints["joints"][fno]["body"]["Head"]["y"],
+                    mix_joints["joints"][fno]["body"]["Head"]["z"],
+                )
+                neck_pos = MVector3D(
+                    mix_joints["joints"][fno]["body"]["Neck"]["x"],
+                    mix_joints["joints"][fno]["body"]["Neck"]["y"],
+                    mix_joints["joints"][fno]["body"]["Neck"]["z"],
+                )
+                nose_pos = MVector3D(
+                    mix_joints["joints"][fno]["body"]["Nose"]["x"],
+                    mix_joints["joints"][fno]["body"]["Nose"]["y"],
+                    mix_joints["joints"][fno]["body"]["Nose"]["z"],
+                )
+
+                direction: MVector3D = (nose_pos - head_pos).normalized()
+                up: MVector3D = (head_pos - neck_pos).normalized()
+                cross: MVector3D = up.cross(direction).normalized()
+                head_qq = MQuaternion.from_direction(direction, cross) * initial_head_qq.inverse()
+
+                ear_mat = MMatrix4x4(identity=True)
+                ear_mat.translate(nose_pos)
+                ear_mat.rotate(head_qq)
+
+                left_ear_pos = ear_mat * initial_left_ear_pos
+                right_ear_pos = ear_mat * initial_right_ear_pos
+
+                mix_joints["joints"][fno]["body"]["LEar"] = {
+                    "x": float(left_ear_pos.x),
+                    "y": float(left_ear_pos.y),
+                    "z": float(left_ear_pos.z),
+                }
+                mix_joints["joints"][fno]["body"]["REar"] = {
+                    "x": float(right_ear_pos.x),
+                    "y": float(right_ear_pos.y),
+                    "z": float(right_ear_pos.z),
+                }
+
             logger.info(
                 "【No.{pname}】推定結果合成 出力開始",
                 pname=pname,
@@ -294,4 +356,4 @@ def execute(args):
         return True
     except Exception as e:
         logger.critical("推定結果合成で予期せぬエラーが発生しました。", e, decoration=MLogger.DECORATION_BOX)
-        return False
+        raise e
