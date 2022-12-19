@@ -444,7 +444,7 @@ def execute(args):
                         rot_infections = np.array([])
                         rot_y_infections = np.array([])
                     else:
-                        rot_infections = get_infections(rot_values, threshold=0.0005)
+                        rot_infections = get_infections(rot_values, threshold=0.001)
                         # 回転変動も検出する(180度だけだとどっち向きの回転か分からないので)
                         rot_y_infections = np.array([])
                         if bone_name in ["上半身", "下半身"]:
