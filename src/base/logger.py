@@ -1,7 +1,10 @@
+import codecs
 import gettext
+import locale
 import logging
 import os
 import re
+import sys
 import traceback
 from datetime import datetime
 from enum import IntEnum
@@ -9,6 +12,9 @@ from enum import IntEnum
 import numpy as np
 
 from base.exception import MLibException
+
+sys.stdout = codecs.getwriter("utf8")(sys.stdout.detach())
+sys.stderr = codecs.getwriter("utf8")(sys.stderr.detach())
 
 
 class LoggingMode(IntEnum):
@@ -68,11 +74,12 @@ class MLogger:
 
         if out_path:
             # ファイル出力ハンドラ
-            self.file_handler = logging.FileHandler(out_path)
+            self.file_handler = logging.FileHandler(out_path, encoding="utf-8")
             self.file_handler.setLevel(self.default_level)
             self.file_handler.setFormatter(logging.Formatter(self.DEFAULT_FORMAT))
 
-        self.stream_handler = logging.StreamHandler()
+        self.stream_handler = logging.StreamHandler(sys.stdout)
+        self.stream_handler = logging.StreamHandler(sys.stderr)
 
     def time(self, msg, *args, **kwargs):
         if not kwargs:
