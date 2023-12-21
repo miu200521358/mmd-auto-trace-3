@@ -14,6 +14,7 @@ Windows cython-bbox
 git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox
 
 git submodule add https://github.com/miu200521358/AlphaPose src/AlphaPose 
+git submodule add https://github.com/miu200521358/chumpy src/chumpy 
 
 (mat3) C:\MMD\mmd-auto-trace-3\src\AlphaPose>python setup.py build install
 
