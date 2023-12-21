@@ -7,3 +7,6 @@
 [submodule "src/MultiPose"]
 	path = src/MultiPose
 	url = https://github.com/miu200521358/3D-Multi-Person-Pose
+[submodule "src/chumpy"]
+	path = src/chumpy
+	url = https://github.com/miu200521358/chumpy
