@@ -1,4 +1,4 @@
-numpy==1.23.5
+numpy==1.24.2
 
 six21==0.1.3
 terminaltables==3.1.10
