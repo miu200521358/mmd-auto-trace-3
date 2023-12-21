@@ -16,6 +16,5 @@ timm==0.1.20
 natsort==8.2.0
 opendr==0.78
 pycocotools==2.0.6
-cython-bbox==0.1.5
 imageio==2.21.3
 chumpy==0.70
