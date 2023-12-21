@@ -1,8 +1,8 @@
+numpy
 tqdm==4.64.1
 opencv_python==4.6.0.66
 matplotlib==3.5.3
 imageio==2.21.3
-numpy==1.23.3
 
 # alphapose
 cython==0.29.32
