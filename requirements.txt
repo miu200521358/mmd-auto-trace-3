@@ -1,14 +1,26 @@
 numpy
+
+six21==0.1.3
+terminaltables==3.1.10
+scipy==1.9.3
+visdom==0.2.3
+tensorboardX==2.5.1
+halpecocotools==0.0.0
+munkres3==1.0.5.5
+timm==0.1.20
+natsort==8.2.0
+opendr==0.78numpy
+
 tqdm==4.64.1
 opencv_python==4.6.0.66
-matplotlib==3.5.3
+matplotlib==3.6.2
 imageio==2.21.3
 
 # alphapose
 cython==0.29.32
-easydict==1.9
+easydict==1.10
 PyYAML==6.0
-pycocotools==2.0.5
+pycocotools==2.0.6
 cython-bbox==0.1.3
 munkres==1.1.4
 chumpy==0.70
