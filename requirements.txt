@@ -5,6 +5,7 @@ terminaltables==3.1.10
 scipy==1.9.3
 visdom==0.2.3
 tensorboardX==2.5.1
+halpecocotools==0.0.0
 munkres3==1.0.5.5
 timm==0.1.20
 natsort==8.2.0
