@@ -25,7 +25,9 @@ def show_worked_time(elapsed_time):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--video-file", type=str, dest="video_file", default="", help="Video file path")
+    parser.add_argument(
+        "--video-file", type=str, dest="video_file", default="", help="Video file path"
+    )
     parser.add_argument(
         "--parent-dir",
         type=str,
@@ -33,7 +35,9 @@ if __name__ == "__main__":
         default="",
         help="Process parent dir path",
     )
-    parser.add_argument("--process", type=str, dest="process", default="", help="Process to be executed")
+    parser.add_argument(
+        "--process", type=str, dest="process", default="", help="Process to be executed"
+    )
     parser.add_argument(
         "--img-dir",
         type=str,
@@ -41,23 +45,33 @@ if __name__ == "__main__":
         default="",
         help="Prepared image directory",
     )
-    parser.add_argument("--audio-file", type=str, dest="audio_file", default="", help="Audio file path")
+    parser.add_argument(
+        "--audio-file", type=str, dest="audio_file", default="", help="Audio file path"
+    )
     parser.add_argument(
         "--trace-check-model-config",
         type=str,
         dest="trace_check_model_config",
-        default=os.path.abspath(os.path.join(__file__, "../../data/pmx/trace_check_model.pmx")),
+        default=os.path.abspath(
+            os.path.join(__file__, "../../data/pmx/trace_check_model.pmx")
+        ),
         help="MMD Model Bone pmx",
     )
     parser.add_argument(
         "--trace-rot-model-config",
         type=str,
         dest="trace_rot_model_config",
-        default=os.path.abspath(os.path.join(__file__, "../../data/pmx/trace_model.pmx")),
+        default=os.path.abspath(
+            os.path.join(__file__, "../../data/pmx/trace_model.pmx")
+        ),
         help="MMD Model Bone pmx",
     )
-    parser.add_argument("--verbose", type=int, dest="verbose", default=20, help="Log level")
-    parser.add_argument("--log-mode", type=int, dest="log_mode", default=0, help="Log output mode")
+    parser.add_argument(
+        "--verbose", type=int, dest="verbose", default=20, help="Log level"
+    )
+    parser.add_argument(
+        "--log-mode", type=int, dest="log_mode", default=0, help="Log output mode"
+    )
     parser.add_argument("--lang", type=str, dest="lang", default="en", help="Language")
 
     args = parser.parse_args()
@@ -123,6 +137,7 @@ if __name__ == "__main__":
     except Exception as e:
         elapsed_time = time.time() - start
 
+        print(f"ERROR : {e}")
         print(traceback.format_exc())
         logger.error(
             "MMD自動トレース失敗\n　処理対象映像ファイル: {video_file}\n　処理内容: {process}\n　処理時間: {elapsed_time}",
